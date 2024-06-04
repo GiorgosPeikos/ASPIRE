@@ -6,17 +6,28 @@ from utils.utils import print_session_data
 print_session_data()
 
 st.header("Upload the retrieval experiments in TREC Format")
-runs = st.file_uploader("Upload Retrieval Experiments (TREC Format). The file's name will be its identifier.",
-                       type=['txt', 'csv'], accept_multiple_files=True)
-st.markdown("""
+runs = st.file_uploader(
+    "Upload Retrieval Experiments (TREC Format). The file's name will be its identifier.",
+    type=["txt", "csv"],
+    accept_multiple_files=True,
+)
+st.markdown(
+    """
     <i>Expected columns: query_id, iteration (i.e. Q0), doc_id, rank, score, experiment_id</i>
-    """, unsafe_allow_html=True)
+    """,
+    unsafe_allow_html=True,
+)
 
 st.header("Upload the Qrels file in TREC Format")
-qrels = st.file_uploader("Upload Qrels File. The file's name will be its identifier. ", type=['txt', 'csv'])
-st.markdown("""
+qrels = st.file_uploader(
+    "Upload Qrels File. The file's name will be its identifier. ", type=["txt", "csv"]
+)
+st.markdown(
+    """
     <i>Expected columns: query_id, iteration (i.e. Q0), doc_id, relevance (without header row)</i>
-    """, unsafe_allow_html=True)
+    """,
+    unsafe_allow_html=True,
+)
 
 
 if st.button("Upload Files"):
@@ -35,7 +46,7 @@ if st.button("Upload Files"):
                 f.write(run.getvalue())
             saved_files.append(run.name)
 
-            st.session_state['runs'] = run.name
+            st.session_state["runs"] = run.name
 
     if qrels is not None:
         # Define the folder to save the QREL file
@@ -49,7 +60,7 @@ if st.button("Upload Files"):
         with open(qrels_file_path, "wb") as f:
             f.write(qrels.getvalue())
         saved_files.append(qrels.name)
-        st.session_state['qrels'] = qrels.name
+        st.session_state["qrels"] = qrels.name
 
     if saved_files:
         st.success(f"Files saved: {', '.join(saved_files)}")

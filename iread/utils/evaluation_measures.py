@@ -1,4 +1,5 @@
 import ir_measures
+
 # from ir_measures import *
 import streamlit as st
 import statistics
@@ -81,18 +82,66 @@ def return_available_measures():
 
 # Define a set of measures that support relevance level e.g. (rel=2)
 measures_with_rel_param = {
-    "Accuracy", "alpha_DCG", "alpha_nDCG", "AP", "AP_IA", "Bpref",
-    "ERR_IA", "infAP", "IPrec", "NERR8", "NERR9", "NERR10",
-    "NERR11", "nERR_IA", "nNRBP", "NRBP", "P", "P_IA", "R", "RBP", "Rprec",
-    "RR", "SetAP", "SetF", "SetP", "SetR", "NumRet", "NumRelRet"
+    "Accuracy",
+    "alpha_DCG",
+    "alpha_nDCG",
+    "AP",
+    "AP_IA",
+    "Bpref",
+    "ERR_IA",
+    "infAP",
+    "IPrec",
+    "NERR8",
+    "NERR9",
+    "NERR10",
+    "NERR11",
+    "nERR_IA",
+    "nNRBP",
+    "NRBP",
+    "P",
+    "P_IA",
+    "R",
+    "RBP",
+    "Rprec",
+    "RR",
+    "SetAP",
+    "SetF",
+    "SetP",
+    "SetR",
+    "NumRet",
+    "NumRelRet",
 }
 
 # Define a set of measures that support a cutoff e.g. @10
 measures_with_cutoff = {
-    "Accuracy", "alpha_DCG", "alpha_nDCG", "AP", "AP_IA", "BPM", "ERR", "ERR_IA",
-    "nDCG", "NERR8", "NERR9", "NERR10", "NERR11", "nERR_IA", "nNRBP", "NRBP",
-    "P", "P_IA", "R", "RBP", "RR", "SDCG", "SetAP", "SetF", "SetP",
-    "SetR", "StRecall", "Success"
+    "Accuracy",
+    "alpha_DCG",
+    "alpha_nDCG",
+    "AP",
+    "AP_IA",
+    "BPM",
+    "ERR",
+    "ERR_IA",
+    "nDCG",
+    "NERR8",
+    "NERR9",
+    "NERR10",
+    "NERR11",
+    "nERR_IA",
+    "nNRBP",
+    "NRBP",
+    "P",
+    "P_IA",
+    "R",
+    "RBP",
+    "RR",
+    "SDCG",
+    "SetAP",
+    "SetF",
+    "SetP",
+    "SetR",
+    "StRecall",
+    "Success",
 }
 
 # Define a set of measures that need to be return as int
@@ -101,8 +150,8 @@ measures_int = ["NumRelRet", "NumRel", "NumRet", "NumQ"]
 
 def evaluate_single_run(qrels, run, metric, relevance_threshold):
     # Check if metric contains '@' and split if it does
-    if '@' in metric:
-        base_metric, cutoff = metric.split('@')
+    if "@" in metric:
+        base_metric, cutoff = metric.split("@")
         # Check if the measure supports a relevance threshold
         if base_metric in measures_with_rel_param:
             # Format the new measure string with the relevance threshold
@@ -179,7 +228,9 @@ def per_topic_evaluation(qrels, run, metric, cutoff, relevance_threshold):
 
 def good_bad_queries(res_eval):
     # Assuming res_eval is a list of dictionaries like: [{'Query ID': '1', 'Score': 0.1049}, ...]
-    data = [{'Query ID': int(metric.query_id), 'Score': metric.value} for metric in res_eval]
+    data = [
+        {"Query ID": int(metric.query_id), "Score": metric.value} for metric in res_eval
+    ]
 
     scores = [entry["Score"] for entry in data]
     ids = [entry["Query ID"] for entry in data]
@@ -188,5 +239,4 @@ def good_bad_queries(res_eval):
 
     average = statistics.mean(scores)
 
-    return scores,ids, median,average
-
+    return scores, ids, median, average

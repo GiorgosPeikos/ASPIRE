@@ -1,6 +1,7 @@
 import statistics
 
 import ir_measures
+
 # from ir_measures import *
 import streamlit as st
 
@@ -240,3 +241,19 @@ def good_bad_queries(res_eval):
     average = statistics.mean(scores)
 
     return scores, ids, median, average
+
+
+def initialize_results():
+    # Standard, extra, custom, and query results dictionaries are initialized
+    if "results_standard" not in st.session_state:
+        st.session_state["results_standard"] = {}
+    if "results_extra" not in st.session_state:
+        st.session_state["results_extra"] = {}
+    if "results_custom" not in st.session_state:
+        st.session_state["results_custom"] = {}
+    if "results_query" not in st.session_state:
+        st.session_state["results_query"] = {}
+    if "saved_queries" not in st.session_state:
+        st.session_state["saved_queries"] = {}
+    if "selected_queries" not in st.session_state:
+        st.session_state["selected_queries"] = {}

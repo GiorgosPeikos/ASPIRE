@@ -9,3 +9,5 @@ scipy==1.13.1
 sentence-transformers==2.7.0
 torch==2.3.0
 numpy==1.26.4
+ir_measures==0.3.3
+plotly-express==0.4.1

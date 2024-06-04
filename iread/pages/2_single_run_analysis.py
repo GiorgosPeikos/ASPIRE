@@ -1,8 +1,9 @@
 import streamlit as st
 import pandas as pd
 
+from utils.single_run_query_processing import get_huggingface_model, get_embeddings, perform_pca
 from utils.ui import single_run_selector, query_selector
-from utils.data import print_session_data
+from utils.data import print_session_data, load_query_data
 import os
 from utils.evaluation_measures import (
     return_available_measures,
@@ -12,7 +13,7 @@ from utils.evaluation_measures import (
     good_bad_queries,
 )
 from utils.data import load_run_data, load_qrel_data
-from utils.plots import create_evaluation_plot, plot_queries
+from utils.plots import create_evaluation_plot, plot_queries, plot_pca
 
 print_session_data()
 
@@ -269,6 +270,120 @@ if "selected_run" in st.session_state:
                         scores, ids, median, average = good_bad_queries(result)
                         plot_queries(scores, ids, median, average, graph_title)
 
+
+
+
+    st.header("Query Context Analysis")
+    st.markdown(
+        """
+        <h2><span style="color: red;">Upload</span> Queries for Content Analysis</h2>
+        """,
+        unsafe_allow_html=True,
+    )
+    saved_queries = st.file_uploader(label="", type=["txt", "csv", "xml"])
+
+    st.markdown(
+        """
+        <i>Expected columns: query_id, query_text</i>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    queries_dir = "../retrieval_experiments/queries"
+
+    if st.button("Upload File"):
+        if saved_queries is not None:
+            # Define the folder to save the TREC file
+            os.makedirs(queries_dir, exist_ok=True)
+
+            # Define file path using the original file name
+            query_file_path = os.path.join(queries_dir, saved_queries.name)
+
+            # Save the TREC file
+            with open(query_file_path, "wb") as f:
+                f.write(saved_queries.getvalue())
+
+    st.markdown(
+        """
+        <h2><span style="color: red;">Select</span> Queries</h2>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    if os.path.exists(queries_dir):
+        queries = os.listdir(queries_dir)
+        # st.write("Uploaded qrels Files:")
+        selected_queries = st.multiselect(
+            "", queries
+        )  # User can select one or more files
+        if len(selected_queries) == 1:
+            st.markdown(
+                """
+                <h3><span style="color: red;">Would you like to classify the queries as Easy/Hard based on their performance?</span></h3> Be Aware that to do so, the selected queries <span style="color: red;">MUST</span> correspond to the those analyzes in "Per Topic Analysis"
+                """,
+                unsafe_allow_html=True,
+            )
+            # Add Yes/No radio buttons
+            classify_queries = st.radio("Select an option:", ("Yes", "No"))
+
+            st.session_state["selected_queries"] = os.path.join(
+                queries_dir, selected_queries[0]
+            )
+            query_data = load_query_data(st.session_state["selected_queries"])
+            # Check the user's choice
+            if classify_queries == "Yes" and graph_title:
+                st.success(
+                    f"""Classifying Queries Difficulty Based on their achieved {graph_title}"""
+                )
+                query_data[f"{graph_title}_values"] = (good_bad_queries(result))[0]
+                mean_perfomance = (good_bad_queries(result))[3]
+                median_performance = (good_bad_queries(result))[2]
+                query_data["query_type"] = query_data[
+                    f"{graph_title}_values"
+                ].apply(lambda x: "Hard" if x < median_performance else "Easy")
+            else:
+                st.error(
+                    f"""The Queries have not been Assessed based on their Difficulty. Proceed."""
+                )
+
+            st.markdown(
+                """
+                       <h6><span style="color: black;">Data</span> Preview</h6>
+                       """,
+                unsafe_allow_html=True,
+            )
+            st.dataframe(
+                query_data, width=None, height=None, use_container_width=True
+            )
+
+            st.markdown(
+                """<h6><span style="color: black;">Obtain</span> Embedding Representation</h6>""",
+                unsafe_allow_html=True,
+            )
+
+            model_name = st.text_input(
+                "Enter the HuggingFace model name:",
+                "sentence-transformers/all-MiniLM-L6-v2",
+            )
+            if st.button("Use the Model to Plot the Queries"):
+                if model_name:
+                    with st.spinner(f"Loading {model_name} model..."):
+                        model, tokenizer = get_huggingface_model(model_name)
+                        st.success(f"Loaded {model_name} model!")
+                    with st.spinner(
+                        f"Calculating the Query Embeddings using the {model_name} model..."
+                    ):
+                        query_data = get_embeddings(query_data, model, tokenizer)
+                        st.success(f"Process {model_name} Completed!")
+                else:
+                    st.error("Please enter a valid model name.")
+            # Plotting the PCA results
+            if "embeddings" in query_data.columns:
+                with st.spinner(f"Plotting..."):
+                    pca_df = perform_pca(query_data)
+                    plot_pca(pca_df, classify_queries)
+            else:
+                st.write("Embeddings not found in the data")
 
 else:
     st.error("Errors in Calculations. No run selected.")

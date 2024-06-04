@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import os
+import xml.etree.ElementTree as ET
 
 
 def read_data(folder_path: str):
@@ -50,12 +51,47 @@ def load_qrel_data(qrel_path):
     )
 
 
-def load_css(file_name: str):
-    with open(file_name, "r") as f:
-        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+@st.cache_data
+def load_query_data(query_path):
+
+    # Determine the file extension
+    file_extension = os.path.splitext(query_path)[1].lower()
+
+    # Process based on file type
+    if file_extension in [".csv", ".txt"]:
+        return pd.read_csv(
+            query_path,
+            names=["query_id", "query_text"],
+            delimiter="[ \t]",
+            dtype={"query_id": str, "iteration": str, "doc_id": str, "relevance": int},
+            index_col=None,
+            engine="python",
+            header=0,
+        )
+    elif file_extension == ".xml":
+        # Parse XML and extract the required data
+        tree = ET.parse(query_path)
+        root = tree.getroot()
+
+        # Create lists to store query_id and query_text
+        query_ids = []
+        query_texts = []
+
+        # Iterate through each 'topic' in the XML and extract required information
+        for topic in root.findall(".//topic"):
+            query_id = topic.get("number")
+            query_text = "".join(topic.itertext()).strip()
+            query_ids.append(query_id)
+            query_texts.append(query_text)
+
+        # Create a DataFrame from the lists
+        return pd.DataFrame({"query_id": query_ids, "query_text": query_texts})
+    else:
+        raise ValueError("Unsupported file format")
 
 
 def print_session_data() -> None:
+    """Only for debug to make sure that we loaded correct data."""
     if "qrels" in st.session_state:
         st.write(f"Loaded qrels: {st.session_state['qrels']}")
     else:

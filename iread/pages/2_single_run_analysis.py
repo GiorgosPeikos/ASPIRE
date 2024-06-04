@@ -1,59 +1,44 @@
 import streamlit as st
 import pandas as pd
-from utils.utils import print_session_data
+
+from utils.ui import single_run_selector, query_selector
+from utils.data import print_session_data
 import os
 from utils.evaluation_measures import (
     return_available_measures,
     evaluate_single_run,
     evaluate_single_run_custom,
-    per_topic_evaluation,
+    per_query_evaluation,
     good_bad_queries,
 )
-from utils.utils import load_run_data, load_qrel_data
+from utils.data import load_run_data, load_qrel_data
 from utils.plots import create_evaluation_plot, plot_queries
-import xml.etree.ElementTree as ET
 
 print_session_data()
 
 
 def initialize_results():
-    # Standard, extra, custom, and topic results dictionaries are initialized
+    # Standard, extra, custom, and query results dictionaries are initialized
     if "results_standard" not in st.session_state:
         st.session_state["results_standard"] = {}
     if "results_extra" not in st.session_state:
         st.session_state["results_extra"] = {}
     if "results_custom" not in st.session_state:
         st.session_state["results_custom"] = {}
-    if "results_topic" not in st.session_state:
-        st.session_state["results_topic"] = {}
+    if "results_query" not in st.session_state:
+        st.session_state["results_query"] = {}
     if "saved_queries" not in st.session_state:
         st.session_state["saved_queries"] = {}
     if "selected_queries" not in st.session_state:
         st.session_state["selected_queries"] = {}
 
 
-st.subheader("Qrels Files")
-qrels_dir = os.path.join(os.path.dirname(os.getcwd()), "retrieval_experiments/qrels")
-if os.path.exists(qrels_dir):
-    selected_qrels = st.selectbox("", os.listdir(qrels_dir))
-    st.session_state["selected_qrels"] = os.path.join(qrels_dir, selected_qrels)
+query_selector()
+single_run_selector()
 
 
-st.subheader("Retrieval Experiments")
-experiments_dir = os.path.join(
-    os.path.dirname(os.getcwd()), "retrieval_experiments/retrieval_runs"
-)
-if os.path.exists(experiments_dir):
-    selected_run = st.selectbox(
-        "", os.listdir(experiments_dir)
-    )  # User can select one or more files
-    print(selected_run)
-    st.session_state["selected_file"] = os.path.join(experiments_dir, selected_run)
-
-
-# Check if a file has been selected and load the data
-if "selected_file" in st.session_state:
-    run_path = st.session_state["selected_file"]
+if "selected_run" in st.session_state:
+    run_path = st.session_state["selected_run"]
     qrel_path = st.session_state["selected_qrels"]
     run = load_run_data(run_path)
     qrels = load_qrel_data(qrel_path)
@@ -66,12 +51,10 @@ if "selected_file" in st.session_state:
         f"""<div style="text-align: center;"><h1><u>  Evaluating the <span style="color:red;"> <u>{filename_without_suffix} </u></span> Experiment </u> </h1></div>""",
         unsafe_allow_html=True,
     )
-    st.markdown(
-        "Further [Details](https://ir-measur.es/en/latest/measures.html) on evaluation measures"
-    )
 
     st.header("Mean Performance Evaluation")
 
+    st.sidebar.subheader("Additional settings")
     # Slider for relevance threshold
     relevance_threshold = st.sidebar.slider(
         "Select from the Available Relevance Thresholds (Slide)",
@@ -174,48 +157,48 @@ if "selected_file" in st.session_state:
             # Displays an error message in case of an exception during evaluation
             st.error(f"Error evaluating custom cutoff: {e}")
 
-    # Header for the 'Per Topic Analysis' section
-    st.header("Per Topic Analysis")
+    # Header for the 'Per Query Analysis' section
+    st.header("Per Query Analysis")
 
-    # Initialize an empty list in the session state to store per-topic analysis results, if it doesn't already exist
-    if "per_topic_analysis_results" not in st.session_state:
-        st.session_state["per_topic_analysis_results"] = []
+    # Initialize an empty list in the session state to store per-query analysis results, if it doesn't already exist
+    if "per_query_analysis_results" not in st.session_state:
+        st.session_state["per_query_analysis_results"] = []
 
-    # Creating a form for user inputs specific to per topic analysis
-    with st.form(key="per_topic_analysis"):
+    # Creating a form for user inputs specific to per query analysis
+    with st.form(key="per_query_analysis"):
         # Dropdown for users to select a measure from a predefined list
-        selected_measure_topic = st.selectbox("Select a measure", custom_user)
+        selected_measure_query = st.selectbox("Select a measure", custom_user)
 
         # Input for users to enter a cutoff value, with specified minimum, default, and maximum values
-        cutoff_topic = st.number_input(
+        cutoff_query = st.number_input(
             "Enter cutoff value", min_value=1, value=25, max_value=1000, step=1
         )
 
         # Input for users to specify a relevance level, within a defined range
-        relevance_level_topic = st.number_input(
+        relevance_level_query = st.number_input(
             "Enter relevance level", min_value=1, max_value=relevance_max, step=1
         )
 
         # Button to submit the form
-        submit_button_topic = st.form_submit_button(label="Per Topic Score Analysis")
+        submit_button_query = st.form_submit_button(label="Per Query Score Analysis")
 
         show_queryperf = st.form_submit_button(label="Show Good/Bad Performing Queries")
 
     # Handling the form submission
-    if submit_button_topic:
+    if submit_button_query:
         try:
-            # Evaluating the selected measure with user-defined cutoffs and relevance level for per topic analysis
-            parsed_metric_topic, custom_cutoff_result_topic = per_topic_evaluation(
-                qrels, run, selected_measure_topic, cutoff_topic, relevance_level_topic
+            # Evaluating the selected measure with user-defined cutoffs and relevance level for per query analysis
+            parsed_metric_query, custom_cutoff_result_query = per_query_evaluation(
+                qrels, run, selected_measure_query, cutoff_query, relevance_level_query
             )
 
             # Creating a unique identifier for the graph based on the measure and relevance level
-            graph_identifier = (selected_measure_topic, relevance_level_topic)
+            graph_identifier = (selected_measure_query, relevance_level_query)
 
             # Searching for an existing graph in the session state that matches the current measure and relevance level
             existing_index = None
             for i, (metric_info, _) in enumerate(
-                st.session_state["per_topic_analysis_results"]
+                st.session_state["per_query_analysis_results"]
             ):
                 if (
                     metric_info["measure"],
@@ -226,42 +209,42 @@ if "selected_file" in st.session_state:
 
             # Creating a dictionary with the new graph information
             new_graph_info = {
-                "measure": selected_measure_topic,
-                "relevance_level": relevance_level_topic,
-                "cutoff": cutoff_topic,
+                "measure": selected_measure_query,
+                "relevance_level": relevance_level_query,
+                "cutoff": cutoff_query,
             }
 
             # Updating or appending the graph in the session state
             if existing_index is not None:
                 # Replace existing graph if the cutoff is different
                 if (
-                    st.session_state["per_topic_analysis_results"][existing_index][0][
+                    st.session_state["per_query_analysis_results"][existing_index][0][
                         "cutoff"
                     ]
-                    != cutoff_topic
+                    != cutoff_query
                 ):
-                    st.session_state["per_topic_analysis_results"][existing_index] = (
+                    st.session_state["per_query_analysis_results"][existing_index] = (
                         new_graph_info,
-                        custom_cutoff_result_topic,
+                        custom_cutoff_result_query,
                     )
             else:
                 # Append new graph if it doesn't already exist
-                st.session_state["per_topic_analysis_results"].append(
-                    (new_graph_info, custom_cutoff_result_topic)
+                st.session_state["per_query_analysis_results"].append(
+                    (new_graph_info, custom_cutoff_result_query)
                 )
 
         except Exception as e:
             # Displaying an error message in case of an exception during evaluation
             st.error(f"Error evaluating custom cutoff: {e}")
 
-    # Iterating through the per-topic analysis results and displaying them
-    for i in range(0, len(st.session_state["per_topic_analysis_results"]), 2):
+    # Iterating through the per-query analysis results and displaying them
+    for i in range(0, len(st.session_state["per_query_analysis_results"]), 2):
         cols = st.columns(2)
 
         for j in range(2):  # Handling two graphs per iteration
             index = i + j
-            if index < len(st.session_state["per_topic_analysis_results"]):
-                metric_info, result = st.session_state["per_topic_analysis_results"][
+            if index < len(st.session_state["per_query_analysis_results"]):
+                metric_info, result = st.session_state["per_query_analysis_results"][
                     index
                 ]
                 # Creating a title for each graph
@@ -277,7 +260,7 @@ if "selected_file" in st.session_state:
                     with button_col:
                         # Button to remove the graph from the display and session state
                         if st.button("❌", key=f"close_{index}", help="Remove graph"):
-                            del st.session_state["per_topic_analysis_results"][index]
+                            del st.session_state["per_query_analysis_results"][index]
                             st.rerun()
 
                     # Rendering the graph plot below the title and close button
@@ -288,5 +271,9 @@ if "selected_file" in st.session_state:
 
 
 else:
-    # Displaying an error message if no file has been selected for analysis
-    st.error("Errors in Calculations.")
+    st.error("Errors in Calculations. No run selected.")
+
+
+st.sidebar.markdown(
+    "Further [Details](https://ir-measur.es/en/latest/measures.html) on evaluation measures"
+)

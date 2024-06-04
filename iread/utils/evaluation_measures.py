@@ -202,7 +202,7 @@ def evaluate_single_run_custom(qrels, run, metric, cutoff, relevance_threshold):
     return parsed_metric, round(list(res_eval.values())[0], 4)
 
 
-def per_topic_evaluation(qrels, run, metric, cutoff, relevance_threshold):
+def per_query_evaluation(qrels, run, metric, cutoff, relevance_threshold):
     # Check if metric contains '@' and split if it does
     # Check if the measure supports a relevance threshold
     if metric in measures_with_rel_param and metric in measures_with_cutoff:

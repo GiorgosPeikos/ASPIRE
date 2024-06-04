@@ -1,5 +1,5 @@
 import streamlit as st
-from utils.utils import print_session_data
+from utils.data import print_session_data
 
 print_session_data()
 

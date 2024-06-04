@@ -1,7 +1,7 @@
 import streamlit as st
 import os
 
-from utils.utils import print_session_data
+from utils.data import print_session_data
 
 print_session_data()
 

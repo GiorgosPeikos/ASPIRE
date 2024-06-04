@@ -1,5 +1,5 @@
 import streamlit as st
-from utils.utils import load_css
+from utils.ui import load_css
 
 
 def main():

@@ -12,3 +12,15 @@ def read_data(folder_path: str):
 def load_css(file_name: str):
     with open(file_name, "r") as f:
         st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+
+
+def print_session_data() -> None:
+    if "qrels" in st.session_state:
+        st.write(f"Loaded qrels: {st.session_state['qrels']}")
+    else:
+        st.write("No qrels available")
+
+    if "runs" in st.session_state:
+        st.write(f"Current runs: {st.session_state['runs']}")
+    else:
+        st.write("No runs available")

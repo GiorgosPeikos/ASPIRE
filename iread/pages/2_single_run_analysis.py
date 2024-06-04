@@ -14,6 +14,7 @@ from utils.evaluation_measures import (
     initialize_results,
 )
 from utils.plots import create_evaluation_plot, plot_queries, plot_pca
+from utils.run_analysis import find_unjudged
 from utils.single_run_query_processing import (
     get_huggingface_model,
     get_embeddings,
@@ -36,7 +37,7 @@ if not any(
 run_path = st.session_state["selected_run"]
 qrel_path = st.session_state["selected_qrels"]
 run = load_run_data(run_path)
-qrels = load_qrel_data(qrel_path)
+qrels = load_qrel_data(qrel_path)  # todo: check why first row is missing
 relevance_max = qrels["relevance"].max()  # Get maximum relevance level
 
 # Displaying the experiment's name
@@ -48,6 +49,11 @@ st.markdown(
 )
 
 st.header("Mean Performance Evaluation")
+
+cutoff = st.slider("cutoff unjudged", 10, 100, 20, 10)
+x = find_unjudged(run=run, qrels=qrels, cutoff=cutoff)
+st.write(f"Mean unjudged: {len(x)/len(qrels['query_id'].unique()):.1f}")
+st.write(f"Median unjudged: {x.groupby('query_id')['doc_id'].count().median()}")
 
 st.sidebar.subheader("Additional settings")
 # Slider for relevance threshold

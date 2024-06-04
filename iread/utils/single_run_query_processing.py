@@ -1,12 +1,10 @@
+import numpy as np
 import pandas as pd
 import streamlit as st
-from transformers import AutoModel, AutoTokenizer
-from sentence_transformers import SentenceTransformer
 import torch
 import torch.nn.functional as F
-from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
-import numpy as np
+from transformers import AutoModel, AutoTokenizer
 
 
 @st.cache_resource()

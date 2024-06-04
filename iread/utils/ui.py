@@ -1,8 +1,9 @@
-import streamlit as st
 import os
 
+import streamlit as st
 
-def query_selector():
+
+def query_selector() -> None:
     st.subheader("Qrels Files")
     qrels_dir = os.path.join(
         os.path.dirname(os.getcwd()), "retrieval_experiments/qrels"
@@ -12,14 +13,18 @@ def query_selector():
         st.session_state["selected_qrels"] = os.path.join(qrels_dir, selected_qrels)
 
 
-def single_run_selector():
-    st.subheader("Retrieval Experiments")
+def single_run_selector(
+    title: str = "Retrieval Experiments", session_key: str = "selected_run"
+) -> None:
+    st.subheader(title)
     experiments_dir = os.path.join(
         os.path.dirname(os.getcwd()), "retrieval_experiments/retrieval_runs"
     )
     if os.path.exists(experiments_dir):
-        selected_run = st.selectbox("", os.listdir(experiments_dir))
-        st.session_state["selected_run"] = os.path.join(experiments_dir, selected_run)
+        selected_run = st.selectbox(
+            "", os.listdir(experiments_dir), key=f"{session_key}_select"
+        )
+        st.session_state[session_key] = os.path.join(experiments_dir, selected_run)
 
 
 def load_css(file_name: str):

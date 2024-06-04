@@ -1,8 +1,8 @@
-import ir_measures
+import statistics
 
+import ir_measures
 # from ir_measures import *
 import streamlit as st
-import statistics
 
 
 @st.cache_data

@@ -1,10 +1,10 @@
-import streamlit as st
-import pandas as pd
-
-from utils.single_run_query_processing import get_huggingface_model, get_embeddings, perform_pca
-from utils.ui import single_run_selector, query_selector
-from utils.data import print_session_data, load_query_data
 import os
+
+import pandas as pd
+import streamlit as st
+
+from utils.data import load_run_data, load_qrel_data
+from utils.data import print_session_data, load_query_data
 from utils.evaluation_measures import (
     return_available_measures,
     evaluate_single_run,
@@ -12,8 +12,13 @@ from utils.evaluation_measures import (
     per_query_evaluation,
     good_bad_queries,
 )
-from utils.data import load_run_data, load_qrel_data
 from utils.plots import create_evaluation_plot, plot_queries, plot_pca
+from utils.single_run_query_processing import (
+    get_huggingface_model,
+    get_embeddings,
+    perform_pca,
+)
+from utils.ui import single_run_selector, query_selector
 
 print_session_data()
 
@@ -270,9 +275,6 @@ if "selected_run" in st.session_state:
                         scores, ids, median, average = good_bad_queries(result)
                         plot_queries(scores, ids, median, average, graph_title)
 
-
-
-
     st.header("Query Context Analysis")
     st.markdown(
         """
@@ -338,9 +340,9 @@ if "selected_run" in st.session_state:
                 query_data[f"{graph_title}_values"] = (good_bad_queries(result))[0]
                 mean_perfomance = (good_bad_queries(result))[3]
                 median_performance = (good_bad_queries(result))[2]
-                query_data["query_type"] = query_data[
-                    f"{graph_title}_values"
-                ].apply(lambda x: "Hard" if x < median_performance else "Easy")
+                query_data["query_type"] = query_data[f"{graph_title}_values"].apply(
+                    lambda x: "Hard" if x < median_performance else "Easy"
+                )
             else:
                 st.error(
                     f"""The Queries have not been Assessed based on their Difficulty. Proceed."""
@@ -352,9 +354,7 @@ if "selected_run" in st.session_state:
                        """,
                 unsafe_allow_html=True,
             )
-            st.dataframe(
-                query_data, width=None, height=None, use_container_width=True
-            )
+            st.dataframe(query_data, width=None, height=None, use_container_width=True)
 
             st.markdown(
                 """<h6><span style="color: black;">Obtain</span> Embedding Representation</h6>""",

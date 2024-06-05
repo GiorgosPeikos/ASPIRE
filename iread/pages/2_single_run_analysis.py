@@ -1,5 +1,6 @@
 import os
 
+import numpy as np
 import pandas as pd
 import streamlit as st
 
@@ -50,10 +51,11 @@ st.markdown(
 
 st.header("Mean Performance Evaluation")
 
-cutoff = st.slider("cutoff unjudged", 10, 100, 20, 10)
+cutoff = st.slider("cutoff unjudged", 20, 100, 20, 10)
 x = find_unjudged(run=run, qrels=qrels, cutoff=cutoff)
-st.write(f"Mean unjudged: {len(x)/len(qrels['query_id'].unique()):.1f}")
-st.write(f"Median unjudged: {x.groupby('query_id')['doc_id'].count().median()}")
+st.dataframe(x.groupby('query_id').count().agg(median=('doc_id', 'median'),
+                                               mean=('doc_id', 'mean'),
+                                               max=('doc_id', 'max')))
 
 st.sidebar.subheader("Additional settings")
 # Slider for relevance threshold

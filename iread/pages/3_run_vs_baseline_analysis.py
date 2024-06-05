@@ -9,6 +9,7 @@ from utils.evaluation_measures import (
     initialize_results,
     evaluate_single_run,
 )
+from utils.run_analysis import find_unjudged
 from utils.ui import query_selector, single_run_selector
 
 print_session_data()
@@ -77,6 +78,16 @@ df = pd.DataFrame(
     [baseline_measures_results, freq_measures_results],
     index=["BASELINE", "filename_without_suffix"],
 )
+
+
+means_baseline = []
+means_run = []
+for cutoff in range(20, 200, 10):
+    means_run.append(len(find_unjudged(run=run, qrels=qrels, cutoff=cutoff))/len(qrels['query_id'].unique()))
+    means_baseline.append(len(find_unjudged(run=baseline_run, qrels=qrels, cutoff=cutoff)) / len(qrels['query_id'].unique()))
+
+
+cutoffs = list(range(20, 200, 10))
 
 
 def color_max_min_column(x):

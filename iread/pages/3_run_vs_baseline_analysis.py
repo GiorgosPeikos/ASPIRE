@@ -2,7 +2,9 @@ import os
 
 import pandas as pd
 import streamlit as st
+import matplotlib.pyplot as plt
 
+from utils.analysis_styling import color_max_min_column
 from utils.data import print_session_data, load_run_data, load_qrel_data
 from utils.evaluation_measures import (
     return_available_measures,
@@ -33,7 +35,6 @@ baseline_run = load_run_data(baseline_path)
 qrels = load_qrel_data(qrel_path)
 relevance_max = qrels["relevance"].max()  # Get maximum relevance level
 
-
 # Displaying the experiment's name
 filename_with_suffix = os.path.basename(run_path)
 filename_without_suffix = os.path.splitext(filename_with_suffix)[0]
@@ -43,7 +44,6 @@ st.markdown(
 )
 
 st.header("Mean Performance Evaluation")
-
 
 st.sidebar.subheader("Additional settings")
 # Slider for relevance threshold
@@ -62,7 +62,6 @@ if relevance_threshold != st.session_state.prev_relevance_threshold:
 
 freq_measures, rest_measures, custom_user = return_available_measures()
 
-
 initialize_results()
 freq_measures_results = {}
 baseline_measures_results = {}
@@ -79,25 +78,29 @@ df = pd.DataFrame(
     index=["BASELINE", "filename_without_suffix"],
 )
 
+st.dataframe(df.style.apply(color_max_min_column, axis=None))
 
+st.write("Number of unjudged documents depending on the cutoff threshold.")
+cutoffs = st.slider(
+    label="Select cutoffs", min_value=10, max_value=1000, value=(10, 100), step=10
+)
 means_baseline = []
 means_run = []
-for cutoff in range(20, 200, 10):
-    means_run.append(len(find_unjudged(run=run, qrels=qrels, cutoff=cutoff))/len(qrels['query_id'].unique()))
-    means_baseline.append(len(find_unjudged(run=baseline_run, qrels=qrels, cutoff=cutoff)) / len(qrels['query_id'].unique()))
+for cutoff in cutoffs:
+    unjudged_run = find_unjudged(run=run, qrels=qrels, cutoff=cutoff)
+    unjudged_baseline = find_unjudged(run=baseline_run, qrels=qrels, cutoff=cutoff)
+    means_run.append(len(unjudged_run) / len(qrels["query_id"].unique()))
+    means_baseline.append(len(unjudged_baseline) / len(qrels["query_id"].unique()))
 
+df_means = pd.DataFrame(
+    {"Cutoffs": cutoffs, "Baseline": means_baseline, "Run": means_run}
+)
 
-cutoffs = list(range(20, 200, 10))
+plt.figure(figsize=(10, 6))
+plt.plot(
+    df_means["Cutoffs"], df_means["Baseline"], marker="", color="blue", label="Baseline"
+)
+plt.plot(df_means["Cutoffs"], df_means["Run"], marker="", color="red", label="Run")
+plt.legend()
 
-
-def color_max_min_column(x):
-    top_colour = "background-color: #b7f5ae"
-    low_colour = "background-color: #f78c81"
-    top_score = x.eq(x.max())
-    low_score = x.eq(x.min())
-
-    df1 = pd.DataFrame("", index=x.index, columns=x.columns)
-    return df1.mask(top_score, top_colour).mask(low_score, low_colour)
-
-
-st.dataframe(df.style.apply(color_max_min_column, axis=None))
+st.pyplot(plt)

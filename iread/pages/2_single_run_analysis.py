@@ -53,9 +53,11 @@ st.header("Mean Performance Evaluation")
 
 cutoff = st.slider("cutoff unjudged", 20, 100, 20, 10)
 x = find_unjudged(run=run, qrels=qrels, cutoff=cutoff)
-st.dataframe(x.groupby('query_id').count().agg(median=('doc_id', 'median'),
-                                               mean=('doc_id', 'mean'),
-                                               max=('doc_id', 'max')))
+st.dataframe(
+    x.groupby("query_id")
+    .count()
+    .agg(median=("doc_id", "median"), mean=("doc_id", "mean"), max=("doc_id", "max"))
+)
 
 st.sidebar.subheader("Additional settings")
 # Slider for relevance threshold

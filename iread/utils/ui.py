@@ -27,6 +27,20 @@ def single_run_selector(
         st.session_state[session_key] = os.path.join(experiments_dir, selected_run)
 
 
+def multi_run_selector() -> None:
+    st.sidebar.subheader("Select all runs you want to compare")
+    experiments_dir = os.path.join(
+        os.path.dirname(os.getcwd()), "retrieval_experiments/retrieval_runs"
+    )
+    if os.path.exists(experiments_dir):
+        selected_runs = st.sidebar.multiselect(
+            "", os.listdir(experiments_dir), key="runs"
+        )
+        print(selected_runs)
+        for run in selected_runs:
+            st.session_state[f"run__{run}"] = os.path.join(experiments_dir, run)
+
+
 def load_css(file_name: str):
     with open(file_name, "r") as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)

@@ -4,7 +4,7 @@ import pandas as pd
 import streamlit as st
 import matplotlib.pyplot as plt
 
-from utils.analysis_styling import color_max_min_column
+from utils.analysis_styling import color_max_min_column, color_max_min_row
 from utils.data import print_session_data, load_run_data, load_qrel_data
 from utils.evaluation_measures import (
     return_available_measures,
@@ -21,8 +21,8 @@ single_run_selector(title="Baseline run", session_key="baseline_run")
 single_run_selector()
 
 if not any(
-    bad_word in st.session_state
-    for bad_word in ["selected_run", "selected_qrels", "baseline_run"]
+    item in st.session_state
+    for item in ["selected_run", "selected_qrels", "baseline_run"]
 ):
     st.error("Errors in Calculations. No run selected.")
     st.stop()
@@ -75,10 +75,13 @@ for measure_name in freq_measures:
 
 df = pd.DataFrame(
     [baseline_measures_results, freq_measures_results],
-    index=["BASELINE", "filename_without_suffix"],
+    index=["BASELINE", filename_without_suffix],
 )
 
-st.dataframe(df.style.apply(color_max_min_column, axis=None))
+if st.button("transpose?"):
+    st.dataframe(df.T.style.apply(color_max_min_row, axis=None))
+else:
+    st.dataframe(df.style.apply(color_max_min_column, axis=None))
 
 st.write("Number of unjudged documents depending on the cutoff threshold.")
 cutoffs = st.slider(

@@ -30,7 +30,7 @@ single_run_selector()
 
 
 if not any(
-    bad_word in st.session_state for bad_word in ["selected_run", "selected_qrels"]
+    item in st.session_state for item in ["selected_run", "selected_qrels"]
 ):
     st.error("Errors in Calculations. No run selected.")
     st.stop()

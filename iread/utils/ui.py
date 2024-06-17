@@ -22,7 +22,7 @@ def single_run_selector(
     )
     if os.path.exists(experiments_dir):
         selected_run = st.sidebar.selectbox(
-            "", os.listdir(experiments_dir), key=f"{session_key}_select"
+            "", os.listdir(experiments_dir), key=f'{session_key}_select'
         )
         st.session_state[session_key] = os.path.join(experiments_dir, selected_run)
 

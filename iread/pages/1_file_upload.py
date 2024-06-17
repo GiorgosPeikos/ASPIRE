@@ -1,12 +1,13 @@
 import os
-
 import streamlit as st
 
 from utils.data import print_session_data
 
-print_session_data()
+st.title('Data Management Page')
+st.divider()
 
-st.header("Upload the retrieval experiments in TREC Format")
+# Uploading the retrieval experiments for evaluation
+st.header("Upload Retrieval Experiments")
 runs = st.file_uploader(
     "Upload Retrieval Experiments (TREC Format). The file's name will be its identifier.",
     type=["txt", "csv"],
@@ -19,13 +20,28 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.header("Upload the Qrels file in TREC Format")
+st.divider()
+# Uploading the Qrels files
+st.header("Upload Qrels")
 qrels = st.file_uploader(
     "Upload Qrels File. The file's name will be its identifier. ", type=["txt", "csv"]
 )
 st.markdown(
     """
     <i>Expected columns: query_id, iteration (i.e. Q0), doc_id, relevance (without header row)</i>
+    """,
+    unsafe_allow_html=True,
+)
+
+st.divider()
+# Uploading the queries associated with the previous files
+st.header("Upload Queries")
+queries = st.file_uploader(
+    "Upload Queries File. The file's name will be its identifier. ", type=["txt", "csv", "xml"]
+)
+st.markdown(
+    """
+    <i>Expected columns: query_id, query</i>
     """,
     unsafe_allow_html=True,
 )
@@ -63,7 +79,21 @@ if st.button("Upload Files"):
         saved_files.append(qrels.name)
         st.session_state["qrels"] = qrels.name
 
+    if queries is not None:
+        # Define the folder to save the queries file
+        queries_folder = "../retrieval_experiments/queries/"
+        os.makedirs(queries_folder, exist_ok=True)
+
+        # Define file path using the original file name
+        queries_file_path = os.path.join(queries_folder, queries.name)
+
+        # Save the Queries file
+        with open(queries_file_path, "wb") as f:
+            f.write(queries.getvalue())
+        saved_files.append(queries.name)
+        st.session_state["qrels"] = queries.name
+
     if saved_files:
-        st.success(f"Files saved: {', '.join(saved_files)}")
+        st.success(f'Files saved: {", ".join(saved_files)}')
     else:
         st.error("No files uploaded. Please upload at least one file.")

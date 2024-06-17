@@ -102,3 +102,8 @@ def print_session_data() -> None:
         st.write(f"Current runs: {st.session_state['runs']}")
     else:
         st.write("No runs available")
+
+    if "queries" in st.session_state:
+        st.write(f"Current queries: {st.session_state['queries']}")
+    else:
+        st.write("No queries available")

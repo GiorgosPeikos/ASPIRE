@@ -2,3 +2,9 @@ div.stButton > button:first-child {
     width: 100%;
     text-align: center;
 }
+
+st.markdown(
+    .center-title {
+        text-align: center;
+    }
+)

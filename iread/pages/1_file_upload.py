@@ -1,10 +1,9 @@
 import os
 import streamlit as st
 
-from utils.data import print_session_data
+from utils.data import get_all_files
 
-st.title('Data Management Page')
-st.divider()
+st.markdown("""<div style="text-align: center;"><h1>Data Management<h1></div>""", unsafe_allow_html=True)
 
 # Uploading the retrieval experiments for evaluation
 st.header("Upload Retrieval Experiments")
@@ -97,3 +96,29 @@ if st.button("Upload Files"):
         st.success(f'Files saved: {", ".join(saved_files)}')
     else:
         st.error("No files uploaded. Please upload at least one file.")
+
+st.divider()
+st.markdown("<h2 style=color:red;>Delete Files</h2>", unsafe_allow_html=True)
+
+all_files = get_all_files("../retrieval_experiments/")
+# Create a dictionary to map file names to their relative paths
+file_dict = {os.path.basename(file): file for file in all_files}
+
+if all_files:
+    selected_files = st.multiselect("Select files to delete", list(file_dict.keys()))
+
+    # 3. Delete Selected Files
+    if st.button("Delete selected files"):
+        for file_name in selected_files:
+            relative_path = file_dict[file_name]
+            file_path = os.path.join("../retrieval_experiments/", relative_path)
+            os.remove(file_path)
+            st.write(f"Deleted {relative_path}")
+
+        # Clear the cache after deletion
+        all_files.clear()
+
+        # Refresh the file list after deletion
+        st.experimental_rerun()
+else:
+    st.write("No files to display.")

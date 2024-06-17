@@ -15,6 +15,18 @@ def read_data(folder_path: str):
     return data_frames
 
 
+# Function to get all files present in folders and subfolders
+def get_all_files(directory):
+    """
+    Recursively get all files in the directory and subdirectories with the given extensions.
+    """
+    file_list = []
+    for root, dirs, files in os.walk(directory):
+        for file in files:
+            file_list.append(os.path.relpath(os.path.join(root, file), directory))
+    return file_list
+
+
 # Function to load run data with caching to optimize performance
 @st.cache_data
 def load_run_data(run_path):

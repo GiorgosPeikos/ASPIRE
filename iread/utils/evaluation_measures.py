@@ -8,6 +8,22 @@ import streamlit as st
 
 @st.cache_data
 def return_available_measures():
+    default_measures  = [
+        "AP@100",  # Average Precision
+        "P@10",  # Precision
+        "nDCG@10",  # Normalized Discounted Cumulative Gain
+        "R@50",  # Recall
+        "RR@1000",  # Reciprocal Rank
+    ]
+
+    overall_measures  = [
+        "NumRelRet",  # Number of Relevant Retrieved Documents (Alias)
+        "NumRel",
+        "NumRet",
+        "Judged"
+    ]
+
+
     freq_measures = [
         "AP@10",  # Average Precision
         "AP@100",  # Average Precision
@@ -73,7 +89,7 @@ def return_available_measures():
         # "α_DCG",
         # "α_nDCG"
     ]
-    return freq_measures, rest_measures, custom_user
+    return freq_measures, rest_measures, custom_user, default_measures, overall_measures
 
 
 # The function gets the qrels and the run from the session and a selected metric from the user and returns the

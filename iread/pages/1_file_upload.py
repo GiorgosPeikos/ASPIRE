@@ -1,6 +1,5 @@
 import os
 import streamlit as st
-
 from utils.data import get_all_files
 
 st.markdown("""<div style="text-align: center;"><h1>Data Management<h1></div>""", unsafe_allow_html=True)

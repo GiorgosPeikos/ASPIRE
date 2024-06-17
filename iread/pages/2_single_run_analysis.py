@@ -74,7 +74,7 @@ if relevance_threshold != st.session_state.prev_relevance_threshold:
     st.session_state["results_extra"] = {}
     st.session_state.prev_relevance_threshold = relevance_threshold
 
-freq_measures, rest_measures, custom_user = return_available_measures()
+freq_measures, rest_measures, custom_user, _, _ = return_available_measures()
 initialize_results()
 freq_measures_results = {}
 for measure_name in freq_measures:

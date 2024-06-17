@@ -3,6 +3,13 @@ div.stButton > button:first-child {
     text-align: center;
 }
 
+.stButtonCenter {
+    display: block;
+    width: fit-content;
+    margin: 0 auto;
+    text-align: center;
+}
+
 st.markdown(
     .center-title {
         text-align: center;

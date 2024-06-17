@@ -15,7 +15,8 @@ def read_data(folder_path: str):
     return data_frames
 
 
-# Function to get all files present in folders and subfolders
+# Function to get all files present in folders and sub folders
+@st.cache_data
 def get_all_files(directory):
     """
     Recursively get all files in the directory and subdirectories with the given extensions.
@@ -27,7 +28,7 @@ def get_all_files(directory):
     return file_list
 
 
-# Function to load run data with caching to optimize performance
+# Function to load retrieval experiment data with caching to optimize performance
 @st.cache_data
 def load_run_data(run_path):
     # Reads a CSV file into a DataFrame with specified columns and delimiters
@@ -49,7 +50,7 @@ def load_run_data(run_path):
     )
 
 
-# Function to load qrel data with caching
+# Function to load qrels data with caching
 @st.cache_data
 def load_qrel_data(qrel_path):
     # Reads a CSV file into a DataFrame for qrel data
@@ -65,6 +66,7 @@ def load_qrel_data(qrel_path):
 
 
 @st.cache_data
+# Function to load queries. Supported formats: csv, txt, xml
 def load_query_data(query_path):
 
     # Determine the file extension

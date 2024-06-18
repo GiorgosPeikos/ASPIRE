@@ -3,7 +3,8 @@ import pandas as pd
 import streamlit as st
 from utils.data import load_run_data, load_qrel_data, load_query_data
 from utils.ui import load_css
-from utils.evaluation_measures import evaluate_single_run, return_available_measures
+from utils.evaluation_measures import evaluate_single_run, return_available_measures, get_relevant_and_unjudged
+from utils.plots import dist_of_retrieved_docs
 
 # Load custom CSS
 load_css("css/styles.css")
@@ -50,10 +51,6 @@ if st.button("Begin the Experimental Evaluation!", key='stButtonCenter'):
     st.markdown(
         f"""<div style="text-align: center;">Evaluating the <span style="color:red;">{st.session_state.runs_file.replace('.txt', '')}</span> experiment using the <span style="color:red;">{qrels_file}</span> qrels.</div>""",
         unsafe_allow_html=True)
-
-    # st.markdown(
-    #     f"""<div style="text-align: center;">Relevance Threshold is <span style="color:red;">{st.session_state.relevance_threshold}</span>.</div>""",
-    #     unsafe_allow_html=True)
 
     if queries_file:
         st.session_state.selected_queries = load_query_data(os.path.join(queries_dir, queries_file))
@@ -161,7 +158,15 @@ st.divider()
 
 # Positional Distribution of Relevant Retrieved Documents
 with st.container():
-    st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Positional Distribution of Relevant Retrieved Documents</span></h3>""", unsafe_allow_html=True)
+    st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Positional Distribution of Relevant and Unjudged Retrieved Documents</span></h3>""", unsafe_allow_html=True)
+
+    if 'selected_qrels' not in st.session_state:
+        st.warning("Please select retrieval experiment and qrels to begin your evaluation.", icon="⚠")
+
+    else:
+        ranking_per_relevance = get_relevant_and_unjudged(st.session_state.selected_qrels, st.session_state.selected_runs)
+
+        dist_of_retrieved_docs(ranking_per_relevance)
 
 st.divider()
 

@@ -1,6 +1,9 @@
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+import matplotlib.pyplot as plt
+from collections import defaultdict
+import seaborn as sns
 
 
 # Function to create a bar plot for evaluation results
@@ -137,3 +140,76 @@ def plot_pca(pca_df, classify_queries):
         )  # Increase hover label font size
 
     st.plotly_chart(fig)
+
+
+# Function that displays the distribution of ranking position of all retrieved documents based on their relevance label.
+def dist_of_retrieved_docs(relevance_ret_pos: dict) -> None:
+    # Define constants for bucket ranges
+    bucket_ranges = {
+        '1': (1, 1),
+        '2-10': (2, 10),
+        '11-20': (11, 20),
+        '21-30': (21, 30),
+        '31-40': (31, 40),
+        '41-50': (41, 50),
+        '51-60': (51, 60),
+        '61-70': (61, 70),
+        '71-80': (71, 80),
+        '81-90': (81, 90),
+        '91-100': (91, 100),
+        '101-200': (101, 200),
+        '200+': (201, float('inf'))  # Handle values greater than 200
+    }
+
+    # Initialize buckets dictionary dynamically
+    thresholds = set(key for values in relevance_ret_pos.values() for key in values.keys())
+    buckets = {threshold: {bucket: 0 for bucket in bucket_ranges.keys()} for threshold in thresholds}
+
+    # Iterate through the items in relevance_ret_pos dictionary
+    for query_id, values in relevance_ret_pos.items():
+        for threshold, value in values.items():
+            value = int(value)
+            for bucket, (start, end) in bucket_ranges.items():
+                if start <= value <= end:
+                    buckets[threshold][bucket] += 1
+                    break  # Break once the bucket is found
+
+    # Combine all data into a single list for sorting and plotting
+    all_data = []
+    for metric, bucket_counts in buckets.items():
+        for bucket, count in bucket_counts.items():
+            all_data.append((metric, bucket, count))
+
+    # Sort by bucket ranges
+    all_data.sort(key=lambda x: list(bucket_ranges.keys()).index(x[1]))
+
+    # Extract sorted data for plotting
+    sorted_buckets = defaultdict(lambda: defaultdict(int))
+    for metric, bucket, count in all_data:
+        sorted_buckets[metric][bucket] = count
+
+    # Plot all metrics in a single figure
+    fig, ax = plt.subplots(figsize=(12, 8))
+    colors = ['skyblue', 'lightgreen', 'salmon', 'gold']  # Different colors for each metric
+    width = 0.2  # Width of each bar
+
+    x_labels = list(bucket_ranges.keys())
+    x_indices = range(len(x_labels))
+    num_metrics = len(buckets)
+
+    for index, (metric, bucket_counts) in enumerate(sorted_buckets.items()):
+        ax.bar(
+            [i + (index - num_metrics / 2) * width for i in x_indices],
+            [bucket_counts[bucket] for bucket in x_labels],
+            width=width/.8,
+            label=metric,
+            color=colors[index % len(colors)]
+        )
+
+    ax.set_xlabel('Rank position of the first retrieved document')
+    ax.set_ylabel('Number of queries')
+    ax.set_title('Distribution of document ranking positions by different relevance labels')
+    ax.set_xticks(x_indices)
+    ax.set_xticklabels(x_labels)
+    ax.legend()
+    st.pyplot(fig)

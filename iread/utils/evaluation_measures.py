@@ -1,6 +1,7 @@
 import statistics
-
+import numpy as np
 import ir_measures
+import pandas as pd
 
 # from ir_measures import *
 import streamlit as st
@@ -269,6 +270,59 @@ def good_bad_queries(res_eval):
     average = statistics.mean(scores)
 
     return scores, ids, median, average
+
+
+@st.cache_data()
+def get_relevant_and_unjudged(qrels, res) -> dict:
+    """
+    Merge 'res' and 'qrels' DataFrames on 'query_id' and 'doc_id'.
+    For each unique 'query_id', determine:
+    - The first rank positions for relevance thresholds (0, 1, 2).
+    - The rank position where 'relevance' is NaN (first_unjudged).
+    Returns a dictionary where keys are 'query_id' and values are dictionaries
+    containing these rank positions.
+    """
+
+    # Merge res and qrels on query_id and doc_id
+    merged_df = pd.merge(res, qrels, on=['query_id', 'doc_id'], how='left')
+
+    # Initialize result dictionary
+    ranking_per_relevance = {}
+
+    # Extract all available relevance thresholds
+    relevance_thresholds = qrels['relevance'].unique()
+
+    # Iterate over each unique query_id in the DataFrame
+    for query_id, group in merged_df.groupby('query_id'):
+        # Sort group by score in descending order
+        group_sorted = group.sort_values(by='score', ascending=False)
+
+        # Initialize a dictionary for the current query_id
+        query_result = {}
+
+        # Find the first rank positions for relevance thresholds (0, 1, 2)
+        for relevance_val in relevance_thresholds:
+            # Find the first rank position for the current relevance value
+            relevant_rows = group_sorted[group_sorted['relevance'] == relevance_val]
+            first_rank = relevant_rows['rank'].iloc[0] if not relevant_rows.empty else f'{len(group_sorted)}'
+
+            # Store the first rank position in the dictionary
+            if not relevance_val == 0:
+                query_result[f'Relevance_Threshold_{relevance_val}'] = first_rank
+            else:
+                query_result[f'Irrelevant_Document'] = first_rank
+
+        # Find the rank position where 'relevance' is NaN (first_unjudged)
+        nan_relevance_rows = group_sorted[group_sorted['relevance'].isna()]
+        first_rank_nan_relevance = nan_relevance_rows['rank'].iloc[0] if not nan_relevance_rows.empty else f'{len(group_sorted)}'
+
+        # Store the first rank position in the dictionary
+        query_result['Unjudged_Document'] = first_rank_nan_relevance
+
+        # Store the dictionary for the current query_id in the result dictionary
+        ranking_per_relevance[query_id] = query_result
+
+    return ranking_per_relevance
 
 
 def initialize_results():

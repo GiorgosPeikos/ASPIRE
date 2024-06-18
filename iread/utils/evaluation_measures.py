@@ -9,7 +9,7 @@ import streamlit as st
 
 @st.cache_data
 def return_available_measures():
-    default_measures  = [
+    default_measures = [
         "AP@100",  # Average Precision
         "P@10",  # Precision
         "nDCG@10",  # Normalized Discounted Cumulative Gain
@@ -65,9 +65,8 @@ def return_available_measures():
         "Rprec",  # Precision at R
         "Bpref",  # Binary Preference
         "infAP",  # Inferred Average Precision
-        "NumRelRet",  # Number of Relevant Retrieved Documents (Alias)
-        "NumRel",
-        "NumRet",
+        "Judged",
+
     ]
 
     rest_measures = [
@@ -227,7 +226,11 @@ def evaluate_single_run_custom(qrels, run, metric, cutoff, relevance_threshold):
     # Calculate the evaluation using the parsed metric
     res_eval = ir_measures.calc_aggregate([parsed_metric], qrels, run)
 
-    return parsed_metric, round(list(res_eval.values())[0], 4)
+    if parsed_metric in measures_int:
+        return str(parsed_metric), int(list(res_eval.values())[0])
+    else:
+        return str(parsed_metric), round(list(res_eval.values())[0], 4)
+
 
 
 @st.cache_data()

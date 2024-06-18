@@ -3,7 +3,7 @@ import pandas as pd
 import streamlit as st
 from utils.data import load_run_data, load_qrel_data, load_query_data
 from utils.ui import load_css
-from utils.evaluation_measures import evaluate_single_run, return_available_measures, get_relevant_and_unjudged
+from utils.evaluation_measures import evaluate_single_run, return_available_measures, get_relevant_and_unjudged, evaluate_single_run_custom
 from utils.plots import dist_of_retrieved_docs
 
 # Load custom CSS
@@ -108,6 +108,14 @@ with st.container():
 
                 st.dataframe(df_measures.transpose(), use_container_width=True)
 
+                recall_measures = {"Recall@50": evaluate_single_run(
+                    st.session_state.selected_qrels, st.session_state.selected_runs, "R@50", st.session_state.relevance_threshold
+                ), "Recall@1000": evaluate_single_run(
+                    st.session_state.selected_qrels, st.session_state.selected_runs, "R@1000", st.session_state.relevance_threshold
+                )}
+                df_recall_measures = pd.DataFrame([recall_measures], index=[st.session_state.runs_file.replace('.txt', '')])
+                st.dataframe(df_recall_measures, use_container_width=True)
+
         with columns[1]:
             if 'selected_qrels' in st.session_state and not st.session_state.selected_qrels.empty:
                 precision_measures_results = {}
@@ -124,8 +132,8 @@ st.divider()
 
 # Common Evaluation Measures
 with st.container():
-    st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Common Evaluation Measures</span></h3>""", unsafe_allow_html=True)
-    _, _, _, default_measures, _, _ = return_available_measures()
+    st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Experimental Evaluation</span></h3>""", unsafe_allow_html=True)
+    _, _, custom_user, default_measures, _, _ = return_available_measures()
 
     if 'selected_qrels' not in st.session_state:
         st.warning("Please select retrieval experiment and qrels to begin your evaluation.", icon="⚠")
@@ -151,8 +159,46 @@ with st.container():
                 freq_measures_results[measure_name] = evaluate_single_run(
                     st.session_state.selected_qrels, st.session_state.selected_runs, measure_name, st.session_state.relevance_threshold
                 )
+
             common_measures = pd.DataFrame([freq_measures_results], index=[st.session_state.runs_file.replace('.txt', '')])
-            st.dataframe(common_measures, use_container_width=True, )
+            st.dataframe(common_measures, use_container_width=True)
+
+            st.divider()
+
+            # Splitting the container
+            col = st.columns(2)
+
+            # Initialize session state variables if they don't exist
+            if 'selected_measures' not in st.session_state:
+                st.session_state.selected_measures = custom_user[0:1]  # Default selected measures
+            if 'selected_cutoff' not in st.session_state:
+                st.session_state.selected_cutoff = 25  # Default cutoff value
+
+            with col[0]:
+                selected_measures = st.multiselect("Select additional measures:", custom_user, default=custom_user[5:6])
+            with col[1]:
+                selected_cutoff = st.number_input("Enter cutoff value:", min_value=1, value=25, max_value=1000, step=1)
+
+                # Update session state with current selections
+            st.session_state.selected_measures = selected_measures
+            st.session_state.selected_cutoff = selected_cutoff
+
+            # Evaluate the experiment whenever selections change
+            users_eval = {}
+            for user_metric in selected_measures:
+                user_metric_name, user_metric_score = evaluate_single_run_custom(st.session_state.selected_qrels, st.session_state.selected_runs,
+                                                                                 user_metric, selected_cutoff, st.session_state.relevance_threshold)
+                users_eval[str(user_metric_name)] = user_metric_score
+
+            # Convert the dictionary to a DataFrame
+            user_measures = pd.DataFrame([users_eval], index=[st.session_state.runs_file.replace('.txt', '')])
+
+            # Display the DataFrame
+            st.dataframe(user_measures, use_container_width=True)
+
+            # Store user_measures_eval in session state for further use
+            st.session_state.user_measures_eval = user_measures.copy()
+
 
 st.divider()
 
@@ -173,6 +219,9 @@ st.divider()
 # Precision/Recall Curve
 with st.container():
     st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Precision/Recall Curve</span></h3>""", unsafe_allow_html=True)
+
+
+
 
 st.divider()
 

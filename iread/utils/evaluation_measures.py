@@ -16,13 +16,19 @@ def return_available_measures():
         "RR@1000",  # Reciprocal Rank
     ]
 
-    overall_measures  = [
+    overall_measures = [
         "NumRelRet",  # Number of Relevant Retrieved Documents (Alias)
         "NumRel",
         "NumRet",
-        "Judged"
     ]
 
+    precision_measures = [
+        "P@5",  # Number of Relevant Retrieved Documents (Alias)
+        "P@10",
+        "P@25",
+        "P@50",
+        "P@100",
+    ]
 
     freq_measures = [
         "AP@10",  # Average Precision
@@ -89,7 +95,7 @@ def return_available_measures():
         # "α_DCG",
         # "α_nDCG"
     ]
-    return freq_measures, rest_measures, custom_user, default_measures, overall_measures
+    return freq_measures, rest_measures, custom_user, default_measures, overall_measures, precision_measures
 
 
 # The function gets the qrels and the run from the session and a selected metric from the user and returns the

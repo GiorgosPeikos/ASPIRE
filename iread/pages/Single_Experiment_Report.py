@@ -30,38 +30,38 @@ with st.container():
     with columns[2]:
         st.session_state.runs_file = st.selectbox("Select Retrieval Run", os.listdir("../retrieval_experiments/retrieval_runs"))
 
-    # Example usage with caching
-    if st.button("Proceed with Experimental Evaluation", key='stButtonCenter'):
+# Example usage with caching
+if st.button("Begin the Experimental Evaluation!", key='stButtonCenter'):
+    # Load qrels file if selected
+    if qrels_file:
+        st.session_state.selected_qrels = load_qrel_data(os.path.join(f'../retrieval_experiments/qrels/{qrels_file}'))
+        st.session_state.max_relevance = st.session_state['selected_qrels']["relevance"].max()  # Get maximum relevance level
+    else:
+        st.write("Please select Qrels file to proceed.")
+        st.stop()  # Stop execution if qrels file is not selected
 
-        # Load qrels file if selected
-        if qrels_file:
-            st.session_state.selected_qrels = load_qrel_data(os.path.join(f'../retrieval_experiments/qrels/{qrels_file}'))
-            st.session_state.max_relevance = st.session_state['selected_qrels']["relevance"].max()  # Get maximum relevance level
-        else:
-            st.write("Please select Qrels file to proceed.")
-            st.stop()  # Stop execution if qrels file is not selected
+    # Load runs file if selected
+    if st.session_state.runs_file:
+        st.session_state.selected_runs = load_run_data(os.path.join(f'../retrieval_experiments/retrieval_runs/{st.session_state.runs_file}'))
+    else:
+        st.write("Please select Retrieval Run file to proceed.")
+        st.stop()  # Stop execution if runs file is not selected
 
-        # Load runs file if selected
-        if st.session_state.runs_file:
-            st.session_state.selected_runs = load_run_data(os.path.join(f'../retrieval_experiments/retrieval_runs/{st.session_state.runs_file}'))
-        else:
-            st.write("Please select Retrieval Run file to proceed.")
-            st.stop()  # Stop execution if runs file is not selected
+    # Display messages and store data in session state if qrels and runs files are selected
+    st.markdown(
+        f"""<div style="text-align: center;">Evaluating the <span style="color:red;">{st.session_state.runs_file.replace('.txt', '')}</span> experiment using the <span style="color:red;">{qrels_file}
+        </span> qrels.</div>""",
+        unsafe_allow_html=True,
+    )
 
-        # Display messages and store data in session state if qrels and runs files are selected
+    # Load query file if selected
+    if queries_file:
+        st.session_state.selected_queries = load_query_data(os.path.join(f'../retrieval_experiments/queries/{queries_file}'))
+
         st.markdown(
-            f"""<div style="text-align: center;">Evaluating the <span style="color:red;">{st.session_state.runs_file.replace('.txt','')}</span> experiment using the <span style="color:red;">{qrels_file}</span> qrels.</div>""",
+            f"""<div style="text-align: center;">This experiment is associated with the <span style="color:red;">{queries_file}</span> queries.</div>""",
             unsafe_allow_html=True,
         )
-
-        # Load query file if selected
-        if queries_file:
-            st.session_state.selected_queries = load_query_data(os.path.join(f'../retrieval_experiments/queries/{queries_file}'))
-
-            st.markdown(
-                f"""<div style="text-align: center;">This experiment is associated with the <span style="color:red;">{queries_file}</span> queries.</div>""",
-                unsafe_allow_html=True,
-            )
 
 # Proceed to analysis, after the user has selected experiment and qrels
 st.divider()
@@ -73,18 +73,34 @@ with st.container():
     st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Overall Retrieval 
     Characteristics</span></h3>""", unsafe_allow_html=True)
 
+    if st.session_state.runs_file:
+        st.warning("Please select retrieval experiment and qrels to begin your evaluation.", icon="⚠")
+
+    columns = st.columns(2)
     # Process and display a predefined set of evaluation measures based on the current threshold
-    _, _, _, _, overall_measures = return_available_measures()
+    _, _, _, _, overall_measures, precision_measures = return_available_measures()
 
-    if not st.session_state.selected_qrels.empty:
-        overall_measures_results = {}
-        for measure_name in overall_measures:
-            overall_measures_results[measure_name] = evaluate_single_run(
-                st.session_state.selected_qrels, st.session_state.selected_runs, measure_name, 1
-            )
+    with columns[0]:
+        if not st.session_state.selected_qrels.empty:
+            overall_measures_results = {}
+            for measure_name in overall_measures:
+                overall_measures_results[measure_name] = evaluate_single_run(
+                    st.session_state.selected_qrels, st.session_state.selected_runs, measure_name, 2
+                )
 
-    # Display the results in a dataframe
-    st.dataframe(pd.DataFrame([overall_measures_results], index=[st.session_state.runs_file.replace('.txt', '')]))
+        # Display the results in a dataframe
+        st.dataframe(pd.DataFrame([overall_measures_results], index=[st.session_state.runs_file.replace('.txt', '')]).transpose())
+
+    with columns[1]:
+        if not st.session_state.selected_qrels.empty:
+            precision_measures_results = {}
+            for measure_name in precision_measures:
+                precision_measures_results[measure_name] = evaluate_single_run(
+                    st.session_state.selected_qrels, st.session_state.selected_runs, measure_name, 1
+                )
+        # Display the results in a dataframe
+        st.dataframe(pd.DataFrame([precision_measures_results], index=[st.session_state.runs_file.replace('.txt', '')]).transpose())
+
 
 st.divider()
 
@@ -94,7 +110,10 @@ with st.container():
     st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Common Evaluation Measures</span></h3>""", unsafe_allow_html=True)
 
     # Process and display a predefined set of evaluation measures based on the current threshold
-    _, _, _, default_measures, _ = return_available_measures()
+    _, _, _, default_measures, _, _ = return_available_measures()
+
+    if st.session_state.selected_qrels.empty:
+        st.warning("Please select retrieval experiment and qrels to begin your evaluation.", icon="⚠")
 
     # Create a slider and update the session state when the value changes
     st.session_state.relevance_threshold = st.slider(

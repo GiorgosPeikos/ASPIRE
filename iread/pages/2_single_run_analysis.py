@@ -16,7 +16,7 @@ from utils.evaluation_measures import (
 )
 from utils.plots import create_evaluation_plot, plot_queries, plot_pca
 from utils.run_analysis import find_unjudged
-from utils.single_run_query_processing import (
+from utils.query_text_processing import (
     get_huggingface_model,
     get_embeddings,
     perform_pca,

@@ -49,8 +49,11 @@ if st.button("Begin the Experimental Evaluation!", key='stButtonCenter'):
 
     st.markdown(
         f"""<div style="text-align: center;">Evaluating the <span style="color:red;">{st.session_state.runs_file.replace('.txt', '')}</span> experiment using the <span style="color:red;">{qrels_file}</span> qrels.</div>""",
-        unsafe_allow_html=True,
-    )
+        unsafe_allow_html=True)
+
+    # st.markdown(
+    #     f"""<div style="text-align: center;">Relevance Threshold is <span style="color:red;">{st.session_state.relevance_threshold}</span>.</div>""",
+    #     unsafe_allow_html=True)
 
     if queries_file:
         st.session_state.selected_queries = load_query_data(os.path.join(queries_dir, queries_file))
@@ -68,27 +71,57 @@ with st.container():
     if 'selected_qrels' not in st.session_state:
         st.warning("Please select retrieval experiment and qrels to begin your evaluation.", icon="⚠")
 
-    columns = st.columns(2)
-    _, _, _, _, overall_measures, precision_measures = return_available_measures()
+    else:
+        st.session_state.relevance_threshold = st.slider(
+            "Select from the Available Relevance Thresholds (Slide)",
+            min_value=1,
+            max_value=2,
+            value=1,
+            key="slider1"
+        )
 
-    with columns[0]:
-        if 'selected_qrels' in st.session_state and not st.session_state.selected_qrels.empty:
-            overall_measures_results = {}
-            for measure_name in overall_measures:
-                overall_measures_results[measure_name] = evaluate_single_run(
-                    st.session_state.selected_qrels, st.session_state.selected_runs, measure_name, 2
-                )
+        if 'prev_relevance_threshold' not in st.session_state:
+            st.session_state.prev_relevance_threshold = 1
 
-            st.dataframe(pd.DataFrame([overall_measures_results], index=[st.session_state.runs_file.replace('.txt', '')]).transpose())
+        if st.session_state.relevance_threshold != st.session_state.prev_relevance_threshold:
+            st.session_state.prev_relevance_threshold = st.session_state.relevance_threshold
 
-    with columns[1]:
-        if 'selected_qrels' in st.session_state and not st.session_state.selected_qrels.empty:
-            precision_measures_results = {}
-            for measure_name in precision_measures:
-                precision_measures_results[measure_name] = evaluate_single_run(
-                    st.session_state.selected_qrels, st.session_state.selected_runs, measure_name, 1
-                )
-            st.dataframe(pd.DataFrame([precision_measures_results], index=[st.session_state.runs_file.replace('.txt', '')]).transpose())
+        columns = st.columns(2)
+        _, _, _, _, overall_measures, precision_measures = return_available_measures()
+
+        with columns[0]:
+            if 'selected_qrels' in st.session_state and not st.session_state.selected_qrels.empty:
+                overall_measures_results = {}
+                for measure_name in overall_measures:
+                    overall_measures_results[measure_name] = evaluate_single_run(
+                        st.session_state.selected_qrels, st.session_state.selected_runs, measure_name, st.session_state.relevance_threshold
+                    )
+
+                df_measures = pd.DataFrame([overall_measures_results],
+                                           index=[st.session_state.runs_file.replace('.txt', '')])
+
+                # Rename columns with custom names
+                # TODO: FIX! There is an error in the calculation of the retrieved documents. It should be 1000x the query number but it is equal to the numrelret.
+                df_measures = df_measures.rename(columns={
+                    "NumQ": "Total Queries",
+                    "NumRet": "Retrieved Documents",
+                    "NumRel": "Relevant Documents",
+                    "NumRelRet": "Relevant Retrieved Documents"
+                })
+
+                st.dataframe(df_measures.transpose(), use_container_width=True)
+
+        with columns[1]:
+            if 'selected_qrels' in st.session_state and not st.session_state.selected_qrels.empty:
+                precision_measures_results = {}
+                for measure_name in precision_measures:
+                    precision_measures_results[measure_name] = evaluate_single_run(
+                        st.session_state.selected_qrels, st.session_state.selected_runs, measure_name, st.session_state.relevance_threshold
+                    )
+                #TODO: Add a caption on the table to say that the values are across queries or rename them.
+                df_prec_measures = pd.DataFrame([precision_measures_results],
+                                                index=[st.session_state.runs_file.replace('.txt', '')]).transpose()
+                st.dataframe(df_prec_measures, use_container_width=True)
 
 st.divider()
 
@@ -100,26 +133,29 @@ with st.container():
     if 'selected_qrels' not in st.session_state:
         st.warning("Please select retrieval experiment and qrels to begin your evaluation.", icon="⚠")
 
-    st.session_state.relevance_threshold = st.slider(
-        "Select from the Available Relevance Thresholds (Slide)",
-        min_value=1,
-        max_value=2,
-        value=1,
-    )
+    else:
+        st.session_state.relevance_threshold = st.slider(
+            "Select from the Available Relevance Thresholds (Slide)",
+            min_value=1,
+            max_value=2,
+            value=1,
+            key="slider2"
+        )
 
-    if 'prev_relevance_threshold' not in st.session_state:
-        st.session_state.prev_relevance_threshold = 1
+        if 'prev_relevance_threshold' not in st.session_state:
+            st.session_state.prev_relevance_threshold = 1
 
-    if st.session_state.relevance_threshold != st.session_state.prev_relevance_threshold:
-        st.session_state.prev_relevance_threshold = st.session_state.relevance_threshold
+        if st.session_state.relevance_threshold != st.session_state.prev_relevance_threshold:
+            st.session_state.prev_relevance_threshold = st.session_state.relevance_threshold
 
-    if 'selected_qrels' in st.session_state and not st.session_state.selected_qrels.empty:
-        freq_measures_results = {}
-        for measure_name in default_measures:
-            freq_measures_results[measure_name] = evaluate_single_run(
-                st.session_state.selected_qrels, st.session_state.selected_runs, measure_name, st.session_state.relevance_threshold
-            )
-        st.dataframe(pd.DataFrame([freq_measures_results], index=[st.session_state.runs_file.replace('.txt', '')]))
+        if 'selected_qrels' in st.session_state and not st.session_state.selected_qrels.empty:
+            freq_measures_results = {}
+            for measure_name in default_measures:
+                freq_measures_results[measure_name] = evaluate_single_run(
+                    st.session_state.selected_qrels, st.session_state.selected_runs, measure_name, st.session_state.relevance_threshold
+                )
+            common_measures = pd.DataFrame([freq_measures_results], index=[st.session_state.runs_file.replace('.txt', '')])
+            st.dataframe(common_measures, use_container_width=True, )
 
 st.divider()
 

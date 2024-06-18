@@ -17,9 +17,10 @@ def return_available_measures():
     ]
 
     overall_measures = [
+        "NumQ",  # The total number of queries.
+        "NumRet",  # Number of Retrieved Documents
+        "NumRel",  # Number of Relevant Documents
         "NumRelRet",  # Number of Relevant Retrieved Documents (Alias)
-        "NumRel",
-        "NumRet",
     ]
 
     precision_measures = [
@@ -28,6 +29,7 @@ def return_available_measures():
         "P@25",
         "P@50",
         "P@100",
+        "Rprec"
     ]
 
     freq_measures = [
@@ -171,6 +173,7 @@ measures_with_cutoff = {
 measures_int = ["NumRelRet", "NumRel", "NumRet", "NumQ"]
 
 
+@st.cache_data()
 def evaluate_single_run(qrels, run, metric, relevance_threshold):
     # Check if metric contains '@' and split if it does
     if "@" in metric:
@@ -201,6 +204,7 @@ def evaluate_single_run(qrels, run, metric, relevance_threshold):
         return round(list(res_eval.values())[0], 4)
 
 
+@st.cache_data()
 def evaluate_single_run_custom(qrels, run, metric, cutoff, relevance_threshold):
     # Check if metric contains '@' and split if it does
     # Check if the measure supports a relevance threshold
@@ -225,6 +229,7 @@ def evaluate_single_run_custom(qrels, run, metric, cutoff, relevance_threshold):
     return parsed_metric, round(list(res_eval.values())[0], 4)
 
 
+@st.cache_data()
 def per_query_evaluation(qrels, run, metric, cutoff, relevance_threshold):
     # Check if metric contains '@' and split if it does
     # Check if the measure supports a relevance threshold
@@ -249,6 +254,7 @@ def per_query_evaluation(qrels, run, metric, cutoff, relevance_threshold):
     return parsed_metric, res_eval
 
 
+@st.cache_data()
 def good_bad_queries(res_eval):
     # Assuming res_eval is a list of dictionaries like: [{'Query ID': '1', 'Score': 0.1049}, ...]
     data = [

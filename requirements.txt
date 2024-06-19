@@ -11,3 +11,4 @@ torch==2.3.0
 numpy==1.26.4
 ir_measures==0.3.3
 plotly-express==0.4.1
+matplotlib==3.9.0

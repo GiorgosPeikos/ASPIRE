@@ -213,9 +213,15 @@ def dist_of_retrieved_docs(relevance_ret_pos: dict) -> None:
         xaxis_title='Rank Position of the 1st Retrieved Document per Relevance Label',
         yaxis_title='Number of Queries',
         xaxis=dict(tickmode='array', tickvals=x_indices, ticktext=x_labels),
-        barmode='group'
+        barmode='group',
+        legend=dict(
+            orientation='h',  # horizontal legend
+            yanchor='bottom',  # anchor legend to the bottom
+            y=1.02,            # position the legend just below the plot
+            xanchor='right',   # anchor legend to the right
+            x=1                # position legend to the right of the plot
+        )
     )
-
     # Display the plot in Streamlit
     st.plotly_chart(fig)
 

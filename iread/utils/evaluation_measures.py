@@ -309,7 +309,7 @@ def get_relevant_and_unjudged(qrels, res) -> dict:
 
             # Store the first rank position in the dictionary
             if not relevance_val == 0:
-                query_result[f'Relevance_Threshold_{relevance_val}'] = first_rank
+                query_result[f'Relevance_Label_{relevance_val}'] = first_rank
             else:
                 query_result[f'Irrelevant_Document'] = first_rank
 

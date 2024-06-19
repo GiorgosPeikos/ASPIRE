@@ -244,6 +244,13 @@ st.divider()
 
 # Additional Analysis
 with st.container():
-    st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Additional Analysis</span></h3>""", unsafe_allow_html=True)
+    st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Personal Notes</span></h3>""", unsafe_allow_html=True)
 
+    st.text_area(
+        "Please add additional comments regarding this experiment.",
+        "",
+        key="placeholder",
+    )
 st.divider()
+
+st.markdown("""<h4 style="text-align:center;"><span style="color:red;">To export the report as PDF press (⌘+P or Ctrl+P)</span></h4>""", unsafe_allow_html=True)

@@ -2,7 +2,6 @@ import statistics
 import numpy as np
 import ir_measures
 import pandas as pd
-
 # from ir_measures import *
 import streamlit as st
 
@@ -232,7 +231,6 @@ def evaluate_single_run_custom(qrels, run, metric, cutoff, relevance_threshold):
         return str(parsed_metric), round(list(res_eval.values())[0], 4)
 
 
-
 @st.cache_data()
 def per_query_evaluation(qrels, run, metric, cutoff, relevance_threshold):
     # Check if metric contains '@' and split if it does
@@ -326,6 +324,36 @@ def get_relevant_and_unjudged(qrels, res) -> dict:
         ranking_per_relevance[query_id] = query_result
 
     return ranking_per_relevance
+
+
+@st.cache_data()
+def generate_prec_recall_graphs(relevance_threshold, selected_qrels, selected_runs):
+    """
+    Generates a dictionary of precision-recall data.
+
+    This function iterates over recall thresholds from 0.0 to 1.0 in increments of 0.1,
+    evaluates the precision for each threshold using the `evaluate_single_run` function,
+    and stores the results in a dictionary.
+
+    Parameters:
+    - relevance_threshold (float): The relevance threshold to use for evaluation.
+    - selected_qrels (any): The selected qrels data.
+    - selected_runs (any): The selected runs data.
+
+    Returns:
+    - dict: A dictionary with keys in the format 'IPrec(rel={relevance_threshold})@{cutoff}'
+      and values representing the precision at those recall thresholds.
+    """
+    prec_recall_graphs = {}
+
+    for i in range(0, 11):
+        cutoff = float(i / 10)
+        key = f"IPrec(rel={relevance_threshold})@{cutoff}"
+        prec_recall_graphs[key] = evaluate_single_run(
+            selected_qrels, selected_runs, key, relevance_threshold
+        )
+
+    return prec_recall_graphs
 
 
 def initialize_results():

@@ -3,7 +3,7 @@ import plotly.express as px
 import streamlit as st
 import matplotlib.pyplot as plt
 from collections import defaultdict
-import seaborn as sns
+import plotly.graph_objects as go
 
 
 # Function to create a bar plot for evaluation results
@@ -143,6 +143,7 @@ def plot_pca(pca_df, classify_queries):
 
 
 # Function that displays the distribution of ranking position of all retrieved documents based on their relevance label.
+
 def dist_of_retrieved_docs(relevance_ret_pos: dict) -> None:
     # Define constants for bucket ranges
     bucket_ranges = {
@@ -188,28 +189,77 @@ def dist_of_retrieved_docs(relevance_ret_pos: dict) -> None:
     for metric, bucket, count in all_data:
         sorted_buckets[metric][bucket] = count
 
-    # Plot all metrics in a single figure
-    fig, ax = plt.subplots(figsize=(12, 8))
+    # Plot all metrics in a single figure using Plotly
+    fig = go.Figure()
+
+    x_labels = list(bucket_ranges.keys())
+    x_indices = list(range(len(x_labels)))  # Convert range to list
+    num_metrics = len(buckets)
     colors = ['skyblue', 'lightgreen', 'salmon', 'gold']  # Different colors for each metric
     width = 0.2  # Width of each bar
 
-    x_labels = list(bucket_ranges.keys())
-    x_indices = range(len(x_labels))
-    num_metrics = len(buckets)
-
     for index, (metric, bucket_counts) in enumerate(sorted_buckets.items()):
-        ax.bar(
-            [i + (index - num_metrics / 2) * width for i in x_indices],
-            [bucket_counts[bucket] for bucket in x_labels],
-            width=width/.8,
-            label=metric,
-            color=colors[index % len(colors)]
-        )
+        fig.add_trace(go.Bar(
+            x=[i + (index - num_metrics / 2) * width for i in x_indices],
+            y=[bucket_counts[bucket] for bucket in x_labels],
+            width=width,
+            name=metric,
+            marker_color=colors[index % len(colors)],
+            hoverinfo='y'
+        ))
 
-    ax.set_xlabel('Rank position of the first retrieved document')
-    ax.set_ylabel('Number of queries')
-    ax.set_title('Distribution of document ranking positions by different relevance labels')
-    ax.set_xticks(x_indices)
-    ax.set_xticklabels(x_labels)
-    ax.legend()
-    st.pyplot(fig)
+    fig.update_layout(
+        title='Distribution of Document Ranking Positions',
+        xaxis_title='Rank Position of the 1st Retrieved Document per Relevance Label',
+        yaxis_title='Number of Queries',
+        xaxis=dict(tickmode='array', tickvals=x_indices, ticktext=x_labels),
+        barmode='group'
+    )
+
+    # Display the plot in Streamlit
+    st.plotly_chart(fig)
+
+
+def plot_precision_recall_curve(prec_recall_graphs, relevance_thres):
+    """
+    This function takes a dictionary containing precision-recall data and plots a precision-recall curve using Plotly.
+    The dictionary keys are expected to be in the format 'IPrec(rel=1)@threshold', where 'threshold' is a floating-point
+    number representing recall values (0.1, 0.2, ..., 1.0). The corresponding values are the precision values at those
+    recall thresholds.
+
+    Parameters:
+    - prec_recall_graphs (dict): A dictionary with precision-recall data, where keys are strings in the format
+      'IPrec(rel=1)@threshold' and values are floating-point numbers representing precision values.
+    """
+    # Extracting thresholds and precisions
+    thresholds = sorted([float(key.split('@')[1]) for key in prec_recall_graphs.keys()])
+    precisions = [prec_recall_graphs[f'IPrec(rel={relevance_thres})@{threshold}'] for threshold in thresholds]
+
+    # Add a point for recall=0 to start the plot from the y-axis
+    if 0.0 not in thresholds:
+        thresholds.insert(0, 0.0)
+        precisions.insert(0, prec_recall_graphs.get(f'IPrec(rel={relevance_thres})@0', 0))
+
+    # Create the plot using Plotly
+    fig = go.Figure()
+
+    fig.add_trace(go.Scatter(
+        x=thresholds,
+        y=precisions,
+        mode='lines+markers',
+        name='Precision-Recall Curve',
+        hoverinfo='y',
+        line=dict(shape='linear')
+    ))
+
+    fig.update_layout(
+        title=f'Precision-Recall Curve (Relevance_threshold={relevance_thres})',
+        xaxis_title='Recall',
+        yaxis_title='Precision',
+        xaxis=dict(range=[0, 1]),
+        yaxis=dict(range=[0, 1]),
+        template='plotly_white'
+    )
+
+    # Display the plot in Streamlit
+    st.plotly_chart(fig)

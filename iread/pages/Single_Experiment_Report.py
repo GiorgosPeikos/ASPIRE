@@ -3,8 +3,8 @@ import pandas as pd
 import streamlit as st
 from utils.data import load_run_data, load_qrel_data, load_query_data
 from utils.ui import load_css
-from utils.evaluation_measures import evaluate_single_run, return_available_measures, get_relevant_and_unjudged, evaluate_single_run_custom
-from utils.plots import dist_of_retrieved_docs
+from utils.evaluation_measures import evaluate_single_run, return_available_measures, get_relevant_and_unjudged, evaluate_single_run_custom, generate_prec_recall_graphs
+from utils.plots import dist_of_retrieved_docs, plot_precision_recall_curve
 
 # Load custom CSS
 load_css("css/styles.css")
@@ -199,7 +199,6 @@ with st.container():
             # Store user_measures_eval in session state for further use
             st.session_state.user_measures_eval = user_measures.copy()
 
-
 st.divider()
 
 # Positional Distribution of Relevant Retrieved Documents
@@ -220,8 +219,26 @@ st.divider()
 with st.container():
     st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Precision/Recall Curve</span></h3>""", unsafe_allow_html=True)
 
+    if 'selected_qrels' not in st.session_state:
+        st.warning("Please select retrieval experiment and qrels to begin your evaluation.", icon="⚠")
+    else:
+        st.session_state.relevance_threshold = st.slider(
+            "Select from the Available Relevance Thresholds (Slide)",
+            min_value=1,
+            max_value=2,
+            value=1,
+            key="slider3"
+        )
 
+        if 'prev_relevance_threshold' not in st.session_state:
+            st.session_state.prev_relevance_threshold = 1
 
+        if st.session_state.relevance_threshold != st.session_state.prev_relevance_threshold:
+            st.session_state.prev_relevance_threshold = st.session_state.relevance_threshold
+
+        prec_recall_graphs = generate_prec_recall_graphs(st.session_state.relevance_threshold, st.session_state.selected_qrels, st.session_state.selected_runs)
+
+        plot_precision_recall_curve(prec_recall_graphs, st.session_state.relevance_threshold)
 
 st.divider()
 

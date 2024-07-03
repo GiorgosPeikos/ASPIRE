@@ -6,6 +6,9 @@ from utils.ui import load_css
 from utils.evaluation_measures import evaluate_single_run, return_available_measures, get_relevant_and_unjudged, evaluate_single_run_custom, generate_prec_recall_graphs
 from utils.plots import dist_of_retrieved_docs, plot_precision_recall_curve
 
+# Set the page configuration to wide mode
+st.set_page_config(layout="wide")
+
 # Load custom CSS
 load_css("css/styles.css")
 
@@ -70,7 +73,7 @@ with st.container():
 
     else:
         st.session_state.relevance_threshold = st.slider(
-            "Select from the Available Relevance Thresholds (Slide)",
+            f"Select from the Available Relevance Thresholds (Slide)",
             min_value=1,
             max_value=2,
             value=1,
@@ -123,9 +126,10 @@ with st.container():
                     precision_measures_results[measure_name] = evaluate_single_run(
                         st.session_state.selected_qrels, st.session_state.selected_runs, measure_name, st.session_state.relevance_threshold
                     )
-                #TODO: Add a caption on the table to say that the values are across queries or rename them.
+
                 df_prec_measures = pd.DataFrame([precision_measures_results],
                                                 index=[st.session_state.runs_file.replace('.txt', '')]).transpose()
+
                 st.dataframe(df_prec_measures, use_container_width=True)
 
 st.divider()

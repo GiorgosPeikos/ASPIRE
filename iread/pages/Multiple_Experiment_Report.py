@@ -225,7 +225,7 @@ with st.container():
                                                            st.session_state.baseline, st.session_state.selected_correction)
 
 
-            st.write(freq_measures_results)
+            st.dataframe(freq_measures_results)
 
 st.divider()
 

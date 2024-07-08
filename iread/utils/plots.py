@@ -264,7 +264,8 @@ def plot_precision_recall_curve(prec_recall_graphs, relevance_thres):
         yaxis_title='Precision',
         xaxis=dict(range=[0, 1]),
         yaxis=dict(range=[0, 1]),
-        template='plotly_white'
+        template='plotly_white',
+
     )
 
     # Display the plot in Streamlit

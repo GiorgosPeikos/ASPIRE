@@ -356,6 +356,36 @@ def generate_prec_recall_graphs(relevance_threshold, selected_qrels, selected_ru
     return prec_recall_graphs
 
 
+st.cache_data()
+
+
+def evaluate_multiple_runs(qrels, runs, metric, relevance_threshold):
+    #  The Function is used in the Multiple_Experiment_Report.py.
+    # Check if metric contains '@' and split if it does
+    if "@" in metric:
+        base_metric, cutoff = metric.split("@")
+        # Check if the measure supports a relevance threshold
+        if base_metric in measures_with_rel_param:
+            # Format the new measure string with the relevance threshold
+            new_metric_str = f"{base_metric}(rel={relevance_threshold})@{cutoff}"
+        else:
+            new_metric_str = metric
+    else:
+        # For metrics without cutoff, use the base metric directly
+        base_metric = metric
+        if base_metric in measures_with_rel_param:
+            new_metric_str = f"{base_metric}(rel={relevance_threshold})"
+        else:
+            new_metric_str = metric
+
+    return None
+
+
+@st.cache_data()
+def evaluate_multiple_runs_custom(qrels, run, metric, cutoff, relevance_threshold):
+    return None
+
+
 def initialize_results():
     # Standard, extra, custom, and query results dictionaries are initialized
     if "results_standard" not in st.session_state:

@@ -7,7 +7,7 @@ from utils.evaluation_measures import evaluate_single_run, return_available_meas
 from utils.plots import dist_of_retrieved_docs, plot_precision_recall_curve
 
 # Set the page configuration to wide mode
-st.set_page_config(layout="wide")
+# st.set_page_config(layout="wide")
 
 # Load custom CSS
 load_css("css/styles.css")

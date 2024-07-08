@@ -3,11 +3,11 @@ import pandas as pd
 import streamlit as st
 from utils.data import load_run_data, load_qrel_data, load_query_data
 from utils.ui import load_css
-from utils.evaluation_measures import evaluate_single_run, return_available_measures
+from utils.evaluation_measures import evaluate_single_run, return_available_measures, evaluate_multiple_runs
 from utils.plots import plot_precision_recall_curve
 
 # Set the page configuration to wide mode
-st.set_page_config(layout="wide")
+# st.set_page_config(layout="wide")
 
 # Load custom CSS
 load_css("css/styles.css")
@@ -69,7 +69,7 @@ if st.button("Begin the Experimental Evaluation!", key='me_stButtonCenter'):
 st.divider()
 
 
-# Existing code with container and header
+# Overall Retrieval Characteristics
 with st.container():
     st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Overall Retrieval Characteristics</span></h3>""", unsafe_allow_html=True)
 
@@ -91,9 +91,9 @@ with st.container():
             st.session_state.me_prev_relevance_threshold = st.session_state.me_relevance_threshold
 
         # Get the list of selected run files
-        selected_runs_files = list(st.session_state.me_selected_runs.keys())
+        me_selected_runs_files = list(st.session_state.me_selected_runs.keys())
 
-        if selected_runs_files:
+        if me_selected_runs_files:
             columns = st.columns(2)
             _, _, _, _, overall_measures, precision_measures = return_available_measures()
 
@@ -170,4 +170,38 @@ with st.container():
             st.markdown("<h4>Recall Measures Combined</h4>", unsafe_allow_html=True)
             st.dataframe(recall_measures_combined, use_container_width=True)
 
-    st.divider()
+st.divider()
+
+# Common Evaluation Measures
+with st.container():
+    st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Experimental Evaluation</span></h3>""", unsafe_allow_html=True)
+    _, _, custom_user, default_measures, _, _ = return_available_measures()
+
+    if 'me_selected_qrels' not in st.session_state:
+        st.warning("Please select retrieval experiment and qrels to begin your evaluation.", icon="⚠")
+    else:
+        st.session_state.me_relevance_threshold = st.slider(
+            "Select from the Available Relevance Thresholds (Slide)",
+            min_value=1,
+            max_value=2,
+            value=1,
+            key="me_slider2"
+        )
+
+        if 'me_prev_relevance_threshold' not in st.session_state:
+            st.session_state.me_prev_relevance_threshold = 1
+
+        if st.session_state.me_relevance_threshold != st.session_state.me_prev_relevance_threshold:
+            st.session_state.me_prev_relevance_threshold = st.session_state.me_relevance_threshold
+
+        # Get the list of selected run files
+        selected_runs_files = list(st.session_state.me_selected_runs.keys())
+
+        if 'me_selected_qrels' in st.session_state and not st.session_state.me_selected_qrels.empty:
+            freq_measures_results = evaluate_multiple_runs(st.session_state.me_selected_qrels, st.session_state.me_selected_runs, default_measures, st.session_state.me_relevance_threshold )
+
+        st.write(freq_measures_results)
+
+
+st.divider()
+

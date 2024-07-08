@@ -1,179 +1,14 @@
 import statistics
-import numpy as np
+import statsmodels.stats.multitest
 import ir_measures
-import pandas as pd
 # from ir_measures import *
 import streamlit as st
-
-
-@st.cache_data
-def return_available_measures():
-    default_measures = [
-        "AP@100",  # Average Precision
-        "P@10",  # Precision
-        "nDCG@10",  # Normalized Discounted Cumulative Gain
-        "R@50",  # Recall
-        "RR@1000",  # Reciprocal Rank
-    ]
-
-    overall_measures = [
-        "NumQ",  # The total number of queries.
-        "NumRet",  # Number of Retrieved Documents
-        "NumRel",  # Number of Relevant Documents
-        "NumRelRet",  # Number of Relevant Retrieved Documents (Alias)
-    ]
-
-    precision_measures = [
-        "P@5",  # Number of Relevant Retrieved Documents (Alias)
-        "P@10",
-        "P@25",
-        "P@50",
-        "P@100",
-        "Rprec"
-    ]
-
-    freq_measures = [
-        "AP@10",  # Average Precision
-        "AP@100",  # Average Precision
-        "AP@1000",  # Average Precision
-        "nDCG@5",  # Normalized Discounted Cumulative Gain
-        "nDCG@10",  # Normalized Discounted Cumulative Gain
-        "nDCG@1000",  # Normalized Discounted Cumulative Gain
-        "P@5",  # Precision
-        "P@10",  # Precision
-        "P@25",  # Precision
-        "R@10",  # Recall
-        "R@25",  # Recall
-        "R@50",  # Recall
-        "R@1000",  # Recall
-        "RR@1000",  # Reciprocal Rank
-        "Rprec",  # Precision at R
-        "Bpref",  # Binary Preference
-        "infAP",  # Inferred Average Precision
-        "NumRelRet",  # Number of Relevant Retrieved Documents (Alias)
-        "NumRel",
-        "NumRet",
-    ]
-
-    custom_user = [
-        "AP",  # Average Precision
-        "nDCG",  # Normalized Discounted Cumulative Gain
-        "P",  # Precision
-        "R",  # Recall
-        "RR",  # Reciprocal Rank
-        "Rprec",  # Precision at R
-        "Bpref",  # Binary Preference
-        "infAP",  # Inferred Average Precision
-        "Judged",
-
-    ]
-
-    rest_measures = [
-        # "Accuracy",
-        # "alpha_DCG",
-        # "alpha_nDCG",
-        # "AP_IA",
-        # "BPM",
-        "Compat",
-        # "ERR",
-        # "ERR_IA",
-        # "INSQ",
-        # "INST",
-        # "IPrec",
-        "Judged",
-        # "nERR_IA",
-        # "nNRBP",
-        # "NRBP",
-        "NumQ",
-        "RBP",
-        # "SDCG",
-        "SetAP",
-        "SetF",
-        "SetP",
-        "SetR",
-        # "StRecall",
-        # "Success",
-        # "α_DCG",
-        # "α_nDCG"
-    ]
-    return freq_measures, rest_measures, custom_user, default_measures, overall_measures, precision_measures
-
-
-# The function gets the qrels and the run from the session and a selected metric from the user and returns the
-# evaluation measure.
-# Define a set of measures that support a relevance threshold based on the documentation
-# https://ir-measur.es/en/latest/measures.html
-
-# Define a set of measures that support relevance level e.g. (rel=2)
-measures_with_rel_param = {
-    "Accuracy",
-    "alpha_DCG",
-    "alpha_nDCG",
-    "AP",
-    "AP_IA",
-    "Bpref",
-    "ERR_IA",
-    "infAP",
-    "IPrec",
-    "NERR8",
-    "NERR9",
-    "NERR10",
-    "NERR11",
-    "nERR_IA",
-    "nNRBP",
-    "NRBP",
-    "P",
-    "P_IA",
-    "R",
-    "RBP",
-    "Rprec",
-    "RR",
-    "SetAP",
-    "SetF",
-    "SetP",
-    "SetR",
-    "NumRet",
-    "NumRelRet",
-}
-
-# Define a set of measures that support a cutoff e.g. @10
-measures_with_cutoff = {
-    "Accuracy",
-    "alpha_DCG",
-    "alpha_nDCG",
-    "AP",
-    "AP_IA",
-    "BPM",
-    "ERR",
-    "ERR_IA",
-    "nDCG",
-    "NERR8",
-    "NERR9",
-    "NERR10",
-    "NERR11",
-    "nERR_IA",
-    "nNRBP",
-    "NRBP",
-    "P",
-    "P_IA",
-    "R",
-    "RBP",
-    "RR",
-    "SDCG",
-    "SetAP",
-    "SetF",
-    "SetP",
-    "SetR",
-    "StRecall",
-    "Success",
-}
-
-# Define a set of measures that need to be return as int
-measures_int = ["NumRelRet", "NumRel", "NumRet", "NumQ"]
+from utils.run_analysis import *
+import pandas as pd
 
 
 @st.cache_data()
-def evaluate_single_run(qrels, run, metric, relevance_threshold):
+def evaluate_single_run(qrel, run, metric, relevance_threshold):
     # Check if metric contains '@' and split if it does
     if "@" in metric:
         base_metric, cutoff = metric.split("@")
@@ -195,7 +30,7 @@ def evaluate_single_run(qrels, run, metric, relevance_threshold):
     parsed_metric = ir_measures.parse_measure(new_metric_str)
 
     # Calculate the evaluation using the parsed metric
-    res_eval = ir_measures.calc_aggregate([parsed_metric], qrels, run)
+    res_eval = ir_measures.calc_aggregate([parsed_metric], qrel, run)
 
     if base_metric in measures_int:
         return int(list(res_eval.values())[0])
@@ -204,7 +39,7 @@ def evaluate_single_run(qrels, run, metric, relevance_threshold):
 
 
 @st.cache_data()
-def evaluate_single_run_custom(qrels, run, metric, cutoff, relevance_threshold):
+def evaluate_single_run_custom(qrel, run, metric, cutoff, relevance_threshold):
     # Check if metric contains '@' and split if it does
     # Check if the measure supports a relevance threshold
     if metric in measures_with_rel_param and metric in measures_with_cutoff:
@@ -223,7 +58,7 @@ def evaluate_single_run_custom(qrels, run, metric, cutoff, relevance_threshold):
     parsed_metric = ir_measures.parse_measure(new_metric_str)
 
     # Calculate the evaluation using the parsed metric
-    res_eval = ir_measures.calc_aggregate([parsed_metric], qrels, run)
+    res_eval = ir_measures.calc_aggregate([parsed_metric], qrel, run)
 
     if parsed_metric in measures_int:
         return str(parsed_metric), int(list(res_eval.values())[0])
@@ -232,7 +67,7 @@ def evaluate_single_run_custom(qrels, run, metric, cutoff, relevance_threshold):
 
 
 @st.cache_data()
-def per_query_evaluation(qrels, run, metric, cutoff, relevance_threshold):
+def per_query_evaluation(qrel, run, metric, cutoff, relevance_threshold):
     # Check if metric contains '@' and split if it does
     # Check if the measure supports a relevance threshold
     if metric in measures_with_rel_param and metric in measures_with_cutoff:
@@ -251,7 +86,7 @@ def per_query_evaluation(qrels, run, metric, cutoff, relevance_threshold):
     parsed_metric = ir_measures.parse_measure(new_metric_str)
 
     # Calculate the evaluation using the parsed metric
-    res_eval = list(ir_measures.iter_calc([parsed_metric], qrels, run))
+    res_eval = list(ir_measures.iter_calc([parsed_metric], qrel, run))
 
     return parsed_metric, res_eval
 
@@ -274,9 +109,9 @@ def good_bad_queries(res_eval):
 
 
 @st.cache_data()
-def get_relevant_and_unjudged(qrels, res) -> dict:
+def get_relevant_and_unjudged(qrel, res) -> dict:
     """
-    Merge 'res' and 'qrels' DataFrames on 'query_id' and 'doc_id'.
+    Merge 'res' and 'qrel' DataFrames on 'query_id' and 'doc_id'.
     For each unique 'query_id', determine:
     - The first rank positions for relevance thresholds (0, 1, 2).
     - The rank position where 'relevance' is NaN (first_unjudged).
@@ -284,14 +119,14 @@ def get_relevant_and_unjudged(qrels, res) -> dict:
     containing these rank positions.
     """
 
-    # Merge res and qrels on query_id and doc_id
-    merged_df = pd.merge(res, qrels, on=['query_id', 'doc_id'], how='left')
+    # Merge res and qrel on query_id and doc_id
+    merged_df = pd.merge(res, qrel, on=['query_id', 'doc_id'], how='left')
 
     # Initialize result dictionary
     ranking_per_relevance = {}
 
     # Extract all available relevance thresholds
-    relevance_thresholds = qrels['relevance'].unique()
+    relevance_thresholds = qrel['relevance'].unique()
 
     # Iterate over each unique query_id in the DataFrame
     for query_id, group in merged_df.groupby('query_id'):
@@ -327,7 +162,7 @@ def get_relevant_and_unjudged(qrels, res) -> dict:
 
 
 @st.cache_data()
-def generate_prec_recall_graphs(relevance_threshold, selected_qrels, selected_runs):
+def generate_prec_recall_graphs(relevance_threshold, selected_qrel, selected_runs):
     """
     Generates a dictionary of precision-recall data.
 
@@ -337,7 +172,7 @@ def generate_prec_recall_graphs(relevance_threshold, selected_qrels, selected_ru
 
     Parameters:
     - relevance_threshold (float): The relevance threshold to use for evaluation.
-    - selected_qrels (any): The selected qrels data.
+    - selected_qrel (any): The selected qrel data.
     - selected_runs (any): The selected runs data.
 
     Returns:
@@ -350,41 +185,10 @@ def generate_prec_recall_graphs(relevance_threshold, selected_qrels, selected_ru
         cutoff = float(i / 10)
         key = f"IPrec(rel={relevance_threshold})@{cutoff}"
         prec_recall_graphs[key] = evaluate_single_run(
-            selected_qrels, selected_runs, key, relevance_threshold
+            selected_qrel, selected_runs, key, relevance_threshold
         )
 
     return prec_recall_graphs
-
-
-st.cache_data()
-
-
-def evaluate_multiple_runs(qrels, runs, metric, relevance_threshold):
-    #  The Function is used in the Multiple_Experiment_Report.py.
-    # Check if metric contains '@' and split if it does
-    if "@" in metric:
-        base_metric, cutoff = metric.split("@")
-        # Check if the measure supports a relevance threshold
-        if base_metric in measures_with_rel_param:
-            # Format the new measure string with the relevance threshold
-            new_metric_str = f"{base_metric}(rel={relevance_threshold})@{cutoff}"
-        else:
-            new_metric_str = metric
-    else:
-        # For metrics without cutoff, use the base metric directly
-        base_metric = metric
-        if base_metric in measures_with_rel_param:
-            new_metric_str = f"{base_metric}(rel={relevance_threshold})"
-        else:
-            new_metric_str = metric
-
-    return None
-
-
-@st.cache_data()
-def evaluate_multiple_runs_custom(qrels, run, metric, cutoff, relevance_threshold):
-    return None
-
 
 def initialize_results():
     # Standard, extra, custom, and query results dictionaries are initialized

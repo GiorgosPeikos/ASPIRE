@@ -3,7 +3,8 @@ import pandas as pd
 import streamlit as st
 from utils.data import load_run_data, load_qrel_data, load_query_data
 from utils.ui import load_css
-from utils.evaluation_measures import evaluate_single_run, return_available_measures, evaluate_multiple_runs
+from utils.evaluation_measures import evaluate_single_run, return_available_measures
+from utils.eval_multiple_exp import  evaluate_multiple_runs
 from utils.plots import plot_precision_recall_curve
 
 # Set the page configuration to wide mode
@@ -111,8 +112,6 @@ with st.container():
                 progress_text.text(f"Evaluating experiment {i + 1}/{total_files}")
 
                 with columns[0]:
-                    # Removed experiment name display
-
                     overall_measures_results = {}
                     for measure_name in overall_measures:
                         overall_measures_results[measure_name] = evaluate_single_run(
@@ -197,11 +196,39 @@ with st.container():
         # Get the list of selected run files
         selected_runs_files = list(st.session_state.me_selected_runs.keys())
 
+        if selected_runs_files:
+            # Add a selectbox to choose the baseline run
+            st.session_state.baseline = st.selectbox(
+                "Select a baseline run file:",
+                selected_runs_files
+            )
+
         if 'me_selected_qrels' in st.session_state and not st.session_state.me_selected_qrels.empty:
-            freq_measures_results = evaluate_multiple_runs(st.session_state.me_selected_qrels, st.session_state.me_selected_runs, default_measures, st.session_state.me_relevance_threshold )
+            # Define possible values for correction
+            correction_methods = ['bonferroni', 'holm']
 
-        st.write(freq_measures_results)
+            st.markdown("Multiple Testing Correction Configuration")
 
+            # Create columns
+            col1, col2 = st.columns([2, 3])  # Adjust the column width ratio as needed
+
+            with col1:
+                st.markdown("Correction Methods: Bonferroni (default), Holm")
+
+            with col2:
+                # Single select component for correction method with bonferroni selected by default
+                st.session_state.selected_correction = st.selectbox(
+                    "Select a correction method:",
+                    correction_methods,
+                    index=0,
+                    format_func=lambda x: "None" if x is None else x
+            )
+
+            freq_measures_results = evaluate_multiple_runs(st.session_state.me_selected_qrels, st.session_state.me_selected_runs, default_measures, st.session_state.me_relevance_threshold,
+                                                           st.session_state.selected_correction, st.session_state.baseline)
+
+
+            st.write(freq_measures_results)
 
 st.divider()
 

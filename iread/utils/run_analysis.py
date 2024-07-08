@@ -167,7 +167,6 @@ measures_with_cutoff = {
 # Define a set of measures that need to be return as int
 measures_int = ["NumRelRet", "NumRel", "NumRet", "NumQ"]
 
-
 def find_unjudged(run: pd.DataFrame, qrels: pd.DataFrame, cutoff: int) -> pd.DataFrame:
     run["rank"] = run["rank"].astype(int)
     run = run[run["rank"] < cutoff]

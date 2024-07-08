@@ -70,7 +70,7 @@ if st.button("Begin the Experimental Evaluation!", key='me_stButtonCenter'):
 st.divider()
 
 
-Overall Retrieval Characteristics
+# Overall Retrieval Characteristics
 with st.container():
     st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Overall Retrieval Characteristics</span></h3>""", unsafe_allow_html=True)
 

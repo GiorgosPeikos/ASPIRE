@@ -223,4 +223,4 @@ def evaluate_multiple_runs(qrel, runs, metric_list, relevance_threshold, baselin
 
     results = create_results_dataframe(statistical_results)
 
-    return results
+    return results, statistical_results

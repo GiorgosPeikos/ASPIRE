@@ -185,12 +185,31 @@ with st.container():
 
         if 'me_selected_qrels' in st.session_state and not st.session_state.me_selected_qrels.empty:
             # Define possible values for correction
-            st.session_state.correction_methods = ['Bonferroni', 'Holm', 'Holm-Sidak']
+            correction_methods = ['Bonferroni', 'Holm', 'Holm-Sidak']
 
-            st.markdown("Multiple Testing Correction Configuration. Correction Methods: Bonferroni, Holm, and Holm-Sidak")
+            if 'load' not in st.session_state:
+                st.session_state.baseline = list(st.session_state.me_selected_runs.keys())[0]
+                st.session_state.selected_correction_alpha = 0.05
+                st.session_state.selected_correction = correction_methods[0]
+
+                st.markdown(
+                    f"""Statistical significance is tested against the selected baseline 
+                    (<span style="color:red;">{st.session_state.baseline}</span>) 
+                    using a paired two-sided t-test at a significance level 
+                    (<span style="color:red;">{st.session_state.selected_correction_alpha}</span>).
+                    Multiple testing correction is performed using the (<span style="color:red;">{st.session_state.selected_correction}</span>) method.
+                    """,
+                    unsafe_allow_html=True
+                )
+
+            # Just a space
+            st.write("#")
 
             # Create columns
             col1, col2 = st.columns([3, 2])  # Adjust the column width ratio as needed
+
+            # Just a space
+            st.write("#")
 
             with col1:
                 st.session_state.me_relevance_threshold = st.slider(
@@ -207,11 +226,20 @@ with st.container():
                 if st.session_state.me_relevance_threshold != st.session_state.me_prev_relevance_threshold:
                     st.session_state.me_prev_relevance_threshold = st.session_state.me_relevance_threshold
 
+                st.session_state.selected_correction_alpha = st.slider(
+                    "Correction Value (alpha)",
+                    min_value=0.01,
+                    max_value=0.05,
+                    value=0.05,
+                    step=0.04,
+                    key="me_slider_alpha"
+                )
+
             with col2:
                 # Single select component for correction method with bonferroni selected by default
                 st.session_state.selected_correction = st.selectbox(
                     "Select a correction method:",
-                    st.session_state.correction_methods,
+                    correction_methods,
                     index=0
                 )
                 if selected_runs_files:
@@ -221,11 +249,25 @@ with st.container():
                         list(st.session_state.me_selected_runs.keys())
                     )
 
-            freq_measures_results = evaluate_multiple_runs(st.session_state.me_selected_qrels, st.session_state.me_selected_runs, default_measures, st.session_state.me_relevance_threshold,
-                                                           st.session_state.baseline, st.session_state.selected_correction)
+            freq_measures_results,statistical_results = evaluate_multiple_runs(st.session_state.me_selected_qrels, st.session_state.me_selected_runs, default_measures, st.session_state.me_relevance_threshold,
+                                                           st.session_state.baseline, st.session_state.selected_correction, st.session_state.selected_correction_alpha)
 
+            if 'load' not in st.session_state:
+                st.session_state.load = True
+            else:
+                st.markdown(
+                    f"""Statistical significance is tested against the selected baseline 
+                    (<span style="color:red;">{st.session_state.baseline}</span>) 
+                    using a paired two-sided t-test at a significance level 
+                    (<span style="color:red;">{st.session_state.selected_correction_alpha}</span>).
+                    Multiple testing correction is performed using the (<span style="color:red;">{st.session_state.selected_correction}</span>) method.
+                    """,
+                    unsafe_allow_html=True
+                )
 
             st.dataframe(freq_measures_results)
+
+            st.write(statistical_results)
 
 st.divider()
 

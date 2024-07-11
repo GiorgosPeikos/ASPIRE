@@ -190,6 +190,7 @@ def generate_prec_recall_graphs(relevance_threshold, selected_qrel, selected_run
 
     return prec_recall_graphs
 
+
 def initialize_results():
     # Standard, extra, custom, and query results dictionaries are initialized
     if "results_standard" not in st.session_state:

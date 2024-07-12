@@ -4,7 +4,7 @@ import streamlit as st
 from utils.data import load_run_data, load_qrel_data, load_query_data
 from utils.ui import load_css
 from utils.evaluation_measures import evaluate_single_run, return_available_measures
-from utils.eval_multiple_exp import  evaluate_multiple_runs
+from utils.eval_multiple_exp import evaluate_multiple_runs, evaluate_multiple_runs_custom
 from utils.plots import plot_precision_recall_curve
 
 # Set the page configuration to wide mode
@@ -68,7 +68,6 @@ if st.button("Begin the Experimental Evaluation!", key='me_stButtonCenter'):
             unsafe_allow_html=True)
 
 st.divider()
-
 
 # Overall Retrieval Characteristics
 with st.container():
@@ -250,8 +249,8 @@ with st.container():
                     )
 
             st.session_state.results_table, style_table = evaluate_multiple_runs(st.session_state.me_selected_qrels, st.session_state.me_selected_runs, default_measures,
-                                                                                st.session_state.me_relevance_threshold,
-                                                           st.session_state.baseline, st.session_state.selected_correction, st.session_state.selected_correction_alpha)
+                                                                                 st.session_state.me_relevance_threshold,
+                                                                                 st.session_state.baseline, st.session_state.selected_correction, st.session_state.selected_correction_alpha)
 
             if 'load' not in st.session_state:
                 st.session_state.load = True
@@ -275,6 +274,42 @@ with st.container():
                 Format is Measure | <sup>p-value</sup> <sub>corrected p-value</sub>. If the observed difference is statistically significant, the background will be green. The highest value per 
                 measure is underscored.
                 """, unsafe_allow_html=True)
+
+            st.divider()
+
+            # Splitting the container
+            col = st.columns(2)
+
+            # Initialize session state variables if they don't exist
+            if 'selected_measures' not in st.session_state:
+                st.session_state.selected_measures = custom_user[0:1]  # Default selected measures
+            if 'selected_cutoff' not in st.session_state:
+                st.session_state.selected_cutoff = 25  # Default cutoff value
+
+            with col[0]:
+                selected_measures = st.multiselect("Select additional measures:", custom_user, default=custom_user[5:6])
+            with col[1]:
+                selected_cutoff = st.number_input("Enter cutoff value:", min_value=1, value=25, max_value=1000, step=1)
+
+                # Update session state with current selections
+            st.session_state.selected_measures = selected_measures
+            st.session_state.selected_cutoff = selected_cutoff
+
+            user_metric_name, user_metric_score = evaluate_multiple_runs_custom(st.session_state.me_selected_qrels, st.session_state.me_selected_runs, selected_measures,
+                                                                                    st.session_state.me_relevance_threshold, st.session_state.baseline, st.session_state.selected_cutoff,
+                                                                                    st.session_state.selected_correction, st.session_state.selected_correction_alpha)
+
+            st.write(user_metric_name, user_metric_score)
+            #     users_eval[str(user_metric_name)] = user_metric_score
+            #
+            # # Convert the dictionary to a DataFrame
+            # user_measures = pd.DataFrame([users_eval], index=[st.session_state.runs_file.replace('.txt', '')])
+            #
+            # # Display the DataFrame
+            # st.dataframe(user_measures, use_container_width=True)
+            #
+            # # Store user_measures_eval in session state for further use
+            # st.session_state.user_measures_eval = user_measures.copy()
 
 st.divider()
 

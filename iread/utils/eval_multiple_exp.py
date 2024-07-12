@@ -118,26 +118,6 @@ def create_results_dataframe(results_dict):
 
 
 def evaluate_multiple_runs(qrel, runs, metric_list, relevance_threshold, baseline, correction_method='bonferroni', correction_alpha=0.05):
-    """
-    Evaluates multiple runs of information retrieval systems across various metrics,
-    computes mean scores for each metric, and computes corrected p-values against a baseline run.
-
-    Parameters:
-    - qrel (dict): Dictionary containing ground truth relevance judgments.
-    - runs (dict): Dictionary where keys are run names and values are dictionaries containing
-      retrieval results for each run.
-    - metric_list (list): List of metric strings to evaluate.
-    - relevance_threshold (int or float): Relevance threshold to use in evaluation.
-    - correction_method (str): Method for multiple comparison correction (e.g., 'bonferroni', 'fdr_bh').
-    - baseline (str): Name of the baseline run for comparison.
-    - correction_alpha (float): Alpha level for multiple comparison correction.
-
-    Returns:
-    - statistical_results (dict): Dictionary containing run names as keys and dictionaries of results as values.
-                                  Each inner dictionary will have metric names as keys and a dictionary of results,
-                                  including mean scores, p-values against the baseline run, corrected p-values, and
-                                  rejection decisions.
-    """
     results_per_run = {}
     parsed_metrics = []
     statistical_results = {}
@@ -155,45 +135,42 @@ def evaluate_multiple_runs(qrel, runs, metric_list, relevance_threshold, baselin
             statistical_results[experiment] = {}
             for parsed_metric in parsed_metrics:
                 baseline_experiment[str(parsed_metric)] = calculate_evaluation(parsed_metric, qrel, run_data)
-                # Extract values from the dictionary to compute mean
                 metric_values = list(baseline_experiment[str(parsed_metric)].values())
                 statistical_results[experiment][str(parsed_metric)] = {
                     "mean": np.mean(metric_values)
                 }
 
-    # Collect p-values for correction
-    all_p_values = []
+    # Determine if correction is needed (more than 2 experiments)
+    need_correction = len(runs) > 2
 
     # Calculate evaluation results for each other experiment and collect p-values
-    for run_name, run_data in runs.items():
-        if run_name != baseline:
-            experiment = get_experiment_name(run_name, baseline)
-            statistical_results[experiment] = {}
-            for parsed_metric in parsed_metrics:
+    for parsed_metric in parsed_metrics:
+        metric_p_values = []
+        for run_name, run_data in runs.items():
+            if run_name != baseline:
+                experiment = get_experiment_name(run_name, baseline)
+                if experiment not in statistical_results:
+                    statistical_results[experiment] = {}
+
                 results_per_run[str(parsed_metric)] = calculate_evaluation(parsed_metric, qrel, run_data)
-                # Extract values from the dictionary to compute mean
                 metric_values = list(results_per_run[str(parsed_metric)].values())
                 mean_value = np.mean(metric_values)
 
                 baseline_values = list(baseline_experiment[str(parsed_metric)].values())
 
-                # Check for valid data before t-test, baseline_values[0] to access its values
                 if len(baseline_values[0]) > 1 and len(metric_values[0]) > 1:
                     t_statistic, p_value = stats.ttest_rel(baseline_values[0], metric_values[0])
 
-                    # Check if the p_value or t_statistic are NaN
                     if np.isnan(t_statistic) or np.isnan(p_value):
                         print(f"NaN detected for metric {str(parsed_metric)} in run {experiment}")
 
-                    # Collect p-value for correction
-                    all_p_values.append(p_value)
+                    metric_p_values.append(p_value)
 
-                    # Update statistical results without corrected p-value for now
                     statistical_results[experiment][str(parsed_metric)] = {
                         "mean": mean_value,
                         "p_value": p_value,
-                        "corrected_p_value": None,  # Placeholder for corrected p-value
-                        "reject": None,  # Placeholder for rejection decision
+                        "corrected_p_value": None,  # Placeholder
+                        "reject": None,  # Placeholder
                         "t_statistic": t_statistic
                     }
                 else:
@@ -206,20 +183,26 @@ def evaluate_multiple_runs(qrel, runs, metric_list, relevance_threshold, baselin
                         "t_statistic": float('nan')
                     }
 
-    # Apply multiple comparison correction to all collected p-values
-    if all_p_values:
-        corrected_p_values = statsmodels.stats.multitest.multipletests(all_p_values, alpha=correction_alpha, method=correction_method)[1]
+        # Apply per-measure correction if needed
+        if need_correction and metric_p_values:
+            corrected_p_values = statsmodels.stats.multitest.multipletests(metric_p_values, alpha=correction_alpha, method=correction_method)[1]
 
-        # Update statistical results with corrected p-values and rejection decisions
-        p_index = 0
-        for run_name, run_data in runs.items():
-            if run_name != baseline:
-                experiment = get_experiment_name(run_name, baseline)
-                for parsed_metric in parsed_metrics:
+            # Update statistical results with corrected p-values
+            p_index = 0
+            for run_name, run_data in runs.items():
+                if run_name != baseline:
+                    experiment = get_experiment_name(run_name, baseline)
                     if statistical_results[experiment][str(parsed_metric)]["p_value"] is not None:
                         statistical_results[experiment][str(parsed_metric)]["corrected_p_value"] = corrected_p_values[p_index]
                         statistical_results[experiment][str(parsed_metric)]["reject"] = corrected_p_values[p_index] < correction_alpha
                         p_index += 1
+        elif not need_correction:
+            # If no correction needed, set corrected p-value same as original
+            for run_name, run_data in runs.items():
+                if run_name != baseline:
+                    experiment = get_experiment_name(run_name, baseline)
+                    statistical_results[experiment][str(parsed_metric)]["corrected_p_value"] = statistical_results[experiment][str(parsed_metric)]["p_value"]
+                    statistical_results[experiment][str(parsed_metric)]["reject"] = statistical_results[experiment][str(parsed_metric)]["p_value"] < correction_alpha
 
     results = create_results_dataframe(statistical_results)
 

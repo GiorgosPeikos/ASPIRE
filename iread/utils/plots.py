@@ -4,9 +4,11 @@ import streamlit as st
 import matplotlib.pyplot as plt
 from collections import defaultdict
 import plotly.graph_objects as go
+from utils.run_analysis import *
 
 
 # Function to create a bar plot for evaluation results
+@st.cache_resource
 def create_evaluation_plot(res_eval, measure_name):
     # Extract query IDs and corresponding values from the Metric objects
     data = [{"Query ID": metric.query_id, "Score": metric.value} for metric in res_eval]
@@ -29,6 +31,7 @@ def create_evaluation_plot(res_eval, measure_name):
     st.plotly_chart(fig)
 
 
+@st.cache_resource
 # Function to plot query scores and add annotations
 def plot_queries(scores, ids, median, average, graph_title):
     # Create a DataFrame
@@ -108,6 +111,7 @@ def plot_queries(scores, ids, median, average, graph_title):
         st.plotly_chart(fig)
 
 
+@st.cache_resource
 def plot_pca(pca_df, classify_queries):
     # Ensure that 'query_id' is a string
     pca_df["query_id"] = pca_df["query_id"].astype(str)
@@ -226,6 +230,7 @@ def dist_of_retrieved_docs(relevance_ret_pos: dict) -> None:
     st.plotly_chart(fig)
 
 
+@st.cache_resource
 def plot_precision_recall_curve(prec_recall_graphs, relevance_thres):
     """
     This function takes a dictionary containing precision-recall data and plots a precision-recall curve using Plotly.

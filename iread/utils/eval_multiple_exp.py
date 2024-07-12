@@ -1,63 +1,11 @@
 import numpy as np
+import streamlit as st
 from scipy import stats
 import statsmodels.stats.multitest
 import ir_measures
 from ir_measures import *
 from utils.run_analysis import *
-import os
 from collections import defaultdict
-import pandas as pd
-
-
-@st.cache_data  # Assuming this is a decorator for caching resources
-def metric_parser(metric, relevance_threshold, cutoff):
-    """
-    Parses a metric string to handle relevance thresholds and cutoffs if specified.
-
-    Parameters:
-    - metric (str): The metric string to parse.
-    - relevance_threshold (int or float): The relevance threshold to use in parsing.
-    - cutoff (int or None): The cutoff value to use in parsing.
-
-    Returns:
-    - parsed_metric: The parsed metric object, parsed using ir_measures.parse_measure.
-    """
-    if "@" in metric:
-        base_metric, cutoff = metric.split("@")
-    else:
-        base_metric = metric
-
-    if base_metric in measures_with_rel_param:  # Assuming measures_with_rel_param is defined elsewhere
-        if cutoff is not None:
-            new_metric_str = f"{base_metric}(rel={relevance_threshold})@{cutoff}"
-        else:
-            new_metric_str = f"{base_metric}(rel={relevance_threshold})"
-    else:
-        new_metric_str = metric
-
-    # Parse the metric using ir_measures (assuming parse_measure is a function from ir_measures)
-    parsed_metric = ir_measures.parse_measure(new_metric_str)
-    return parsed_metric
-
-
-def get_experiment_name(run_name, baseline):
-    """
-    Extracts the experiment name from run_name by removing common file extensions
-    and appends (Baseline) if the run_name matches the baseline.
-
-    Parameters:
-    - run_name (str): The name of the run or experiment.
-    - baseline (str): The name of the baseline run.
-
-    Returns:
-    - experiment_name (str): Processed experiment name.
-    """
-    base_name, extension = os.path.splitext(run_name)
-
-    # Append (Baseline) to experiment name if it's the baseline run
-    experiment_name = base_name + " (Baseline)" if run_name == baseline else base_name
-
-    return experiment_name
 
 
 def calculate_evaluation(parsed_metric, qrel, run_data):
@@ -88,35 +36,7 @@ def calculate_evaluation(parsed_metric, qrel, run_data):
     return dict(metric_scores)
 
 
-def create_results_dataframe(results_dict):
-    # Initialize lists to store data for DataFrame construction
-    data = []
-    index = []
-
-    # Iterate through each experiment in the results dictionary
-    for experiment, metrics_dict in results_dict.items():
-        index.append(experiment)
-        experiment_results = {"Experiment": experiment}
-
-        # Iterate through each metric for the current experiment
-        for metric, metric_data in metrics_dict.items():
-            experiment_results[metric + "_mean"] = metric_data["mean"]
-
-            # Check if "reject" key exists and its value is True
-            if "reject" in metric_data and metric_data["reject"] == True:
-                experiment_results[metric + "_reject"] = '<span style="color:green;">True</span>'
-            else:
-                experiment_results[metric + "_reject"] = '<span style="color:red;">False</span>'
-
-        # Append experiment_results to data list
-        data.append(experiment_results)
-
-    # Create DataFrame from data list with Experiment column as index
-    df = pd.DataFrame(data).set_index('Experiment')
-
-    return df
-
-
+@st.cache_data
 def evaluate_multiple_runs(qrel, runs, metric_list, relevance_threshold, baseline, correction_method='bonferroni', correction_alpha=0.05):
     results_per_run = {}
     parsed_metrics = []
@@ -204,6 +124,6 @@ def evaluate_multiple_runs(qrel, runs, metric_list, relevance_threshold, baselin
                     statistical_results[experiment][str(parsed_metric)]["corrected_p_value"] = statistical_results[experiment][str(parsed_metric)]["p_value"]
                     statistical_results[experiment][str(parsed_metric)]["reject"] = statistical_results[experiment][str(parsed_metric)]["p_value"] < correction_alpha
 
-    results = create_results_dataframe(statistical_results)
+    df, style_df = create_results_table(statistical_results)
 
-    return results, statistical_results
+    return df, style_df

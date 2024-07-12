@@ -249,7 +249,8 @@ with st.container():
                         list(st.session_state.me_selected_runs.keys())
                     )
 
-            freq_measures_results,statistical_results = evaluate_multiple_runs(st.session_state.me_selected_qrels, st.session_state.me_selected_runs, default_measures, st.session_state.me_relevance_threshold,
+            st.session_state.results_table, style_table = evaluate_multiple_runs(st.session_state.me_selected_qrels, st.session_state.me_selected_runs, default_measures,
+                                                                                st.session_state.me_relevance_threshold,
                                                            st.session_state.baseline, st.session_state.selected_correction, st.session_state.selected_correction_alpha)
 
             if 'load' not in st.session_state:
@@ -265,9 +266,15 @@ with st.container():
                     unsafe_allow_html=True
                 )
 
-            st.dataframe(freq_measures_results)
+            if not st.session_state.results_table.empty:
+                # Display the table in Streamlit
+                st.dataframe(st.session_state.results_table.style.apply(lambda _: style_table, axis=None), use_container_width=True)
 
-            st.write(statistical_results)
+                # Add a legend
+                st.markdown("""
+                Format is Measure | <sup>p-value</sup> <sub>corrected p-value</sub>. If the observed difference is statistically significant, the background will be green. The highest value per 
+                measure is underscored.
+                """, unsafe_allow_html=True)
 
 st.divider()
 

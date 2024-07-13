@@ -65,7 +65,12 @@ def return_available_measures():
         "Bpref",  # Binary Preference
         "infAP",  # Inferred Average Precision
         "Judged",
-
+        "SetF",
+        "SetP",
+        "SetR",
+        "SetAP",
+        "Success",
+        "Compat",
     ]
 
     rest_measures = [
@@ -85,7 +90,7 @@ def return_available_measures():
         # "nNRBP",
         # "NRBP",
         "NumQ",
-        "RBP",
+        # "RBP", - Error
         # "SDCG",
         "SetAP",
         "SetF",
@@ -160,10 +165,6 @@ measures_with_cutoff = {
     "RBP",
     "RR",
     "SDCG",
-    "SetAP",
-    "SetF",
-    "SetP",
-    "SetR",
     "StRecall",
     "Success",
 }
@@ -195,20 +196,27 @@ def metric_parser(metric, relevance_threshold, cutoff):
     Returns:
     - parsed_metric: The parsed metric object, parsed using ir_measures.parse_measure.
     """
+    # Check if metric contains '@' and split if it does
     if "@" in metric:
-        base_metric, cutoff = metric.split("@")
+        base_metric, existing_cutoff = metric.split("@")
+        cutoff = existing_cutoff if cutoff is None else cutoff
     else:
         base_metric = metric
 
-    if base_metric in measures_with_rel_param:  # Assuming measures_with_rel_param is defined elsewhere
-        if cutoff is not None:
-            new_metric_str = f"{base_metric}(rel={relevance_threshold})@{cutoff}"
-        else:
-            new_metric_str = f"{base_metric}(rel={relevance_threshold})"
+    # Check if the measure supports a relevance threshold and/or cutoff
+    supports_rel = base_metric in measures_with_rel_param
+    supports_cutoff = base_metric in measures_with_cutoff
+
+    if supports_rel and supports_cutoff:
+        new_metric_str = f"{base_metric}(rel={relevance_threshold})@{cutoff}"
+    elif supports_rel:
+        new_metric_str = f"{base_metric}(rel={relevance_threshold})"
+    elif supports_cutoff:
+        new_metric_str = f"{base_metric}@{cutoff}"
     else:
         new_metric_str = metric
 
-    # Parse the metric using ir_measures (assuming parse_measure is a function from ir_measures)
+    # Parse the metric using ir_measures
     parsed_metric = ir_measures.parse_measure(new_metric_str)
     return parsed_metric
 
@@ -241,6 +249,7 @@ def get_experiment_name(run_name, baseline):
 
     return experiment_name
 
+
 @st.cache_resource
 def to_super(text):
     superscript_map = {
@@ -248,6 +257,7 @@ def to_super(text):
         '.': '·', '-': '⁻'
     }
     return ''.join(superscript_map.get(char, char) for char in str(text))
+
 
 @st.cache_resource
 def to_sub(text):

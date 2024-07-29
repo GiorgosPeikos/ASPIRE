@@ -147,7 +147,7 @@ def plot_pca(pca_df, classify_queries):
 
 
 # Function that displays the distribution of ranking position of all retrieved documents based on their relevance label.
-
+@st.cache_resource
 def dist_of_retrieved_docs(relevance_ret_pos: dict) -> None:
     # Define constants for bucket ranges
     bucket_ranges = {

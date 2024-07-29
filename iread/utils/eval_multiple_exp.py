@@ -8,6 +8,7 @@ from utils.run_analysis import *
 from collections import defaultdict
 
 
+
 def calculate_evaluation(parsed_metric, qrel, run_data):
     """
     Calculates the evaluation results for a single run based on parsed metrics.
@@ -36,6 +37,7 @@ def calculate_evaluation(parsed_metric, qrel, run_data):
     return dict(metric_scores)
 
 
+@st.cache_resource
 def evaluate_multiple_runs_custom(qrel, runs, metric_list, relevance_threshold, baseline, selected_cutoff, correction_method='bonferroni', correction_alpha=0.05):
     results_per_run = {}
     parsed_metrics = []
@@ -127,3 +129,49 @@ def evaluate_multiple_runs_custom(qrel, runs, metric_list, relevance_threshold, 
 
     return df, style_df
 
+
+@st.cache_resource
+def get_doc_intersection(runs, baseline, selected_cutoff):
+    # Get unique query IDs and document IDs
+    all_queries = set()
+    all_docs = set()
+    for run_data in runs.values():
+        all_queries.update(run_data['query_id'])
+        all_docs.update(run_data['doc_id'])
+
+    query_map = {q: i for i, q in enumerate(all_queries)}
+    doc_map = {d: i for i, d in enumerate(all_docs)}
+
+    n_queries = len(all_queries)
+    n_docs = len(all_docs)
+    n_runs = len(runs)
+
+    # Create a 3D numpy array to represent the data
+    data = np.zeros((n_runs, n_queries, n_docs), dtype=bool)
+
+    # Fill the array
+    for i, (run_name, run_data) in enumerate(runs.items()):
+        for _, row in run_data.iterrows():
+            if row['rank'] <= selected_cutoff:
+                q_idx = query_map[row['query_id']]
+                d_idx = doc_map[row['doc_id']]
+                data[i, q_idx, d_idx] = True
+
+    # Compute intersections
+    baseline_idx = list(runs.keys()).index(baseline)
+    baseline_data = data[baseline_idx]
+    intersections = (data & baseline_data).sum(axis=(1, 2))
+
+    # Compute totals
+    totals = np.minimum(data.sum(axis=2), selected_cutoff).sum(axis=1)
+
+    # Create DataFrame
+    df = pd.DataFrame({
+        'Intersected Documents': intersections,
+        'Total Documents': totals,
+    }, index=list(runs.keys()))
+
+    df = df.drop(baseline)  # Remove baseline from results
+    df['Intersection Percentage'] = (df['Intersected Documents'] / df['Total Documents'] * 100).round(2)
+
+    return df

@@ -4,8 +4,8 @@ import pandas as pd
 import streamlit as st
 from utils.data import load_run_data, load_qrel_data, load_query_data
 from utils.ui import load_css
-from utils.eval_multiple_exp import evaluate_multiple_runs_custom
-from utils.evaluation_measures import evaluate_single_run, return_available_measures, get_relevant_and_unjudged, evaluate_single_run_custom, generate_prec_recall_graphs
+from utils.eval_multiple_exp import evaluate_multiple_runs_custom, get_doc_intersection
+from utils.evaluation_measures import evaluate_single_run, return_available_measures, get_relevant_and_unjudged
 from utils.plots import dist_of_retrieved_docs, plot_precision_recall_curve
 
 # Set the page configuration to wide mode
@@ -250,8 +250,9 @@ with st.container():
                     )
 
             st.session_state.results_table, style_table = evaluate_multiple_runs_custom(st.session_state.me_selected_qrels, st.session_state.me_selected_runs, default_measures,
-                                                                                 st.session_state.me_relevance_threshold,
-                                                                                 st.session_state.baseline, None, st.session_state.selected_correction, st.session_state.selected_correction_alpha)
+                                                                                        st.session_state.me_relevance_threshold,
+                                                                                        st.session_state.baseline, None, st.session_state.selected_correction,
+                                                                                        st.session_state.selected_correction_alpha)
 
             if 'load' not in st.session_state:
                 st.session_state.load = True
@@ -297,8 +298,9 @@ with st.container():
             st.session_state.selected_cutoff = selected_cutoff
 
             st.session_state.results_table_custom, style_table_custom = evaluate_multiple_runs_custom(st.session_state.me_selected_qrels, st.session_state.me_selected_runs, selected_measures,
-                                                                                    st.session_state.me_relevance_threshold, st.session_state.baseline, st.session_state.selected_cutoff,
-                                                                                    st.session_state.selected_correction, st.session_state.selected_correction_alpha)
+                                                                                                      st.session_state.me_relevance_threshold, st.session_state.baseline,
+                                                                                                      st.session_state.selected_cutoff,
+                                                                                                      st.session_state.selected_correction, st.session_state.selected_correction_alpha)
 
             if not st.session_state.results_table_custom.empty:
                 # Display the table in Streamlit
@@ -337,6 +339,49 @@ with st.container():
                             dist_of_retrieved_docs(ranking_per_relevance)
 st.divider()
 
-# Most Frequent and Less frequent documents retrieved
+# Retrieved Document Intersection
 with st.container():
-    st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Easy and Hard to Retrieve Documents</span></h3>""", unsafe_allow_html=True)
+    st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Retrieved Document Intersection</span></h3>""", unsafe_allow_html=True)
+
+    if 'me_selected_runs' not in st.session_state or len(st.session_state.me_selected_runs) < 2:
+        st.warning("This analysis requires at least two retrieval experiments to be selected.", icon="⚠")
+
+    else:
+        st.write("""
+             This analysis calculates the intersection of retrieved documents between a selected baseline run and other retrieval experiments.
+             It showcases the similarity between the document rankings across different retrieval approaches.
+             """)
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.session_state.baseline = st.selectbox(
+                "Select a baseline run file:",
+                list(st.session_state.me_selected_runs.keys()),
+                key="selectbox1"
+            )
+
+        with col2:
+            selected_cutoff_inter = st.number_input("Enter cutoff value:", min_value=1, value=10, max_value=1000, step=1, key='cutoff2')
+
+        st.write(f"""
+               **Selected Baseline**: {st.session_state.baseline}. All other runs will be compared against this baseline.
+
+               **Cutoff Value**: {selected_cutoff_inter}. The cutoff value determines how many top-ranked documents from each run are considered in the intersection analysis.
+               """)
+
+        intersection_results = get_doc_intersection(st.session_state.me_selected_runs, st.session_state.baseline, selected_cutoff_inter)
+
+        st.dataframe(intersection_results)
+
+        st.write(f"""
+        **Intersected Documents**: The number of documents that appear in both the baseline and the compared run within the top {selected_cutoff_inter} results.
+        
+        **Total Documents**: The total number of documents considered (number of queries × cutoff value).
+        
+        **Intersection Percentage**: The percentage of documents that intersect, calculated as (Intersected Documents / Total Documents) × 100.
+
+        <span style="color:red;">A higher intersection percentage indicates greater similarity with the baseline results.</span>
+        """, unsafe_allow_html=True)
+
+st.divider()

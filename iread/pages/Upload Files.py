@@ -118,6 +118,6 @@ if all_files:
         all_files.clear()
 
         # Refresh the file list after deletion
-        st.experimental_rerun()
+        st.rerun()
 else:
     st.write("No files to display.")

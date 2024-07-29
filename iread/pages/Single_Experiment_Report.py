@@ -52,7 +52,7 @@ if st.button("Begin the Experimental Evaluation!", key='stButtonCenter'):
         st.stop()
 
     st.markdown(
-        f"""<div style="text-align: center;">Evaluating the <span style="color:red;">{st.session_state.runs_file.replace('.txt', '')}</span> experiment using the <span style="color:red;">{qrels_file}</span> qrels.</div>""",
+        f"""<div style="text-align: center;">Evaluating the <span style="color:red;">{st.session_state.runs_file.replace('.txt', '').replace('.csv', '')}</span> experiment using the <span style="color:red;">{qrels_file}</span> qrels.</div>""",
         unsafe_allow_html=True)
 
     if queries_file:
@@ -98,7 +98,7 @@ with st.container():
                     )
 
                 df_measures = pd.DataFrame([overall_measures_results],
-                                           index=[st.session_state.runs_file.replace('.txt', '')])
+                                           index=[st.session_state.runs_file.replace('.txt', '').replace('.csv', '')])
 
                 # Rename columns with custom names
                 # TODO: FIX! There is an error in the calculation of the retrieved documents. It should be 1000x the query number but it is equal to the numrelret.
@@ -116,7 +116,7 @@ with st.container():
                 ), "Recall@1000": evaluate_single_run(
                     st.session_state.selected_qrels, st.session_state.selected_runs, "R@1000", st.session_state.relevance_threshold
                 )}
-                df_recall_measures = pd.DataFrame([recall_measures], index=[st.session_state.runs_file.replace('.txt', '')])
+                df_recall_measures = pd.DataFrame([recall_measures], index=[st.session_state.runs_file.replace('.txt', '').replace('.csv', '')])
                 st.dataframe(df_recall_measures, use_container_width=True)
 
         with columns[1]:
@@ -128,7 +128,7 @@ with st.container():
                     )
 
                 df_prec_measures = pd.DataFrame([precision_measures_results],
-                                                index=[st.session_state.runs_file.replace('.txt', '')]).transpose()
+                                                index=[st.session_state.runs_file.replace('.txt', '').replace('.csv', '')]).transpose()
 
                 st.dataframe(df_prec_measures, use_container_width=True)
 
@@ -164,7 +164,7 @@ with st.container():
                     st.session_state.selected_qrels, st.session_state.selected_runs, measure_name, st.session_state.relevance_threshold
                 )
 
-            common_measures = pd.DataFrame([freq_measures_results], index=[st.session_state.runs_file.replace('.txt', '')])
+            common_measures = pd.DataFrame([freq_measures_results], index=[st.session_state.runs_file.replace('.txt', '').replace('.csv', '')])
             st.dataframe(common_measures, use_container_width=True)
 
             st.divider()
@@ -195,7 +195,7 @@ with st.container():
                 users_eval[str(user_metric_name)] = user_metric_score
 
             # Convert the dictionary to a DataFrame
-            user_measures = pd.DataFrame([users_eval], index=[st.session_state.runs_file.replace('.txt', '')])
+            user_measures = pd.DataFrame([users_eval], index=[st.session_state.runs_file.replace('.txt', '').replace('.csv', '')])
 
             # Display the DataFrame
             st.dataframe(user_measures, use_container_width=True)

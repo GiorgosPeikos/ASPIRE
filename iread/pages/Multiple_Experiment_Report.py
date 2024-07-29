@@ -1,4 +1,5 @@
 import os
+import math
 import pandas as pd
 import streamlit as st
 from utils.data import load_run_data, load_qrel_data, load_query_data
@@ -320,9 +321,22 @@ with st.container():
 
     else:
         if 'me_selected_runs' in st.session_state:
-            for run_key, run_value in st.session_state.me_selected_runs.items():
-                ranking_per_relevance = get_relevant_and_unjudged(st.session_state.get('me_selected_qrels'), run_value)
-                st.markdown(f"""#### Experiment: <span style="color:red;"> {str(run_key).replace('.txt','').replace('.csv','')}</span>""", unsafe_allow_html=True)
-                dist_of_retrieved_docs(ranking_per_relevance)
+            num_runs = len(st.session_state.me_selected_runs)
+            num_rows = math.ceil(num_runs / 2)
+
+            for i in range(num_rows):
+                cols = st.columns(2)
+                for j in range(2):
+                    run_index = i * 2 + j
+                    if run_index < num_runs:
+                        run_key, run_value = list(st.session_state.me_selected_runs.items())[run_index]
+                        ranking_per_relevance = get_relevant_and_unjudged(st.session_state.get('me_selected_qrels'), run_value)
+
+                        with cols[j]:
+                            st.markdown(f"""#### Experiment: <span style="color:red;"> {str(run_key).replace('.txt', '').replace('.csv', '')}</span>""", unsafe_allow_html=True)
+                            dist_of_retrieved_docs(ranking_per_relevance)
 st.divider()
 
+# Most Frequent and Less frequent documents retrieved
+with st.container():
+    st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Easy and Hard to Retrieve Documents</span></h3>""", unsafe_allow_html=True)

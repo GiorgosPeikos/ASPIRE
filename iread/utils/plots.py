@@ -163,7 +163,7 @@ def dist_of_retrieved_docs(relevance_ret_pos: dict) -> None:
         '81-90': (81, 90),
         '91-100': (91, 100),
         '101-200': (101, 200),
-        '200+': (201, float('inf'))  # Handle values greater than 200
+        '200+': (201, 999)  # Handle values greater than 200
     }
 
     # Initialize buckets dictionary dynamically
@@ -187,7 +187,7 @@ def dist_of_retrieved_docs(relevance_ret_pos: dict) -> None:
 
     # Sort by bucket ranges
     all_data.sort(key=lambda x: list(bucket_ranges.keys()).index(x[1]))
-
+    print(all_data)
     # Extract sorted data for plotting
     sorted_buckets = defaultdict(lambda: defaultdict(int))
     for metric, bucket, count in all_data:

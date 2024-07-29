@@ -161,7 +161,7 @@ def get_relevant_and_unjudged(qrel, res) -> dict:
     return ranking_per_relevance
 
 
-@st.cache_data()
+@st.cache_resource()
 def generate_prec_recall_graphs(relevance_threshold, selected_qrel, selected_runs):
     """
     Generates a dictionary of precision-recall data.

@@ -101,10 +101,9 @@ with st.container():
                                            index=[st.session_state.runs_file.replace('.txt', '').replace('.csv', '')])
 
                 # Rename columns with custom names
-                # TODO: FIX! There is an error in the calculation of the retrieved documents. It should be 1000x the query number but it is equal to the numrelret.
                 df_measures = df_measures.rename(columns={
                     "NumQ": "Total Queries",
-                    "NumRet": "Retrieved Documents",
+                    # "NumRet": "Retrieved Documents",
                     "NumRel": "Relevant Documents",
                     "NumRelRet": "Relevant Retrieved Documents"
                 })

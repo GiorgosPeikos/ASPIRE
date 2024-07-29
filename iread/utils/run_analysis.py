@@ -18,7 +18,7 @@ def return_available_measures():
 
     overall_measures = [
         "NumQ",  # The total number of queries.
-        "NumRet",  # Number of Retrieved Documents
+        # "NumRet",  # Number of Retrieved Documents
         "NumRel",  # Number of Relevant Documents
         "NumRelRet",  # Number of Relevant Retrieved Documents (Alias)
     ]

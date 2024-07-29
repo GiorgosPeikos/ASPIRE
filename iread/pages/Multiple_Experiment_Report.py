@@ -3,10 +3,9 @@ import pandas as pd
 import streamlit as st
 from utils.data import load_run_data, load_qrel_data, load_query_data
 from utils.ui import load_css
-from utils.evaluation_measures import evaluate_single_run, return_available_measures
 from utils.eval_multiple_exp import evaluate_multiple_runs_custom
-from utils.plots import plot_precision_recall_curve
-
+from utils.evaluation_measures import evaluate_single_run, return_available_measures, get_relevant_and_unjudged, evaluate_single_run_custom, generate_prec_recall_graphs
+from utils.plots import dist_of_retrieved_docs, plot_precision_recall_curve
 
 # Set the page configuration to wide mode
 st.set_page_config(layout="wide")
@@ -59,7 +58,7 @@ if st.button("Begin the Experimental Evaluation!", key='me_stButtonCenter'):
 
     if st.session_state.me_selected_runs:
         st.markdown(
-            f"""<div style="text-align: center;">Evaluating the <span style="color:red;">{", ".join(selected_runs_files).replace('.txt', '')}</span> experiments using the <span style="color:red;">{qrels_file}</span> qrels.</div>""",
+            f"""<div style="text-align: center;">Evaluating the <span style="color:red;">{", ".join(selected_runs_files).replace('.txt', '').replace('.csv', '')}</span> experiments using the <span style="color:red;">{qrels_file}</span> qrels.</div>""",
             unsafe_allow_html=True)
 
     if queries_file:
@@ -119,7 +118,7 @@ with st.container():
                         )
 
                     df_measures = pd.DataFrame([overall_measures_results],
-                                               index=[run_file.replace('.txt', '')])
+                                               index=[run_file.replace('.txt', '').replace('.csv', '')])
 
                     df_measures = df_measures.rename(columns={
                         "NumQ": "Total Queries",
@@ -138,10 +137,10 @@ with st.container():
                             st.session_state.me_selected_qrels, st.session_state.me_selected_runs[run_file], measure_name, st.session_state.me_relevance_threshold
                         )
 
-                    df_prec_measures = pd.DataFrame(precision_measures_results, index=[run_file.replace('.txt', '')]).transpose()
+                    df_prec_measures = pd.DataFrame(precision_measures_results, index=[run_file.replace('.txt', '').replace('.csv', '')]).transpose()
 
                     # Add precision measures to the combined DataFrame
-                    precision_measures_combined[run_file.replace('.txt', '')] = df_prec_measures.iloc[:, 0]
+                    precision_measures_combined[run_file.replace('.txt', '').replace('.csv', '')] = df_prec_measures.iloc[:, 0]
 
                     # Calculate and add recall measures to the combined DataFrame
                     recall_measures_results = {
@@ -152,7 +151,7 @@ with st.container():
                             st.session_state.me_selected_qrels, st.session_state.me_selected_runs[run_file], "R@1000", st.session_state.me_relevance_threshold
                         )
                     }
-                    df_recall_measures = pd.DataFrame([recall_measures_results], index=[run_file.replace('.txt', '')])
+                    df_recall_measures = pd.DataFrame([recall_measures_results], index=[run_file.replace('.txt', '').replace('.csv', '')])
                     recall_measures_combined = pd.concat([recall_measures_combined, df_recall_measures.transpose()], axis=1)
 
             # Clear the progress bar and text
@@ -310,5 +309,20 @@ with st.container():
                 the background of the measure is green. The highest value per measure is underscored.
                 """, unsafe_allow_html=True)
 
+st.divider()
+
+# Positional Distribution of Relevant Retrieved Documents
+with st.container():
+    st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Positional Distribution of Relevant and Unjudged Retrieved Documents</span></h3>""", unsafe_allow_html=True)
+
+    if 'me_selected_qrels' not in st.session_state:
+        st.warning("Please select retrieval experiment and qrels to begin your evaluation.", icon="⚠")
+
+    else:
+        if 'me_selected_runs' in st.session_state:
+            for run_key, run_value in st.session_state.me_selected_runs.items():
+                ranking_per_relevance = get_relevant_and_unjudged(st.session_state.get('me_selected_qrels'), run_value)
+                st.markdown(f"""#### Experiment: <span style="color:red;"> {str(run_key).replace('.txt','').replace('.csv','')}</span>""", unsafe_allow_html=True)
+                dist_of_retrieved_docs(ranking_per_relevance)
 st.divider()
 

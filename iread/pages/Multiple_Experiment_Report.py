@@ -5,7 +5,7 @@ import streamlit as st
 from utils.data import load_run_data, load_qrel_data, load_query_data
 from utils.ui import load_css
 from utils.eval_multiple_exp import evaluate_multiple_runs_custom, get_doc_intersection, get_docs_retrieved_by_all_systems
-from utils.evaluation_measures import evaluate_single_run, return_available_measures, get_relevant_and_unjudged
+from utils.evaluation_measures import evaluate_single_run, return_available_measures, get_relevant_and_unjudged, generate_prec_recall_graphs
 from utils.plots import dist_of_retrieved_docs, plot_precision_recall_curve
 
 # Set the page configuration to wide mode
@@ -401,7 +401,7 @@ with st.container():
     st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Documents Retrieved by All Systems</span></h3>""", unsafe_allow_html=True)
 
     if 'me_selected_runs' not in st.session_state or len(st.session_state.me_selected_runs) < 2:
-        st.warning("Please select at least two retrieval experiments to begin your evaluation.", icon="⚠️")
+        st.warning("Please select at least two retrieval experiments to begin your evaluation.", icon="⚠")
     else:
         st.write("""
         This analysis identifies documents that are retrieved by all selected retrieval systems within a specified cutoff rank.
@@ -467,3 +467,57 @@ with st.container():
 st.divider()
 
 
+# Precision/Recall Curve
+with st.container():
+    st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Precision/Recall Curve</span></h3>""", unsafe_allow_html=True)
+
+    if 'me_selected_qrels' not in st.session_state:
+        st.warning("Please select retrieval experiment and qrels to begin your evaluation.", icon="⚠")
+    else:
+        st.session_state.relevance_threshold = st.slider(
+            "Select from the Available Relevance Thresholds (Slide)",
+            min_value=1,
+            max_value=2,
+            value=1,
+            key="slider3"
+        )
+
+        if 'prev_relevance_threshold' not in st.session_state:
+            st.session_state.prev_relevance_threshold = 1
+
+        if st.session_state.relevance_threshold != st.session_state.prev_relevance_threshold:
+            st.session_state.prev_relevance_threshold = st.session_state.relevance_threshold
+
+        if 'me_selected_runs' in st.session_state:
+            num_runs = len(st.session_state.me_selected_runs)
+            num_rows = math.ceil(num_runs / 2)
+
+            for i in range(num_rows):
+                cols = st.columns(2)
+                for j in range(2):
+                    run_index = i * 2 + j
+                    if run_index < num_runs:
+                        run_key, run_value = list(st.session_state.me_selected_runs.items())[run_index]
+
+                        with cols[j]:
+                            st.markdown(f"""#### Experiment: <span style="color:red;"> {str(run_key).replace('.txt', '').replace('.csv', '')}</span>""", unsafe_allow_html=True)
+
+                            # Generate and plot the precision-recall curve for this run
+                            prec_recall_graph = generate_prec_recall_graphs(st.session_state.relevance_threshold, st.session_state.me_selected_qrels, run_value)
+                            plot_precision_recall_curve(prec_recall_graph, st.session_state.relevance_threshold)
+
+st.divider()
+
+
+# Additional Analysis
+with st.container():
+    st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Personal Notes</span></h3>""", unsafe_allow_html=True)
+
+    st.text_area(
+        "Please add additional comments regarding this experiment.",
+        "",
+        key="placeholder",
+    )
+st.divider()
+
+st.markdown("""<h4 style="text-align:center;"><span style="color:red;">To export the report as PDF press (⌘+P or Ctrl+P)</span></h4>""", unsafe_allow_html=True)

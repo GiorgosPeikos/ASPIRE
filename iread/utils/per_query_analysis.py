@@ -2,6 +2,7 @@ import numpy as np
 import streamlit
 import streamlit as st
 
+
 @st.cache_data
 def get_frequently_retrieved_docs(runs, selected_cutoff):
     # Get unique query IDs and document IDs
@@ -40,3 +41,6 @@ def get_frequently_retrieved_docs(runs, selected_cutoff):
         frequent_docs.append((query_id, doc_id))
 
     return frequent_docs
+
+
+

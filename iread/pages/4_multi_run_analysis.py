@@ -3,8 +3,8 @@ import pandas as pd
 
 
 from utils.analysis_styling import color_max_min_column, color_max_min_row
-from utils.data import print_session_data, load_qrel_data, load_run_data
-from utils.evaluation_measures import initialize_results, return_available_measures, evaluate_single_run
+from utils.data_handler import print_session_data, load_qrel_data, load_run_data
+from utils.eval_core import initialize_results, return_available_measures, evaluate_single_run
 from utils.ui import query_selector, multi_run_selector
 
 print_session_data()

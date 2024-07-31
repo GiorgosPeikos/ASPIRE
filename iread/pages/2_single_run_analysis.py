@@ -4,9 +4,9 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
-from utils.data import load_run_data, load_qrel_data
-from utils.data import print_session_data, load_query_data
-from utils.evaluation_measures import (
+from utils.data_handler import load_run_data, load_qrel_data
+from utils.data_handler import print_session_data, load_query_data
+from utils.eval_core import (
     return_available_measures,
     evaluate_single_run,
     evaluate_single_run_custom,

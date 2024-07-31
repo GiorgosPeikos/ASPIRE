@@ -2,10 +2,10 @@ import os
 import math
 import pandas as pd
 import streamlit as st
-from utils.data import load_run_data, load_qrel_data, load_query_data
+from utils.data_handler import load_run_data, load_qrel_data, load_query_data
 from utils.ui import load_css
 from utils.eval_multiple_exp import evaluate_multiple_runs_custom, get_doc_intersection, get_docs_retrieved_by_all_systems
-from utils.evaluation_measures import evaluate_single_run, return_available_measures, get_relevant_and_unjudged, generate_prec_recall_graphs
+from utils.eval_core import evaluate_single_run, return_available_measures, get_relevant_and_unjudged, generate_prec_recall_graphs
 from utils.plots import dist_of_retrieved_docs, plot_precision_recall_curve
 
 # Set the page configuration to wide mode

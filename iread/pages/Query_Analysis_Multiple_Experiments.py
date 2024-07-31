@@ -3,10 +3,10 @@ import math
 import pandas as pd
 import numpy as np
 import streamlit as st
-from utils.data import load_run_data, load_qrel_data, load_query_data
+from utils.data_handler import load_run_data, load_qrel_data, load_query_data
 from utils.ui import load_css
 from utils.eval_multiple_exp import evaluate_multiple_runs_custom, get_doc_intersection, get_docs_retrieved_by_all_systems
-from utils.evaluation_measures import evaluate_single_run, return_available_measures, get_relevant_and_unjudged, generate_prec_recall_graphs
+from utils.eval_core import evaluate_single_run, return_available_measures, get_relevant_and_unjudged, generate_prec_recall_graphs
 from utils.plots import dist_of_retrieved_docs, plot_precision_recall_curve
 
 # Set the page configuration to wide mode
@@ -128,7 +128,7 @@ if 'qme_selected_queries' in st.session_state and not st.session_state.qme_selec
 
 # Per query Measure Performance Plots
 with st.container():
-    st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Median Retrieval Performance of the Selected Experiments</span></h3>""", unsafe_allow_html=True)
+    st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Query-based Experimental Evaluation</span></h3>""", unsafe_allow_html=True)
 
     if 'qme_selected_qrels' not in st.session_state:
         st.warning("Please select retrieval experiment and qrels to begin your evaluation.", icon="⚠")

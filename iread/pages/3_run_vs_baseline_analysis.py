@@ -5,8 +5,8 @@ import streamlit as st
 import matplotlib.pyplot as plt
 
 from utils.analysis_styling import color_max_min_column, color_max_min_row
-from utils.data import print_session_data, load_run_data, load_qrel_data
-from utils.evaluation_measures import (
+from utils.data_handler import print_session_data, load_run_data, load_qrel_data
+from utils.eval_core import (
     return_available_measures,
     initialize_results,
     evaluate_single_run,

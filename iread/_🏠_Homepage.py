@@ -10,7 +10,7 @@ def main():
     st.title("Interactive Dashboard for IR Evaluation")
     st.write(
         "This application allows you to analyze retrieval experiments, "
-        "compare multiple retrieval_runs, and obtain various visualizations."
+        "compare multiple retrieval experiments, and create various visualizations."
     )
 
 

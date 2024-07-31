@@ -1,6 +1,7 @@
 import os
 import math
 import pandas as pd
+import numpy as np
 import streamlit as st
 from utils.data import load_run_data, load_qrel_data, load_query_data
 from utils.ui import load_css
@@ -15,7 +16,7 @@ st.set_page_config(layout="wide")
 load_css("css/styles.css")
 
 # Title for the page
-st.markdown("""<div style="text-align: center;"><h1>Retrieval Evaluation Report of Multiple Experiments<h1></div>""", unsafe_allow_html=True)
+st.markdown("""<div style="text-align: center;"><h1>Query-based Analysis Across Multiple Experiments<h1></div>""", unsafe_allow_html=True)
 
 # Container for loading data
 with st.container():
@@ -68,8 +69,63 @@ if st.button("Begin the Experimental Evaluation!", key='me_stButtonCenter'):
             f"""<div style="text-align: center;">This experiment is associated with the <span style="color:red;">{queries_file}</span> queries.</div>""",
             unsafe_allow_html=True)
 
-st.divider()
+# Functionality that allows to randomly select queries for analysis, size and queries.
+if 'qme_selected_queries' in st.session_state and not st.session_state.qme_selected_queries.empty:
+    if len(st.session_state.qme_selected_queries) > 100:
+        with st.container():
+            st.write("""<h3>Query Sampling - <span style="color:red;">Sampling Queries to Facilitate Experiment Analysis</span></h3>""", unsafe_allow_html=True)
+
+            # Initialize random_state in session state if it doesn't exist
+            if 'random_state' not in st.session_state:
+                st.session_state.random_state = 42
+            if 'random_size' not in st.session_state:
+                st.session_state.random_size = 100
+
+            st.write(f"""<div style="text-align: center;">  ⚠️ Note: Too many available queries (<span style="color:red;">{len(st.session_state.qme_selected_queries)}</span>).
+            To enhance the following analysis, a random set will be used. Please select the following:</div>""", unsafe_allow_html=True)
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+                st.session_state.random_size = st.number_input(
+                    "Set Number of queries to be randomly selected (default: 49)",
+                    min_value=1,
+                    value=st.session_state.random_size,
+                    max_value=len(st.session_state.qme_selected_queries),
+                    step=1
+                )
+            with col2:
+                st.session_state.random_state = st.number_input(
+                    "Set random state for query selection (default: 42)",
+                    min_value=1,
+                    value=st.session_state.random_state,
+                    max_value=100,
+                    step=1
+                )
+
+            # Main content logic
+            st.write(f"""<div style="text-align: center;"> A total of <span style="color:red;">{st.session_state.random_size}</span> random queries have been
+            selected based on a random state equal to <span style="color:red;">{st.session_state.random_state}</span> and will be used for the upcoming analyses.</div>""", unsafe_allow_html=True)
+
+            st.session_state.qme_selected_queries_random = st.session_state.qme_selected_queries.sample(n=st.session_state.random_size, random_state=st.session_state.random_state)
+
+            st.write(f"""<div style="text-align: center;"> Number of randomly selected queries that would be used for analysis: <span style="color:red;"
+                >{len(st.session_state.qme_selected_queries_random)}</span></div>""", unsafe_allow_html=True)
+
+            query_ids = np.sort(st.session_state.qme_selected_queries_random.query_id.values)
+            query_ids_str = ", ".join(map(str, query_ids))
+            st.write(f"Selected Query (IDs): {query_ids_str}")
+
+            st.divider()
+    else:
+
+        st.session_state.qme_selected_queries_random = st.session_state.qme_selected_queries
+        st.write(f"""<div style="text-align: center;"> All <span style="color:red;">{len(st.session_state.qme_selected_queries_random)}</span> provided queries will be used for the 
+        following analyses.</div>""", unsafe_allow_html=True)
+
+        st.divider()
+
 
 # Overall Retrieval Characteristics
-
-
+with st.container():
+    st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Median Retrieval Performance Based on the Selected Experiments</span></h3>""", unsafe_allow_html=True)

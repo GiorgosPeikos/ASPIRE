@@ -348,7 +348,7 @@ with st.container():
 
     else:
         st.write("""
-             This analysis calculates the intersection of retrieved documents between a selected baseline run and other retrieval experiments.
+             This analysis calculates the intersection of retrieved documents between a selected baseline experiment and other retrieval experiments.
              It showcases the similarity between the document rankings across different retrieval approaches.
              """)
 
@@ -365,33 +365,36 @@ with st.container():
             selected_cutoff_inter = st.number_input("Top-ranked documents considered (ranking cutoff value):", min_value=1, value=10, max_value=1000, step=1, key='cutoff2')
 
         st.write(f"""
-               **Selected Baseline**: {st.session_state.baseline}. All other runs will be compared against this baseline.
+               **Selected Baseline**:  <span style="color:red;">{str(st.session_state.baseline).replace('.txt','').replace('.csv','')}</span>. All other experiments will be compared against this 
+               baseline.
 
-               **Cutoff Value**: {selected_cutoff_inter}. The cutoff value determines how many top-ranked documents from each run are considered in the intersection analysis.
-               """)
+               **Cutoff Value**: <span style="color:red;">{selected_cutoff_inter}</span>. The cutoff value determines how many top-ranked documents from each experiment are considered in the intersection analysis.
+               """, unsafe_allow_html=True)
 
         intersection_results = get_doc_intersection(st.session_state.me_selected_runs, st.session_state.baseline, selected_cutoff_inter)
 
         st.dataframe(intersection_results)
 
-        st.write(f"""
-        <span style="color:red;">**Interpretation**:</span>
+        with col1:
+            st.write(f"""
+                <span style="color:red;">**Interpretation**:</span>
+                
+                - Intersected Documents: The number of documents that appear in both the baseline and the compared experiments within the top <span style="color:red;">{selected_cutoff_inter}</span> results.
+                
+                - Total Documents: The total number of documents considered (number of queries × cutoff value).
+                
+                - Intersection Percentage: The percentage of documents that intersect, calculated as (Intersected Documents / Total Documents) × 100.
         
-        - Intersected Documents: The number of documents that appear in both the baseline and the compared run within the top {selected_cutoff_inter} results.
-        
-        - Total Documents: The total number of documents considered (number of queries × cutoff value).
-        
-        - Intersection Percentage: The percentage of documents that intersect, calculated as (Intersected Documents / Total Documents) × 100.
+                <span style="color:red;">A higher intersection percentage indicates greater similarity with the baseline results.</span>
+                """, unsafe_allow_html=True)
 
-        <span style="color:red;">A higher intersection percentage indicates greater similarity with the baseline results.</span>
-        """, unsafe_allow_html=True)
-
-        st.write("""
+        with col2:
+            st.write("""
                <span style="color:red;">**Potential Next Steps**:</span>
-               1. Analyze runs with high intersection percentages to understand what makes them similar to the baseline.
-               2. Investigate runs with low intersection percentages to determine if they're introducing beneficial diversity or potentially underperforming.
-               3. Conduct a query-level analysis to identify which types of queries lead to high or low intersection across runs.
-               5. Consider combining systems with low intersection to potentially improve overall performance.
+               - Analyze experiments with high intersection percentages to understand what makes them similar to the baseline.
+               - Investigate experiments with low intersection percentages to determine if they're introducing beneficial diversity or are potentially underperforming.
+               - Conduct a query-level analysis to identify which types of queries lead to high or low intersection across experiments.
+               - Consider combining systems with low intersection to potentially improve overall performance.
                """, unsafe_allow_html=True)
 
 st.divider()
@@ -420,7 +423,7 @@ with st.container():
                 key='cutoff_retrieved_docs'
             )
             st.write(f"""
-            **Cutoff Value**: {selected_cutoff}. The analysis considers the top {selected_cutoff} ranked documents for each query across all runs.
+            **Cutoff Value**: {selected_cutoff}. The analysis considers the top {selected_cutoff} ranked documents for each query across all experiments.
             """)
 
         with col2:
@@ -447,20 +450,24 @@ with st.container():
         if retrieved_docs:
             st.write(", ".join(map(str, retrieved_docs)))
 
-            st.write("""
-                   <span style="color:red;">**Interpretation**:</span>
-                   - The query IDs listed above represent queries where at least one document was retrieved by all systems within the specified cutoff.
-                   - For instance, if the cutoff value is 1, the analysis presents those queries for which all systems retrieve the same document in the 1st rank position.
-                   - The documents listed are a sample of those retrieved by all systems, prioritized by frequency across queries. Sample size can be adjusted.
-                   - These documents may be highly relevant to multiple queries or represent core content in your collection.
-                   - Their consistent retrieval across all systems suggests they are important in the context of your retrieval task.
-
-                   <span style="color:red;">**Potential Next Steps**:</span>
-                   1. Examine the listed queries to understand what types of information needs lead to consistent retrieval across systems.
-                   2. Analyze the sample documents to identify characteristics that make them consistently retrievable across the identified queries.
-                   3. If the number of queries or documents is lower than expected, consider increasing the cutoff value or investigating differences in retrieval approaches.
-                   4. Use these results as a starting point for in-depth relevance assessment or to refine your retrieval approaches.
-                   """, unsafe_allow_html=True)
+            with col1:
+                st.write("""
+                       <span style="color:red;">**Interpretation**:</span>
+                       
+                       - The query IDs listed above represent queries where at least one document was retrieved by all systems within the specified cutoff.
+                       - For instance, if the cutoff value is 1, the analysis presents those queries for which all systems retrieve the same document in the 1st rank position.
+                       - The documents listed are a sample of those retrieved by all systems, prioritized by frequency across queries. Sample size can be adjusted.
+                       - These documents may be highly relevant to multiple queries or represent core content in your collection.
+                       - Their consistent retrieval across all systems suggests they are important in the context of your retrieval task.""", unsafe_allow_html=True)
+            with col2:
+                st.write("""
+                        <span style="color:red;">**Potential Next Steps**:</span>
+                        
+                       - Examine the listed queries to understand what types of information needs lead to consistent retrieval across systems.
+                       - Analyze the sample documents to identify characteristics that make them consistently retrievable across the identified queries.
+                       - If the number of queries or documents is lower than expected, consider increasing the cutoff value or investigating differences in retrieval approaches.
+                       - Use these results as a starting point for in-depth relevance assessment or to refine your retrieval approaches.
+                       """, unsafe_allow_html=True)
         else:
             st.write(f"No documents were retrieved by all systems in the top {selected_cutoff} results.")
 

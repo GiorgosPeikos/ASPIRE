@@ -8,6 +8,7 @@ from utils.ui import load_css
 from utils.eval_multiple_exp import evaluate_multiple_runs_custom, get_doc_intersection, get_docs_retrieved_by_all_systems
 from utils.eval_core import evaluate_single_run, return_available_measures, get_relevant_and_unjudged, generate_prec_recall_graphs
 from utils.plots import dist_of_retrieved_docs, plot_precision_recall_curve
+from utils.eval_per_query import *
 
 # Set the page configuration to wide mode
 st.set_page_config(layout="wide")
@@ -129,8 +130,162 @@ if 'qme_selected_queries' in st.session_state and not st.session_state.qme_selec
 # Per query Measure Performance Plots
 with st.container():
     st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Query-based Experimental Evaluation</span></h3>""", unsafe_allow_html=True)
+    _, _, custom_user, default_measures, _, _ = return_available_measures()
 
     if 'qme_selected_qrels' not in st.session_state:
         st.warning("Please select retrieval experiment and qrels to begin your evaluation.", icon="⚠")
     else:
-        st.write("ME")
+        # Get the list of selected run files
+        selected_runs_files = list(st.session_state.qme_selected_runs.keys())
+
+        st.session_state.qme_relevance_threshold = st.slider(
+            "Select from the Available Relevance Thresholds (Slide)",
+            min_value=1,
+            max_value=2,
+            value=1,
+            key="me_slider2"
+        )
+
+        if 'me_prev_relevance_threshold' not in st.session_state:
+            st.session_state.qme_prev_relevance_threshold = 1
+
+        if st.session_state.qme_relevance_threshold != st.session_state.qme_prev_relevance_threshold:
+            st.session_state.qme_prev_relevance_threshold = st.session_state.qme_relevance_threshold
+
+        # Create columns
+        col1, col2 = st.columns(2)  # Adjust the column width ratio as needed
+
+        with col1:
+
+            # Initialize session state variables if they don't exist
+            if 'selected_measures' not in st.session_state:
+                st.session_state.selected_measures = custom_user[0:4]  # Default selected measures
+
+            selected_measures = st.multiselect("Select additional measures:", custom_user, default=custom_user[1:5])
+
+        with col2:
+            if 'selected_cutoff' not in st.session_state:
+                st.session_state.selected_cutoff = 10  # Default cutoff value
+
+            selected_cutoff = st.number_input("Enter cutoff value:", min_value=1, value=10, max_value=1000, step=1)
+
+            # Update session state with current selections
+            st.session_state.selected_measures = selected_measures
+            st.session_state.selected_cutoff = selected_cutoff
+
+        if len(st.session_state.selected_measures) >= 1:
+            results = per_query_evaluation(st.session_state.qme_selected_qrels, st.session_state.qme_selected_runs, selected_measures, st.session_state.qme_relevance_threshold,
+                                           st.session_state.selected_cutoff,
+                                           None, None)
+
+            if len(st.session_state.qme_selected_runs) > 1:
+                # Analyze the results
+                analysis_results = analyze_performance(results)
+
+                # Display the analysis results in two columns
+                st.header("Performance Analysis")
+
+                col1, col2 = st.columns(2)
+
+                with col1:
+                    st.markdown("""
+                    This analysis identifies two key aspects of the retrieval performance:
+                    1. Queries with consistent performance across all experiments
+                    2. Queries with large performance gaps between experiments
+
+                    Consistent performance across experiments may indicate:
+                    - Robust retrieval methods for these queries
+                    - Potential ceiling or floor effects in the evaluation measure
+                    """)
+
+                with col2:
+                    st.markdown("""
+                    For identifying large performance gaps, we use the Interquartile Range (IQR) method:
+                    - We calculate the IQR for each measure across all queries and experiments.
+                    - A performance gap is considered 'large' if it's greater than 1.5 times the IQR.
+                    - This method adapts to each measure's scale and distribution, providing meaningful insights.
+
+                    Large gaps may indicate:
+                    - Sensitivity to specific experimental conditions
+                    - Potential areas for focused improvement or investigation
+
+                    [More information about IQR](https://en.wikipedia.org/wiki/Interquartile_range)
+                    """)
+
+                st.markdown("---")
+
+                # Create a list of measures
+                measures = list(analysis_results.keys())
+
+                # Calculate the number of rows needed (ceiling division by 2)
+                num_rows = math.ceil(len(measures) / 2)
+
+                # Create rows and columns
+                for i in range(num_rows):
+                    col1, col2 = st.columns(2)
+
+                    # First column
+                    if i * 2 < len(measures):
+                        measure = measures[i * 2]
+                        with col1:
+                            st.subheader(f"Analysis for {measure}")
+
+                            same_performance = analysis_results[measure]["same_performance"]
+                            if same_performance:
+                                st.write(f"Queries with consistent performance: {', '.join(map(str, same_performance))}")
+                                st.write("Possible indications:")
+                                st.write("- Robust retrieval for these queries")
+                                st.write("- Potential ceiling or floor effects")
+                            else:
+                                st.write("No queries with consistent performance.")
+                                st.write("Suggests significant variability across experiments.")
+
+                            large_gaps = analysis_results[measure]["large_gaps"]
+                            threshold = analysis_results[measure]["threshold"]
+                            if large_gaps:
+                                st.write(f"Queries with large performance gaps (1.5xIQR = {threshold:.3f}):")
+                                for query_id, min_val, max_val, _ in large_gaps:
+                                    st.write(f"  Query {query_id}: min = {min_val:.3f}, max = {max_val:.3f}, gap = {max_val - min_val:.3f}")
+                                st.write("Possible indications:")
+                                st.write("- Sensitivity to experimental conditions")
+                                st.write("- Areas for focused improvement")
+                            else:
+                                st.write("No queries with large performance gaps.")
+                                st.write("Suggests consistent performance across experiments.")
+
+                    # Second column
+                    if i * 2 + 1 < len(measures):
+                        measure = measures[i * 2 + 1]
+                        with col2:
+                            st.subheader(f"Analysis for {measure}")
+
+                            same_performance = analysis_results[measure]["same_performance"]
+                            if same_performance:
+                                st.write(f"Queries with consistent performance: {', '.join(map(str, same_performance))}")
+                                st.write("Possible indications:")
+                                st.write("- Robust retrieval for these queries")
+                                st.write("- Potential ceiling or floor effects")
+                            else:
+                                st.write("No queries with consistent performance.")
+                                st.write("Suggests significant variability across experiments.")
+
+                            large_gaps = analysis_results[measure]["large_gaps"]
+                            threshold = analysis_results[measure]["threshold"]
+                            if large_gaps:
+                                st.write(f"Queries with large performance gaps (1.5xIQR = {threshold:.3f}):")
+                                for query_id, min_val, max_val, _ in large_gaps:
+                                    st.write(f"  Query {query_id}: min = {min_val:.3f}, max = {max_val:.3f}, gap = {max_val - min_val:.3f}")
+                                st.write("Possible indications:")
+                                st.write("- Sensitivity to experimental conditions")
+                                st.write("- Areas for focused improvement")
+                            else:
+                                st.write("No queries with large performance gaps.")
+                                st.write("Suggests consistent performance across experiments.")
+
+                    st.write("---")
+            else:
+                st.divider()
+
+        else:
+            st.warning("Please select at least one measure to begin your evaluation.", icon="⚠")
+            st.divider()

@@ -6,6 +6,7 @@ import ir_measures
 from ir_measures import *
 from utils.eval_single_exp import *
 from collections import defaultdict, Counter
+from utils.eval_core import *
 
 
 def calculate_evaluation(parsed_metric, qrel, run_data):

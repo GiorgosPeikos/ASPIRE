@@ -4,6 +4,103 @@ import streamlit as st
 import statistics
 import ir_measures
 from utils.eval_single_exp import *
+from utils.eval_multiple_exp import *
+from collections import defaultdict, Counter
+from utils.plots import *
+from utils.eval_core import *
+
+
+@st.cache_data
+def per_query_evaluation(qrel, runs, metric_list, relevance_threshold, selected_cutoff, baseline_run, threshold_value):
+    results_per_run = {}
+    parsed_metrics = []
+
+    # Parse each metric in metric_list
+    for metric in metric_list:
+        parsed_metric = metric_parser(metric, relevance_threshold, selected_cutoff)
+        parsed_metrics.append(parsed_metric)
+
+    # Calculate evaluation results for each other experiment and collect p-values
+        for run_name, run_data in runs.items():
+            experiment = get_experiment_name(run_name, None)
+            results_per_run[experiment] = {}
+            for parsed_metric in parsed_metrics:
+                results_per_run[experiment][str(parsed_metric)] = calculate_evaluation(parsed_metric, qrel, run_data)
+
+    if baseline_run:
+        # call function to estimate the performance for each query on the baseline.
+        return
+
+    if threshold_value:
+        # call function that estimate the performance to this threshold, default value is the median performance of all runs per query.
+        return
+
+    if threshold_value and baseline_run:
+        # call function that estimate the performance to this threshold, default value is the median performance of all runs per query.
+        return
+
+    # Call the plot function
+    plot_performance_measures_per_q(results_per_run)
+
+    return results_per_run
+
+
+@st.cache_data
+def find_same_performance_queries(data, runs, measure, max_queries):
+    same_performance = []
+    for query_id in range(max_queries):
+        values = [data[run][measure][measure][query_id] if query_id < len(data[run][measure][measure]) else None for run in runs]
+        if all(v is not None and abs(v - values[0]) < 1e-6 for v in values):  # Using small epsilon for float comparison
+            same_performance.append(query_id + 1)  # +1 to make it 1-indexed
+    return same_performance
+
+
+@st.cache_data
+def find_large_gap_queries(data, runs, measure, max_queries):
+    large_gaps = []
+    all_values = []
+
+    # Collect all values for this measure across all runs and queries
+    for run in runs:
+        all_values.extend(data[run][measure][measure])
+
+    # Calculate Q1, Q3, and IQR
+    q1 = np.percentile(all_values, 25)
+    q3 = np.percentile(all_values, 75)
+    iqr = q3 - q1
+
+    # Define the threshold as 1.5 times the IQR
+    threshold = 1.5 * iqr
+
+    for query_id in range(max_queries):
+        values = [data[run][measure][measure][query_id] if query_id < len(data[run][measure][measure]) else None for run in runs]
+        values = [v for v in values if v is not None]
+        if values and max(values) - min(values) > threshold:
+            large_gaps.append((query_id + 1, min(values), max(values), threshold))
+
+    return large_gaps, threshold
+
+
+def analyze_performance(data):
+    # Extract measures and runs
+    eval_measures = list(data[list(data.keys())[0]].keys())
+    runs = list(data.keys())
+
+    # Determine the maximum number of queries
+    max_queries = max(len(data[run][measure][measure]) for run in runs for measure in eval_measures)
+
+    results = {}
+    for measure in eval_measures:
+        same_performance = find_same_performance_queries(data, runs, measure, max_queries)
+        large_gaps, threshold = find_large_gap_queries(data, runs, measure, max_queries)
+
+        results[measure] = {
+            "same_performance": same_performance,
+            "large_gaps": large_gaps,
+            "threshold": threshold
+        }
+
+    return results
 
 
 @st.cache_data
@@ -44,31 +141,6 @@ def get_frequently_retrieved_docs(runs, selected_cutoff):
         frequent_docs.append((query_id, doc_id))
 
     return frequent_docs
-
-
-@st.cache_data()
-def per_query_evaluation(qrel, run, metric, cutoff, relevance_threshold):
-    # Check if metric contains '@' and split if it does
-    # Check if the measure supports a relevance threshold
-    if metric in measures_with_rel_param and metric in measures_with_cutoff:
-        # Format the new measure string with the relevance threshold
-        new_metric_str = f"{metric}(rel={relevance_threshold})@{cutoff}"
-    else:
-        # For metrics without cutoff, use the base metric directly
-        if metric in measures_with_rel_param:
-            new_metric_str = f"{metric}(rel={relevance_threshold})"
-        elif metric in measures_with_cutoff:
-            new_metric_str = f"{metric}@{cutoff}"
-        else:
-            new_metric_str = metric
-
-    # Parse the new metric using ir_measures
-    parsed_metric = ir_measures.parse_measure(new_metric_str)
-
-    # Calculate the evaluation using the parsed metric
-    res_eval = list(ir_measures.iter_calc([parsed_metric], qrel, run))
-
-    return parsed_metric, res_eval
 
 
 @st.cache_data()

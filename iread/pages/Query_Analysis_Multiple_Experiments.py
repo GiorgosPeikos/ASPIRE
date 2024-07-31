@@ -77,10 +77,10 @@ if 'qme_selected_queries' in st.session_state and not st.session_state.qme_selec
             st.write("""<h3>Query Sampling - <span style="color:red;">Sampling Queries to Facilitate Experiment Analysis</span></h3>""", unsafe_allow_html=True)
 
             # Initialize random_state in session state if it doesn't exist
-            if 'random_state' not in st.session_state:
-                st.session_state.random_state = 42
-            if 'random_size' not in st.session_state:
-                st.session_state.random_size = 100
+            if 'qme_random_state' not in st.session_state:
+                st.session_state.qme_random_state = 42
+            if 'qme_random_size' not in st.session_state:
+                st.session_state.qme_random_size = 100
 
             st.write(f"""<div style="text-align: center;">  ⚠️ Note: Too many available queries (<span style="color:red;">{len(st.session_state.qme_selected_queries)}</span>).
             To enhance the following analysis, a random set will be used. Please select the following:</div>""", unsafe_allow_html=True)
@@ -88,27 +88,27 @@ if 'qme_selected_queries' in st.session_state and not st.session_state.qme_selec
             col1, col2 = st.columns(2)
 
             with col1:
-                st.session_state.random_size = st.number_input(
+                st.session_state.qme_random_size = st.number_input(
                     "Set Number of queries to be randomly selected (default: 49)",
                     min_value=1,
-                    value=st.session_state.random_size,
+                    value=st.session_state.qme_random_size,
                     max_value=len(st.session_state.qme_selected_queries),
                     step=1
                 )
             with col2:
-                st.session_state.random_state = st.number_input(
+                st.session_state.qme_random_state = st.number_input(
                     "Set random state for query selection (default: 42)",
                     min_value=1,
-                    value=st.session_state.random_state,
+                    value=st.session_state.qme_random_state,
                     max_value=100,
                     step=1
                 )
 
             # Main content logic
-            st.write(f"""<div style="text-align: center;"> A total of <span style="color:red;">{st.session_state.random_size}</span> random queries have been
-            selected based on a random state equal to <span style="color:red;">{st.session_state.random_state}</span> and will be used for the upcoming analyses.</div>""", unsafe_allow_html=True)
+            st.write(f"""<div style="text-align: center;"> A total of <span style="color:red;">{st.session_state.qme_random_size}</span> random queries have been
+            selected based on a random state equal to <span style="color:red;">{st.session_state.qme_random_state}</span> and will be used for the upcoming analyses.</div>""", unsafe_allow_html=True)
 
-            st.session_state.qme_selected_queries_random = st.session_state.qme_selected_queries.sample(n=st.session_state.random_size, random_state=st.session_state.random_state)
+            st.session_state.qme_selected_queries_random = st.session_state.qme_selected_queries.sample(n=st.session_state.qme_random_size, random_state=st.session_state.qme_random_state)
 
             st.write(f"""<div style="text-align: center;"> Number of randomly selected queries that would be used for analysis: <span style="color:red;"
                 >{len(st.session_state.qme_selected_queries_random)}</span></div>""", unsafe_allow_html=True)
@@ -146,7 +146,7 @@ with st.container():
             key="me_slider2"
         )
 
-        if 'me_prev_relevance_threshold' not in st.session_state:
+        if 'qme_prev_relevance_threshold' not in st.session_state:
             st.session_state.qme_prev_relevance_threshold = 1
 
         if st.session_state.qme_relevance_threshold != st.session_state.qme_prev_relevance_threshold:
@@ -158,24 +158,24 @@ with st.container():
         with col1:
 
             # Initialize session state variables if they don't exist
-            if 'selected_measures' not in st.session_state:
-                st.session_state.selected_measures = custom_user[0:4]  # Default selected measures
+            if 'qme_selected_measures' not in st.session_state:
+                st.session_state.qme_selected_measures = custom_user[0:4]  # Default selected measures
 
             selected_measures = st.multiselect("Select additional measures:", custom_user, default=custom_user[1:5])
 
         with col2:
-            if 'selected_cutoff' not in st.session_state:
-                st.session_state.selected_cutoff = 10  # Default cutoff value
+            if 'qme_selected_cutoff' not in st.session_state:
+                st.session_state.qme_selected_cutoff = 10  # Default cutoff value
 
             selected_cutoff = st.number_input("Enter cutoff value:", min_value=1, value=10, max_value=1000, step=1)
 
             # Update session state with current selections
-            st.session_state.selected_measures = selected_measures
-            st.session_state.selected_cutoff = selected_cutoff
+            st.session_state.qme_selected_measures = selected_measures
+            st.session_state.qme_selected_cutoff = selected_cutoff
 
-        if len(st.session_state.selected_measures) >= 1:
-            results = per_query_evaluation(st.session_state.qme_selected_qrels, st.session_state.qme_selected_runs, selected_measures, st.session_state.qme_relevance_threshold,
-                                           st.session_state.selected_cutoff,
+        if len(st.session_state.qme_selected_measures) >= 1:
+            results = per_query_evaluation(st.session_state.qme_selected_qrels, st.session_state.qme_selected_runs, st.session_state.qme_selected_measures, st.session_state.qme_relevance_threshold,
+                                           st.session_state.qme_selected_cutoff,
                                            None, None)
 
             if len(st.session_state.qme_selected_runs) > 1:
@@ -289,3 +289,60 @@ with st.container():
         else:
             st.warning("Please select at least one measure to begin your evaluation.", icon="⚠")
             st.divider()
+
+
+# Per query Measure Performance Plots Comparison with a Baseline Run
+with st.container():
+    st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Query-based Experimental Evaluation</span> Vs <span style="color:red;">Baseline</span></h3>""", unsafe_allow_html=True)
+    _, _, custom_user, default_measures, _, _ = return_available_measures()
+
+    if 'qme_selected_runs' not in st.session_state or len(st.session_state.qme_selected_runs) < 2:
+        st.warning("This analysis requires at least two retrieval experiments to be selected.", icon="⚠")
+
+    else:
+        # Get the list of selected run files
+        selected_runs_files = list(st.session_state.qme_selected_runs.keys())
+
+        st.session_state.qme_relevance_threshold = st.slider(
+            "Select from the Available Relevance Thresholds (Slide)",
+            min_value=1,
+            max_value=2,
+            value=1,
+            key="me_slider3"
+        )
+
+        if 'qme_prev_relevance_threshold' not in st.session_state:
+            st.session_state.qme_prev_relevance_threshold = 1
+
+        if st.session_state.qme_relevance_threshold != st.session_state.qme_prev_relevance_threshold:
+            st.session_state.qme_prev_relevance_threshold = st.session_state.qme_relevance_threshold
+
+        # Create columns
+        col1, col2 = st.columns(2)  # Adjust the column width ratio as needed
+
+        with col1:
+
+            # Initialize session state variables if they don't exist
+            if 'qme_selected_measures' not in st.session_state:
+                st.session_state.qme_selected_measures = custom_user[1:2]  # Default selected measures
+
+            selected_measures = st.selectbox("Select an evaluation measures:", custom_user)
+
+        with col2:
+            if 'qme_selected_cutoff' not in st.session_state:
+                st.session_state.qme_selected_cutoff = 10  # Default cutoff value
+
+            selected_cutoff = st.number_input("Enter cutoff value:", min_value=1, value=10, max_value=1000, step=1, key="cutoff3")
+
+            # Update session state with current selections
+            st.session_state.qme_selected_measures = selected_measures
+            st.session_state.qme_selected_cutoff = selected_cutoff
+
+        if selected_runs_files:
+            # Add a selectbox to choose the baseline run
+            st.session_state.qme_baseline = st.selectbox(
+                "Select a baseline run file:",
+                list(st.session_state.qme_selected_runs.keys())
+            )
+
+

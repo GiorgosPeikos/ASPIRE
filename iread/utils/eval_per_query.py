@@ -15,20 +15,32 @@ def per_query_evaluation(qrel, runs, metric_list, relevance_threshold, selected_
     results_per_run = {}
     parsed_metrics = []
 
-    # Parse each metric in metric_list
-    for metric in metric_list:
-        parsed_metric = metric_parser(metric, relevance_threshold, selected_cutoff)
-        parsed_metrics.append(parsed_metric)
+    if baseline_run is None:
+        # Parse each metric in metric_list
+        for metric in metric_list:
+            parsed_metric = metric_parser(metric, relevance_threshold, selected_cutoff)
+            parsed_metrics.append(parsed_metric)
 
-    # Calculate evaluation results for each other experiment and collect p-values
+            # Calculate evaluation results for each other experiment and collect p-values
+            for run_name, run_data in runs.items():
+                experiment = get_experiment_name(run_name, baseline_run)
+                results_per_run[experiment] = {}
+                for parsed_metric in parsed_metrics:
+                    results_per_run[experiment][str(parsed_metric)] = calculate_evaluation(parsed_metric, qrel, run_data)
+
+        # Call the plot function
+        plot_performance_measures_per_q(results_per_run)
+
+        return results_per_run
+
+    elif baseline_run is not None:
         for run_name, run_data in runs.items():
-            experiment = get_experiment_name(run_name, None)
-            results_per_run[experiment] = {}
-            for parsed_metric in parsed_metrics:
-                results_per_run[experiment][str(parsed_metric)] = calculate_evaluation(parsed_metric, qrel, run_data)
+            if run_name == baseline_run:
+                experiment = get_experiment_name(run_name, baseline_run)
+                results_per_run[experiment] = {}
+                for parsed_metric in parsed_metrics:
+                    results_per_run[experiment][str(parsed_metric)] = calculate_evaluation(parsed_metric, qrel, run_data)
 
-    if baseline_run:
-        # call function to estimate the performance for each query on the baseline.
         return
 
     if threshold_value:
@@ -38,11 +50,6 @@ def per_query_evaluation(qrel, runs, metric_list, relevance_threshold, selected_
     if threshold_value and baseline_run:
         # call function that estimate the performance to this threshold, default value is the median performance of all runs per query.
         return
-
-    # Call the plot function
-    plot_performance_measures_per_q(results_per_run)
-
-    return results_per_run
 
 
 @st.cache_data

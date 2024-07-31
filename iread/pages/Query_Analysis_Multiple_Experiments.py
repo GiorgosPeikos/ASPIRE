@@ -126,6 +126,11 @@ if 'qme_selected_queries' in st.session_state and not st.session_state.qme_selec
         st.divider()
 
 
-# Overall Retrieval Characteristics
+# Per query Measure Performance Plots
 with st.container():
-    st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Median Retrieval Performance Based on the Selected Experiments</span></h3>""", unsafe_allow_html=True)
+    st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Median Retrieval Performance of the Selected Experiments</span></h3>""", unsafe_allow_html=True)
+
+    if 'qme_selected_qrels' not in st.session_state:
+        st.warning("Please select retrieval experiment and qrels to begin your evaluation.", icon="⚠")
+    else:
+        st.write("ME")

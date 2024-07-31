@@ -4,7 +4,7 @@ from scipy import stats
 import statsmodels.stats.multitest
 import ir_measures
 from ir_measures import *
-from utils.run_analysis import *
+from utils.eval_single_exp import *
 from collections import defaultdict, Counter
 
 

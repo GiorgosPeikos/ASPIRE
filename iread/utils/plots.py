@@ -4,7 +4,7 @@ import streamlit as st
 import matplotlib.pyplot as plt
 from collections import defaultdict
 import plotly.graph_objects as go
-from utils.run_analysis import *
+from utils.eval_single_exp import *
 
 
 # Function to create a bar plot for evaluation results

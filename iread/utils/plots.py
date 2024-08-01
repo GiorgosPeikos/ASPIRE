@@ -448,4 +448,88 @@ def plot_performance_and_median_per_experiment(data):
         st.subheader(f"Experiment: {run}")
         st.plotly_chart(fig, use_container_width=True)
 
+@st.cache_data
+def plot_performance_difference_threshold(data, threshold):
+    # Extract measures and runs
+    eval_measures = list(data[list(data.keys())[0]].keys())
+    runs = list(data.keys())
 
+    for run in runs:
+        # Determine the maximum number of queries for this run
+        max_queries = max(len(data[run][measure][measure]) for measure in eval_measures)
+
+        # Create a subplot for each measure within this run
+        fig = make_subplots(rows=len(eval_measures), cols=1, subplot_titles=eval_measures, vertical_spacing=0.1)
+
+        for i, measure in enumerate(eval_measures, start=1):
+            run_values = data[run][measure][measure]
+
+            # Calculate the difference from the threshold
+            diff_values = [run_val - threshold for run_val in run_values]
+            x_values = list(range(1, len(diff_values) + 1))
+
+            fig.add_trace(
+                go.Bar(
+                    x=x_values,
+                    y=diff_values,
+                    name=measure,
+                    marker_color='blue',
+                    opacity=0.8,
+                    showlegend=False,
+                    hovertemplate='Query: %{x}<br>Actual Performance: %{customdata:.3f}<br>Difference: %{y:.3f}<extra></extra>',
+                    customdata=run_values  # Add actual performance values for hover
+                ),
+                row=i, col=1
+            )
+
+            # Add a horizontal line at y=0
+            fig.add_shape(
+                type="line",
+                x0=0.5,
+                x1=max_queries + 0.5,
+                y0=0,
+                y1=0,
+                line=dict(color="black", width=1, dash="dash"),
+                row=i,
+                col=1
+            )
+
+            # Update y-axis title
+            fig.update_yaxes(title_text=f"{measure} Difference", row=i, col=1)
+
+            # Update x-axis settings
+            if max_queries > 20:  # If there are many queries, show every 5th tick
+                fig.update_xaxes(
+                    title_text='Query ID',
+                    tickmode='array',
+                    tickvals=list(range(1, max_queries + 1, 5)),
+                    ticktext=[str(x) for x in range(1, max_queries + 1, 5)],
+                    tickangle=90,
+                    range=[0.5, max_queries + 0.5],
+                    row=i, col=1
+                )
+            else:
+                fig.update_xaxes(
+                    title_text='Query ID',
+                    tickmode='linear',
+                    tick0=1,
+                    dtick=1,
+                    range=[0.5, max_queries + 0.5],
+                    row=i, col=1
+                )
+
+        # Update layout
+        fig.update_layout(
+            height=550 * len(eval_measures),
+            title={
+                'text': f"Performance Difference for {run} (Threshold: {threshold})",
+                'x': 0.01,
+                'xanchor': 'left',
+                'yanchor': 'top'
+            },
+            showlegend=False
+        )
+
+        # Display the plot in Streamlit
+        st.subheader(f"Experiment: {run}")
+        st.plotly_chart(fig, use_container_width=True)

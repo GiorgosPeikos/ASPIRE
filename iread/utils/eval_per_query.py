@@ -107,6 +107,8 @@ def per_query_evaluation(qrel, runs, metric_list, relevance_threshold, selected_
             for parsed_metric in parsed_metrics:
                 results_per_run[experiment][str(parsed_metric)] = calculate_evaluation(parsed_metric, qrel, run_data)
 
+        plot_performance_difference_threshold(results_per_run, threshold_value)
+
         return results_per_run
 
     elif threshold_value and baseline_run:

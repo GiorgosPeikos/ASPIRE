@@ -518,7 +518,7 @@ with st.container():
             if 'qme_selected_measures' not in st.session_state:
                 st.session_state.qme_selected_measures = custom_user[1:2]  # Default selected measures
 
-            selected_measures = st.multiselect("Select additional measures:", custom_user, default=custom_user[1:3], key="multiselect_4")
+            selected_measures = st.multiselect("Select additional measures:", custom_user, default=custom_user[1:2], key="multiselect_4")
 
         with col2:
             if 'qme_selected_cutoff' not in st.session_state:
@@ -530,4 +530,16 @@ with st.container():
             st.session_state.qme_selected_measures = selected_measures
             st.session_state.qme_selected_cutoff = selected_cutoff
 
+        st.write("""If value is 0.0 (default), it compares the per query retrieval performance of the N experiment to a threshold value equal to the median performance of the selected measures, "
+                 "computed based on N-1 experiments.
+                 Otherwise, you can select any threshold [0.0,1.0]""")
+
+        st.session_state.qme_comparison_thresh = st.number_input("Select a performance threshold (will be the same across queries):", min_value=0., value=0., max_value=1.0, step=.05,
+                                                                 key="cutoff_5")
+
+        results = per_query_evaluation(st.session_state.qme_selected_qrels, st.session_state.qme_selected_runs, st.session_state.qme_selected_measures, st.session_state.qme_relevance_threshold,
+                                       st.session_state.qme_selected_cutoff,
+                                       None, st.session_state.qme_comparison_thresh)
+
+        st.write(results)
 

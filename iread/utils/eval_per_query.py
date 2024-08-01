@@ -8,6 +8,42 @@ from utils.eval_multiple_exp import *
 from collections import defaultdict, Counter
 from utils.plots import *
 from utils.eval_core import *
+from typing import Dict, Any, List
+
+
+@st.cache_data
+def calculate_median_metrics(results_per_run: Dict[str, Dict[str, Dict[str, List[float]]]]) -> Dict[str, Dict[str, List[float]]]:
+    """
+    Calculate median metric values across N-1 experiments for each query.
+
+    This function computes the median value for each metric and query,
+    considering all experiments except the current one.
+
+    Args:
+    results_per_run (Dict[str, Dict[str, Dict[str, List[float]]]]): A nested dictionary
+        containing evaluation results for each experiment, metric, and query.
+
+    Returns:
+    Dict[str, Dict[str, List[float]]]: A dictionary with median values for each experiment and metric.
+    """
+    median_results = {}
+    experiments = list(results_per_run.keys())
+    metrics = list(results_per_run[experiments[0]].keys())
+    num_queries = len(results_per_run[experiments[0]][metrics[0]][metrics[0]])
+
+    for current_exp in experiments:
+        median_results[current_exp] = {}
+        for metric in metrics:
+            other_exps = [exp for exp in experiments if exp != current_exp]
+            median_values = []
+
+            for query_idx in range(num_queries):
+                other_values = [results_per_run[exp][metric][metric][query_idx] for exp in other_exps]
+                median_values.append(statistics.median(other_values))
+
+            median_results[current_exp][f"median_{metric}"] = median_values
+
+    return median_results
 
 
 @st.fragment
@@ -21,7 +57,7 @@ def per_query_evaluation(qrel, runs, metric_list, relevance_threshold, selected_
         parsed_metric = metric_parser(metric, relevance_threshold, selected_cutoff)
         parsed_metrics.append(parsed_metric)
 
-    if baseline_run is None:
+    if baseline_run is None and threshold_value is None:
         # Calculate evaluation results for each other experiment and collect p-values
         for run_name, run_data in runs.items():
             experiment = get_experiment_name(run_name, baseline_run)
@@ -45,9 +81,33 @@ def per_query_evaluation(qrel, runs, metric_list, relevance_threshold, selected_
         plot_performance_difference(results_per_run)
         return results_per_run
 
-    elif threshold_value:
-        # call function that estimate the performance to this threshold, default value is the median performance of all runs per query.
-        return
+    # This is the default run. So the threshold value needs to be equal to the median of the N-1 values.
+    elif threshold_value == 0.0:
+        for run_name, run_data in runs.items():
+            experiment = get_experiment_name(run_name, baseline_run)
+            results_per_run[experiment] = {}
+            for parsed_metric in parsed_metrics:
+                results_per_run[experiment][str(parsed_metric)] = calculate_evaluation(parsed_metric, qrel, run_data)
+
+        # Calculate median metrics
+        median_results = calculate_median_metrics(results_per_run)
+
+        # Merge original results with median results
+        for experiment in results_per_run:
+            results_per_run[experiment].update(median_results[experiment])
+
+        plot_performance_and_median_per_experiment(results_per_run)
+        return results_per_run
+
+    # The user has selected a float value.
+    elif threshold_value != 0.0:
+        for run_name, run_data in runs.items():
+            experiment = get_experiment_name(run_name, baseline_run)
+            results_per_run[experiment] = {}
+            for parsed_metric in parsed_metrics:
+                results_per_run[experiment][str(parsed_metric)] = calculate_evaluation(parsed_metric, qrel, run_data)
+
+        return results_per_run
 
     elif threshold_value and baseline_run:
         # call function that estimate the performance to this threshold, default value is the median performance of all runs per query.
@@ -137,9 +197,9 @@ def analyze_performance_difference(results):
 
             # Compare each query's performance
             diff_values = [run_val - baseline_val for run_val, baseline_val in zip(run_values, baseline_values)]
-            improved_queries = [i+1 for i, diff in enumerate(diff_values) if diff > 0]
-            degraded_queries = [i+1 for i, diff in enumerate(diff_values) if diff < 0]
-            unchanged_queries = [i+1 for i, diff in enumerate(diff_values) if diff == 0]
+            improved_queries = [i + 1 for i, diff in enumerate(diff_values) if diff > 0]
+            degraded_queries = [i + 1 for i, diff in enumerate(diff_values) if diff < 0]
+            unchanged_queries = [i + 1 for i, diff in enumerate(diff_values) if diff == 0]
 
             # Calculate statistics
             avg_diff = np.mean(diff_values)
@@ -207,4 +267,3 @@ def get_frequently_retrieved_docs(runs, selected_cutoff):
         frequent_docs.append((query_id, doc_id))
 
     return frequent_docs
-

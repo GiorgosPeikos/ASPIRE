@@ -362,3 +362,90 @@ def plot_performance_difference(data):
 
     # Display the plot in Streamlit
     st.plotly_chart(fig, use_container_width=True)
+
+
+@st.cache_data
+def plot_performance_and_median_per_experiment(data):
+    runs = list(data.keys())
+    eval_measures = [measure for measure in data[runs[0]].keys() if not measure.startswith("median_")]
+
+    for run in runs:
+        # Create a subplot for each measure within this run
+        fig = make_subplots(rows=len(eval_measures), cols=1, subplot_titles=eval_measures)
+
+        max_queries = max(len(data[run][measure][measure]) for measure in eval_measures)
+
+        for i, measure in enumerate(eval_measures, start=1):
+            y_values = data[run][measure][measure]  # Access the nested level
+            median_values = data[run][f"median_{measure}"]
+            x_values = list(range(1, len(y_values) + 1))
+
+            # Add bar plot for performance
+            fig.add_trace(
+                go.Bar(
+                    x=x_values,
+                    y=y_values,
+                    name="Performance",
+                    marker_color='blue',
+                    opacity=0.8,
+                    hovertemplate='Query: %{x}<br>Performance: %{y:.3f}<extra></extra>'
+                ),
+                row=i, col=1
+            )
+
+            # Add scatter plot for median scores
+            fig.add_trace(
+                go.Scatter(
+                    x=x_values,
+                    y=median_values,
+                    mode='markers',
+                    marker=dict(color='red', symbol='star', size=8),
+                    name="Median",
+                    hovertemplate='Query: %{x}<br>Median: %{y:.3f}<extra></extra>'
+                ),
+                row=i, col=1
+            )
+
+            # Update y-axis title
+            fig.update_yaxes(title_text=f"{measure} Value", row=i, col=1)
+
+            # Update x-axis settings
+            if max_queries > 20:  # If there are many queries, show every 5th tick
+                fig.update_xaxes(
+                    title_text='Query ID',
+                    tickmode='array',
+                    tickvals=list(range(1, max_queries + 1, 5)),
+                    ticktext=[str(x) for x in range(1, max_queries + 1, 5)],
+                    tickangle=90,
+                    range=[0.5, max_queries + 0.5],
+                    row=i, col=1
+                )
+            else:
+                fig.update_xaxes(
+                    title_text='Query ID',
+                    tickmode='linear',
+                    tick0=1,
+                    dtick=1,
+                    range=[0.5, max_queries + 0.5],
+                    row=i, col=1
+                )
+
+        # Update layout
+        fig.update_layout(
+            height=300 * len(eval_measures),
+            title_text=f"Performance Measures and Median Scores for {run}",
+            showlegend=True,
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="right",
+                x=1
+            )
+        )
+
+        # Display the plot in Streamlit
+        st.subheader(f"Experiment: {run}")
+        st.plotly_chart(fig, use_container_width=True)
+
+

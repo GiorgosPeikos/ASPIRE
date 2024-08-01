@@ -11,7 +11,7 @@ import random
 
 
 # Function that displays the distribution of ranking position of all retrieved documents based on their relevance label.
-@st.fragment
+
 @st.cache_resource
 def dist_of_retrieved_docs(relevance_ret_pos: dict) -> None:
     # Define constants for bucket ranges
@@ -86,16 +86,15 @@ def dist_of_retrieved_docs(relevance_ret_pos: dict) -> None:
         legend=dict(
             orientation='h',  # horizontal legend
             yanchor='bottom',  # anchor legend to the bottom
-            y=1.02,            # position the legend just below the plot
-            xanchor='right',   # anchor legend to the right
-            x=1                # position legend to the right of the plot
+            y=1.02,  # position the legend just below the plot
+            xanchor='right',  # anchor legend to the right
+            x=1  # position legend to the right of the plot
         )
     )
     # Display the plot in Streamlit
     st.plotly_chart(fig)
 
 
-@st.fragment
 @st.cache_resource
 def plot_precision_recall_curve(prec_recall_graphs, relevance_thres):
     """
@@ -143,7 +142,6 @@ def plot_precision_recall_curve(prec_recall_graphs, relevance_thres):
     st.plotly_chart(fig)
 
 
-@st.fragment
 @st.cache_data
 # Generate colors dynamically
 def generate_colors(n):
@@ -175,7 +173,7 @@ def generate_colors(n):
     return predefined_colors[:n]
 
 
-@st.fragment
+
 @st.cache_data
 def plot_performance_measures_per_q(data):
     # Extract measures and runs
@@ -211,7 +209,7 @@ def plot_performance_measures_per_q(data):
                     marker_pattern_shape=patterns[j],
                     opacity=0.8,
                     showlegend=(i == 1),  # Only show legend for the first subplot
-                    hovertemplate='Query: %{x}<br>Difference: %{y:.3f}<br>Run: ' + run + '<extra></extra>' # Show query number and y-value with 3 decimal places
+                    hovertemplate='Query: %{x}<br>Difference: %{y:.3f}<br>Run: ' + run + '<extra></extra>'  # Show query number and y-value with 3 decimal places
                 ),
                 row=i, col=1
             )
@@ -257,7 +255,6 @@ def plot_performance_measures_per_q(data):
     st.plotly_chart(fig, use_container_width=True)
 
 
-@st.fragment
 @st.cache_data
 def plot_performance_difference(data):
     # Extract measures and runs
@@ -388,6 +385,7 @@ def plot_performance_and_median_per_experiment(data):
                     name="Performance",
                     marker_color='blue',
                     opacity=0.8,
+                    showlegend=(i == 1),  # Only show legend for the first subplot
                     hovertemplate='Query: %{x}<br>Performance: %{y:.3f}<extra></extra>'
                 ),
                 row=i, col=1
@@ -409,15 +407,18 @@ def plot_performance_and_median_per_experiment(data):
             # Update y-axis title
             fig.update_yaxes(title_text=f"{measure} Value", row=i, col=1)
 
+            # Check if any query ID is longer than 5 characters
+            long_labels = any(len(str(x)) > 5 for x in x_values)
+
             # Update x-axis settings
-            if max_queries > 20:  # If there are many queries, show every 5th tick
+            if long_labels:
                 fig.update_xaxes(
                     title_text='Query ID',
                     tickmode='array',
-                    tickvals=list(range(1, max_queries + 1, 5)),
-                    ticktext=[str(x) for x in range(1, max_queries + 1, 5)],
-                    tickangle=90,
-                    range=[0.5, max_queries + 0.5],
+                    tickvals=list(range(1, max_queries + 1)),  # Show all ticks
+                    ticktext=[str(x) for x in range(1, max_queries + 1)],
+                    tickangle=90,  # Rotate labels 90 degrees
+                    range=[0.5, max_queries + 0.5],  # Ensure all bars are visible
                     row=i, col=1
                 )
             else:
@@ -426,14 +427,14 @@ def plot_performance_and_median_per_experiment(data):
                     tickmode='linear',
                     tick0=1,
                     dtick=1,
-                    range=[0.5, max_queries + 0.5],
+                    range=[0.5, max_queries + 0.5],  # Ensure all bars are visible
                     row=i, col=1
                 )
 
         # Update layout
         fig.update_layout(
             height=300 * len(eval_measures),
-            title_text=f"Performance Measures and Median Scores for {run}",
+            title_text=f"""Performance of <span style="color:red;">{run}</span> and Comparison to median scores""",
             showlegend=True,
             legend=dict(
                 orientation="h",
@@ -445,8 +446,10 @@ def plot_performance_and_median_per_experiment(data):
         )
 
         # Display the plot in Streamlit
-        st.subheader(f"Experiment: {run}")
+        st.write(f"""<center><h4>Analysis of the <span style="color:red;">{run}</span> Experiment</h4></center>""", unsafe_allow_html=True)
+        st.write(f"""<center>The median performance per measure, for each query, is computed based on the remaining selected experiments.</center>""", unsafe_allow_html=True)
         st.plotly_chart(fig, use_container_width=True)
+
 
 @st.cache_data
 def plot_performance_difference_threshold(data, threshold):
@@ -475,7 +478,7 @@ def plot_performance_difference_threshold(data, threshold):
                     name=measure,
                     marker_color='blue',
                     opacity=0.8,
-                    showlegend=False,
+                    showlegend=(i == 1),  # Only show legend for the first subplot
                     hovertemplate='Query: %{x}<br>Actual Performance: %{customdata:.3f}<br>Difference: %{y:.3f}<extra></extra>',
                     customdata=run_values  # Add actual performance values for hover
                 ),

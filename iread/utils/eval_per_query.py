@@ -46,7 +46,7 @@ def calculate_median_metrics(results_per_run: Dict[str, Dict[str, Dict[str, List
     return median_results
 
 
-@st.fragment
+
 @st.cache_data
 def per_query_evaluation(qrel, runs, metric_list, relevance_threshold, selected_cutoff, baseline_run, threshold_value):
     results_per_run = {}
@@ -116,7 +116,7 @@ def per_query_evaluation(qrel, runs, metric_list, relevance_threshold, selected_
         return
 
 
-@st.fragment
+
 @st.cache_data
 def find_same_performance_queries(data, runs, measure, max_queries):
     same_performance = []
@@ -127,7 +127,7 @@ def find_same_performance_queries(data, runs, measure, max_queries):
     return same_performance
 
 
-@st.fragment
+
 @st.cache_data
 def find_large_gap_queries(data, runs, measure, max_queries):
     large_gaps = []
@@ -154,7 +154,6 @@ def find_large_gap_queries(data, runs, measure, max_queries):
     return large_gaps, threshold
 
 
-@st.fragment
 @st.cache_data
 def analyze_performance_perq(data):
     # Extract measures and runs
@@ -178,7 +177,63 @@ def analyze_performance_perq(data):
     return results
 
 
-@st.fragment
+@st.cache_data
+def analyze_performance_difference_median(data):
+    analysis_results = {}
+    eval_measures = [measure for measure in data[list(data.keys())[0]].keys() if not measure.startswith("median_")]
+    runs = list(data.keys())
+
+    for measure in eval_measures:
+        # Calculate median performance across all runs for each query
+        all_values = np.array([data[run][measure][measure] for run in runs])
+        median_values = np.median(all_values, axis=0)
+
+        for run in runs:
+            if run not in analysis_results:
+                analysis_results[run] = {}
+
+            actual_values = np.array(data[run][measure][measure])
+
+            # Compare each query's performance to median of other runs
+            diff_values = actual_values - median_values
+            improved_queries = [i + 1 for i, diff in enumerate(diff_values) if diff > 0]
+            degraded_queries = [i + 1 for i, diff in enumerate(diff_values) if diff < 0]
+            unchanged_queries = [i + 1 for i, diff in enumerate(diff_values) if diff == 0]
+
+            # Calculate statistics
+            total_queries = len(diff_values)
+            pct_improved = (len(improved_queries) / total_queries) * 100
+            pct_degraded = (len(degraded_queries) / total_queries) * 100
+            pct_unchanged = (len(unchanged_queries) / total_queries) * 100
+
+            avg_diff = np.mean(diff_values)
+            median_diff = np.median(diff_values)
+            std_diff = np.std(diff_values)
+
+            # Calculate relative improvement
+            relative_improvement = (np.sum(actual_values) - np.sum(median_values)) / np.sum(median_values) * 100
+
+            # Calculate effect size (Cohen's d)
+            effect_size = (np.mean(actual_values) - np.mean(median_values)) / np.std(diff_values)
+
+            analysis_results[run][measure] = {
+                "improved_queries": improved_queries,
+                "degraded_queries": degraded_queries,
+                "unchanged_queries": unchanged_queries,
+                "total_queries": total_queries,
+                "pct_improved": pct_improved,
+                "pct_degraded": pct_degraded,
+                "pct_unchanged": pct_unchanged,
+                "avg_diff": avg_diff,
+                "median_diff": median_diff,
+                "std_diff": std_diff,
+                "relative_improvement": relative_improvement,
+                "effect_size": effect_size
+            }
+
+    return analysis_results
+
+
 @st.cache_data
 def analyze_performance_difference(results):
     # Extract measures and runs
@@ -230,7 +285,6 @@ def analyze_performance_difference(results):
     return analysis_results, baseline_run
 
 
-@st.fragment
 @st.cache_data
 def get_frequently_retrieved_docs(runs, selected_cutoff):
     # Get unique query IDs and document IDs

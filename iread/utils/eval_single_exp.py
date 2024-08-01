@@ -7,7 +7,7 @@ import os
 from utils.eval_core import *
 
 
-@st.fragment
+
 @st.cache_data  # Assuming this is a decorator for caching resources
 def metric_parser(metric, relevance_threshold, cutoff):
     """
@@ -75,7 +75,7 @@ def get_experiment_name(run_name, baseline):
     return experiment_name
 
 
-@st.fragment
+
 @st.cache_resource
 def to_super(text):
     superscript_map = {
@@ -85,7 +85,7 @@ def to_super(text):
     return ''.join(superscript_map.get(char, char) for char in str(text))
 
 
-@st.fragment
+
 @st.cache_resource
 def to_sub(text):
     subscript_map = {
@@ -95,7 +95,7 @@ def to_sub(text):
     return ''.join(subscript_map.get(char, char) for char in str(text))
 
 
-@st.fragment
+
 @st.cache_data
 def create_results_table(statistical_results):
     # Extract baseline and other system names

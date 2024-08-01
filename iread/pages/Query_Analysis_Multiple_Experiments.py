@@ -541,5 +541,85 @@ with st.container():
                                        st.session_state.qme_selected_cutoff,
                                        None, st.session_state.qme_comparison_thresh)
 
-        st.write(results)
+        if st.session_state.qme_comparison_thresh == 0.0:
+            # Assuming you've already loaded your data into 'results'
+            analysis_results = analyze_performance_difference_median(results)
 
+            st.write("""<h4><span style="color:red;">Information Related to the Analysis</span></h4>""", unsafe_allow_html=True)
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+                st.markdown("""
+                This analysis compares each run against the median threshold, identifying:
+                1. Percentage of queries improved, degraded, or unchanged
+                2. Average and median differences in performance
+                3. Variability in performance differences across queries
+                """)
+
+            with col2:
+                st.markdown("""
+                The analysis also provides insights on:
+                1. Overall trend of improvement or degradation
+                2. Presence of extreme values affecting the results
+                3. Variability in performance differences
+                """)
+
+            # Create a row for each run
+            for run, run_analysis in analysis_results.items():
+                st.write(f"""<center><h4>{run} <span style="color:red;">vs</span> Median Threshold</h4></center>""", unsafe_allow_html=True)
+
+                # Calculate the number of measures
+                measures = list(run_analysis.keys())
+                num_measures = len(measures)
+                num_rows = math.ceil(num_measures / 2)
+
+                # Create rows and columns for measures
+                for i in range(num_rows):
+                    col1, col2 = st.columns(2)
+
+                    for j, col in enumerate([col1, col2]):
+                        if i * 2 + j < num_measures:
+                            measure = measures[i * 2 + j]
+                            analysis = run_analysis[measure]
+                            with col:
+                                st.subheader(f"Result Analysis based on {measure}")
+                                st.write(f"Improved Queries: {len(analysis['improved_queries'])} ({analysis['pct_improved']:.2f}%)")
+                                st.write(f"Degraded Queries: {len(analysis['degraded_queries'])} ({analysis['pct_degraded']:.2f}%)")
+                                st.write(f"Unchanged Queries: {len(analysis['unchanged_queries'])} ({analysis['pct_unchanged']:.2f}%)")
+                                with st.expander("See detailed analysis"):
+                                    st.write(f"Average Difference: {analysis['avg_diff']:.3f}")
+                                    st.write(f"Median Difference: {analysis['median_diff']:.3f}")
+                                    st.write(f"Standard Deviation of Difference: {analysis['std_diff']:.3f}")
+                                    st.write('----')
+                                    # Additional insights
+                                    insights = []
+                                    if analysis['pct_improved'] > analysis['pct_degraded']:
+                                        insights.append(
+                                            f"""This run shows overall improvement over the median for <span style="color:red;">{measure}</span>, with <span style="color:red;">{analysis['pct_improved']:.2f}</span>% of queries improved.""")
+                                    elif analysis['pct_improved'] < analysis['pct_degraded']:
+                                        insights.append(
+                                            f"""This run shows overall degradation compared to the median for <span style="color:red;">{measure}</span>, with <span style="color:red;">{analysis['pct_degraded']:.2f}</span>% of queries degraded.""")
+                                    else:
+                                        insights.append(f"""This run shows no significant overall difference from the median for <span style="color:red;">{measure}</span>.""")
+
+                                    if analysis['avg_diff'] > 0:
+                                        insights.append(f"""The average difference is positive (<span style="color:red;">{analysis['avg_diff']:.3f}</span>), indicating an overall improvement.""")
+                                    elif analysis['avg_diff'] < 0:
+                                        insights.append(f"""The average difference is negative (<span style="color:red;">{analysis['avg_diff']:.3f}</span>), indicating an overall degradation.""")
+
+                                    if abs(analysis['median_diff']) > abs(analysis['avg_diff']):
+                                        insights.append("The median difference is larger than the average, suggesting some extreme values are influencing the results.")
+
+                                    if analysis['std_diff'] > abs(analysis['avg_diff']):
+                                        insights.append("""High variability in differences across queries. Some queries may have significantly larger improvements or degradations than others.""")
+
+                                    for insight in insights:
+                                        st.write(f"- {insight}", unsafe_allow_html=True)
+
+                                    st.write("Specifically:")
+                                    st.write(f"- Improved Queries: {', '.join(map(str, analysis['improved_queries']))}")
+                                    st.write(f"- Degraded Queries: {', '.join(map(str, analysis['degraded_queries']))}")
+                                    st.write(f"- Unchanged Queries: {', '.join(map(str, analysis['unchanged_queries']))}")
+
+st.divider()

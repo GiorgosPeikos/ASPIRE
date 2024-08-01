@@ -10,6 +10,7 @@ from utils.plots import *
 from utils.eval_core import *
 
 
+@st.fragment
 @st.cache_data
 def per_query_evaluation(qrel, runs, metric_list, relevance_threshold, selected_cutoff, baseline_run, threshold_value):
     results_per_run = {}
@@ -52,7 +53,7 @@ def per_query_evaluation(qrel, runs, metric_list, relevance_threshold, selected_
         # call function that estimate the performance to this threshold, default value is the median performance of all runs per query.
         return
 
-
+@st.fragment
 @st.cache_data
 def find_same_performance_queries(data, runs, measure, max_queries):
     same_performance = []
@@ -63,6 +64,7 @@ def find_same_performance_queries(data, runs, measure, max_queries):
     return same_performance
 
 
+@st.fragment
 @st.cache_data
 def find_large_gap_queries(data, runs, measure, max_queries):
     large_gaps = []
@@ -89,6 +91,8 @@ def find_large_gap_queries(data, runs, measure, max_queries):
     return large_gaps, threshold
 
 
+@st.fragment
+@st.cache_data
 def analyze_performance_perq(data):
     # Extract measures and runs
     eval_measures = list(data[list(data.keys())[0]].keys())
@@ -110,8 +114,8 @@ def analyze_performance_perq(data):
 
     return results
 
-import numpy as np
 
+@st.fragment
 @st.cache_data
 def analyze_performance_difference(results):
     # Extract measures and runs
@@ -163,6 +167,7 @@ def analyze_performance_difference(results):
     return analysis_results, baseline_run
 
 
+@st.fragment
 @st.cache_data
 def get_frequently_retrieved_docs(runs, selected_cutoff):
     # Get unique query IDs and document IDs

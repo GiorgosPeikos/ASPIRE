@@ -11,6 +11,7 @@ import random
 
 
 # Function that displays the distribution of ranking position of all retrieved documents based on their relevance label.
+@st.fragment
 @st.cache_resource
 def dist_of_retrieved_docs(relevance_ret_pos: dict) -> None:
     # Define constants for bucket ranges
@@ -94,6 +95,7 @@ def dist_of_retrieved_docs(relevance_ret_pos: dict) -> None:
     st.plotly_chart(fig)
 
 
+@st.fragment
 @st.cache_resource
 def plot_precision_recall_curve(prec_recall_graphs, relevance_thres):
     """
@@ -141,6 +143,8 @@ def plot_precision_recall_curve(prec_recall_graphs, relevance_thres):
     st.plotly_chart(fig)
 
 
+@st.fragment
+@st.cache_data
 # Generate colors dynamically
 def generate_colors(n):
     # Predefined list of LaTeX-friendly colors
@@ -148,7 +152,6 @@ def generate_colors(n):
         '#E69F00',  # Orange
         '#56B4E9',  # Sky Blue
         '#009E73',  # Bluish Green
-        '#F0E442',  # Yellow
         '#0072B2',  # Blue
         '#D55E00',  # Vermilion
         '#CC79A7',  # Reddish Purple
@@ -156,9 +159,7 @@ def generate_colors(n):
         '#E69F00',  # Orange
         '#56B4E9',  # Sky Blue
         '#009E73',  # Bluish Green
-        '#F0E442',  # Yellow
         '#0072B2',  # Blue
-        '#D55E00',  # Vermilion
         '#CC79A7',  # Reddish Purple
     ]
 
@@ -174,6 +175,7 @@ def generate_colors(n):
     return predefined_colors[:n]
 
 
+@st.fragment
 @st.cache_data
 def plot_performance_measures_per_q(data):
     # Extract measures and runs
@@ -209,7 +211,7 @@ def plot_performance_measures_per_q(data):
                     marker_pattern_shape=patterns[j],
                     opacity=0.8,
                     showlegend=(i == 1),  # Only show legend for the first subplot
-                    hovertemplate='Query: %{x}<br>Value: %{y:.3f}<extra></extra>'  # Show query number and y-value with 3 decimal places
+                    hovertemplate='Query: %{x}<br>Difference: %{y:.3f}<br>Run: ' + run + '<extra></extra>' # Show query number and y-value with 3 decimal places
                 ),
                 row=i, col=1
             )
@@ -239,7 +241,7 @@ def plot_performance_measures_per_q(data):
 
     # Update layout
     fig.update_layout(
-        height=400 * len(eval_measures),
+        height=200 * len(eval_measures),
         title_text="Performance Measures Across Queries",
         barmode='group',
         legend=dict(
@@ -255,6 +257,7 @@ def plot_performance_measures_per_q(data):
     st.plotly_chart(fig, use_container_width=True)
 
 
+@st.fragment
 @st.cache_data
 def plot_performance_difference(data):
     # Extract measures and runs
@@ -297,7 +300,7 @@ def plot_performance_difference(data):
                     marker_pattern_shape=patterns[j],
                     opacity=0.8,
                     showlegend=(i == 1),  # Only show legend for the first subplot
-                    hovertemplate='Query: %{x}<br>Difference: %{y:.3f}<extra></extra>'
+                    hovertemplate='Query: %{x}<br>Difference: %{y:.3f}<br>Run: ' + run + '<extra></extra>'
                 ),
                 row=i, col=1
             )
@@ -340,9 +343,9 @@ def plot_performance_difference(data):
 
     # Update layout
     fig.update_layout(
-        height=400 * len(eval_measures),  # Increase height
+        height=550 * len(eval_measures),  # Increase height
         title={
-            'text': f"Performance Difference from Baseline: {baseline_run.replace('(Baseline)', '')}",
+            'text': f"""Performance Difference Compared to the Selected Baseline: <span style="color:red;">{baseline_run.replace('(Baseline)', '')}</span>""",
             'x': 0.01,  # Move title to the left
             'xanchor': 'left',
             'yanchor': 'top'
@@ -351,11 +354,10 @@ def plot_performance_difference(data):
         legend=dict(
             orientation="h",
             yanchor="bottom",
-            y=1.02,
+            y=1.05,
             xanchor="right",
             x=1
-        ),
-        margin=dict(b=100, l=100, r=50, t=100),  # Increase bottom margin for labels
+        )
     )
 
     # Display the plot in Streamlit

@@ -286,6 +286,57 @@ def analyze_performance_difference(results):
 
 
 @st.cache_data
+def analyze_performance_difference_threshold(data, threshold):
+    analysis_results = {}
+    eval_measures = [measure for measure in data[list(data.keys())[0]].keys() if not measure.startswith("median_")]
+    runs = list(data.keys())
+
+    for run in runs:
+        analysis_results[run] = {}
+        for measure in eval_measures:
+            actual_values = np.array(data[run][measure][measure])
+
+            # Compare each query's performance to the threshold
+            diff_values = actual_values - threshold
+            improved_queries = [i + 1 for i, diff in enumerate(diff_values) if diff > 0]
+            degraded_queries = [i + 1 for i, diff in enumerate(diff_values) if diff < 0]
+            unchanged_queries = [i + 1 for i, diff in enumerate(diff_values) if diff == 0]
+
+            # Calculate statistics
+            total_queries = len(diff_values)
+            pct_improved = (len(improved_queries) / total_queries) * 100
+            pct_degraded = (len(degraded_queries) / total_queries) * 100
+            pct_unchanged = (len(unchanged_queries) / total_queries) * 100
+
+            avg_diff = np.mean(diff_values)
+            median_diff = np.median(diff_values)
+            std_diff = np.std(diff_values)
+
+            # Calculate relative improvement
+            relative_improvement = (np.sum(actual_values) - threshold * total_queries) / (threshold * total_queries) * 100
+
+            # Calculate effect size (Cohen's d)
+            effect_size = (np.mean(actual_values) - threshold) / np.std(actual_values)
+
+            analysis_results[run][measure] = {
+                "improved_queries": improved_queries,
+                "degraded_queries": degraded_queries,
+                "unchanged_queries": unchanged_queries,
+                "total_queries": total_queries,
+                "pct_improved": pct_improved,
+                "pct_degraded": pct_degraded,
+                "pct_unchanged": pct_unchanged,
+                "avg_diff": avg_diff,
+                "median_diff": median_diff,
+                "std_diff": std_diff,
+                "relative_improvement": relative_improvement,
+                "effect_size": effect_size
+            }
+
+    return analysis_results
+
+
+@st.cache_data
 def get_frequently_retrieved_docs(runs, selected_cutoff):
     # Get unique query IDs and document IDs
     all_queries = set()

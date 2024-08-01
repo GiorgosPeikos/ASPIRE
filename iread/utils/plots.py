@@ -500,15 +500,18 @@ def plot_performance_difference_threshold(data, threshold):
             # Update y-axis title
             fig.update_yaxes(title_text=f"{measure} Difference", row=i, col=1)
 
+            # Check if any query ID is longer than 5 characters
+            long_labels = any(len(str(x)) > 5 for x in x_values)
+
             # Update x-axis settings
-            if max_queries > 20:  # If there are many queries, show every 5th tick
+            if long_labels:
                 fig.update_xaxes(
                     title_text='Query ID',
                     tickmode='array',
-                    tickvals=list(range(1, max_queries + 1, 5)),
-                    ticktext=[str(x) for x in range(1, max_queries + 1, 5)],
-                    tickangle=90,
-                    range=[0.5, max_queries + 0.5],
+                    tickvals=list(range(1, max_queries + 1)),  # Show all ticks
+                    ticktext=[str(x) for x in range(1, max_queries + 1)],
+                    tickangle=90,  # Rotate labels 90 degrees
+                    range=[0.5, max_queries + 0.5],  # Ensure all bars are visible
                     row=i, col=1
                 )
             else:
@@ -517,15 +520,15 @@ def plot_performance_difference_threshold(data, threshold):
                     tickmode='linear',
                     tick0=1,
                     dtick=1,
-                    range=[0.5, max_queries + 0.5],
+                    range=[0.5, max_queries + 0.5],  # Ensure all bars are visible
                     row=i, col=1
                 )
 
-        # Update layout
+            # Update layout
         fig.update_layout(
             height=550 * len(eval_measures),
             title={
-                'text': f"Performance Difference for {run} (Threshold: {threshold})",
+                'text': f"""Performance Difference for <span style="color:red;">{run}</span> w.r.t. the selected threshold: ({threshold:.2f})""",
                 'x': 0.01,
                 'xanchor': 'left',
                 'yanchor': 'top'
@@ -534,5 +537,5 @@ def plot_performance_difference_threshold(data, threshold):
         )
 
         # Display the plot in Streamlit
-        st.subheader(f"Experiment: {run}")
+        st.write(f"""<center><h4>Analysis of the <span style="color:red;">{run}</span> Experiment</h4></center>""", unsafe_allow_html=True)
         st.plotly_chart(fig, use_container_width=True)

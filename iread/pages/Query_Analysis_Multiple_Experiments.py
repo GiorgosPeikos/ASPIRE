@@ -138,22 +138,26 @@ with st.container():
         # Get the list of selected run files
         selected_runs_files = list(st.session_state.qme_selected_runs.keys())
 
-        st.session_state.qme_relevance_threshold = st.slider(
-            "Select from the Available Relevance Thresholds (Slide)",
-            min_value=1,
-            max_value=2,
-            value=1,
-            key="me_slider2",
-            help='Fragment rerun'
-        )
+        if st.session_state.qme_max_relevance >= 2:
+            st.session_state.qme_relevance_threshold = st.slider(
+                "Select from the Available Relevance Thresholds (Slide)",
+                min_value=1,
+                max_value=2,
+                value=1,
+                key="me_slider3",
+                help='Fragment rerun'
+            )
 
-        if 'qme_prev_relevance_threshold' not in st.session_state:
-            st.session_state.qme_prev_relevance_threshold = 1
+            if 'qme_prev_relevance_threshold' not in st.session_state:
+                st.session_state.qme_prev_relevance_threshold = 1
 
-        if st.session_state.qme_relevance_threshold != st.session_state.qme_prev_relevance_threshold:
-            st.session_state.qme_prev_relevance_threshold = st.session_state.qme_relevance_threshold
+            if st.session_state.qme_relevance_threshold != st.session_state.qme_prev_relevance_threshold:
+                st.session_state.qme_prev_relevance_threshold = st.session_state.qme_relevance_threshold
+        else:
+            st.session_state.qme_relevance_threshold = 1
+            st.write("""**Relevance judgements are binary, so <span style="color:red;">relevance threshold is set to 1.</span>**""", unsafe_allow_html=True)
 
-        # Create columns
+            # Create columns
         col1, col2 = st.columns(2)  # Adjust the column width ratio as needed
 
         with col1:
@@ -296,19 +300,24 @@ with st.container():
         # Get the list of selected run files
         selected_runs_files = list(st.session_state.qme_selected_runs.keys())
 
-        st.session_state.qme_relevance_threshold = st.slider(
-            "Select from the Available Relevance Thresholds (Slide)",
-            min_value=1,
-            max_value=2,
-            value=1,
-            key="me_slider3"
-        )
+        if st.session_state.qme_max_relevance >= 2:
+            st.session_state.qme_relevance_threshold = st.slider(
+                "Select from the Available Relevance Thresholds (Slide)",
+                min_value=1,
+                max_value=2,
+                value=1,
+                key="me_slider2",
+                help='Fragment rerun'
+            )
 
-        if 'qme_prev_relevance_threshold' not in st.session_state:
-            st.session_state.qme_prev_relevance_threshold = 1
+            if 'qme_prev_relevance_threshold' not in st.session_state:
+                st.session_state.qme_prev_relevance_threshold = 1
 
-        if st.session_state.qme_relevance_threshold != st.session_state.qme_prev_relevance_threshold:
-            st.session_state.qme_prev_relevance_threshold = st.session_state.qme_relevance_threshold
+            if st.session_state.qme_relevance_threshold != st.session_state.qme_prev_relevance_threshold:
+                st.session_state.qme_prev_relevance_threshold = st.session_state.qme_relevance_threshold
+        else:
+            st.session_state.qme_relevance_threshold = 1
+            st.write("""**Relevance judgements are binary, so <span style="color:red;">relevance threshold is set to 1.</span>**""", unsafe_allow_html=True)
 
         # Create columns
         col1, col2 = st.columns(2)  # Adjust the column width ratio as needed

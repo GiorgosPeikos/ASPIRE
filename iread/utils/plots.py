@@ -241,7 +241,7 @@ def plot_performance_measures_per_q(data):
 
     # Update layout
     fig.update_layout(
-        height=200 * len(eval_measures),
+        height=350 * len(eval_measures),
         title_text="Performance Measures Across Queries",
         barmode='group',
         legend=dict(

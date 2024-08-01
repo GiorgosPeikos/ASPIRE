@@ -53,6 +53,7 @@ def per_query_evaluation(qrel, runs, metric_list, relevance_threshold, selected_
         # call function that estimate the performance to this threshold, default value is the median performance of all runs per query.
         return
 
+
 @st.fragment
 @st.cache_data
 def find_same_performance_queries(data, runs, measure, max_queries):

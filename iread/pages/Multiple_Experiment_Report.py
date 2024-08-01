@@ -77,19 +77,24 @@ with st.container():
     if 'me_selected_qrels' not in st.session_state:
         st.warning("Please select retrieval experiment and qrels to begin your evaluation.", icon="⚠")
     else:
-        st.session_state.me_relevance_threshold = st.slider(
-            "Select from the Available Relevance Thresholds (Slide)",
-            min_value=1,
-            max_value=2,
-            value=1,
-            key="me_slider1"
-        )
+        if st.session_state.me_max_relevance >= 2:
+            st.session_state.me_relevance_threshold = st.slider(
+                "Select from the Available Relevance Thresholds (Slide)",
+                min_value=1,
+                max_value=2,
+                value=1,
+                key="me_slider3",
+                help='Fragment rerun'
+            )
 
-        if 'me_prev_relevance_threshold' not in st.session_state:
-            st.session_state.me_prev_relevance_threshold = 1
+            if 'me_prev_relevance_threshold' not in st.session_state:
+                st.session_state.me_prev_relevance_threshold = 1
 
-        if st.session_state.me_relevance_threshold != st.session_state.me_prev_relevance_threshold:
-            st.session_state.me_prev_relevance_threshold = st.session_state.me_relevance_threshold
+            if st.session_state.me_relevance_threshold != st.session_state.me_prev_relevance_threshold:
+                st.session_state.me_prev_relevance_threshold = st.session_state.me_relevance_threshold
+        else:
+            st.session_state.me_relevance_threshold = 1
+            st.write("""**Relevance judgements are binary, so <span style="color:red;">relevance threshold is set to 1.</span>**""", unsafe_allow_html=True)
 
         # Get the list of selected run files
         me_selected_runs_files = list(st.session_state.me_selected_runs.keys())
@@ -212,19 +217,24 @@ with st.container():
             st.write("#")
 
             with col1:
-                st.session_state.me_relevance_threshold = st.slider(
-                    "Select from the Available Relevance Thresholds (Slide)",
-                    min_value=1,
-                    max_value=2,
-                    value=1,
-                    key="me_slider2"
-                )
+                if st.session_state.me_max_relevance >= 2:
+                    st.session_state.me_relevance_threshold = st.slider(
+                        "Select from the Available Relevance Thresholds (Slide)",
+                        min_value=1,
+                        max_value=2,
+                        value=1,
+                        key="me_slider4",
+                        help='Fragment rerun'
+                    )
 
-                if 'me_prev_relevance_threshold' not in st.session_state:
-                    st.session_state.me_prev_relevance_threshold = 1
+                    if 'me_prev_relevance_threshold' not in st.session_state:
+                        st.session_state.me_prev_relevance_threshold = 1
 
-                if st.session_state.me_relevance_threshold != st.session_state.me_prev_relevance_threshold:
-                    st.session_state.me_prev_relevance_threshold = st.session_state.me_relevance_threshold
+                    if st.session_state.me_relevance_threshold != st.session_state.me_prev_relevance_threshold:
+                        st.session_state.me_prev_relevance_threshold = st.session_state.me_relevance_threshold
+                else:
+                    st.session_state.me_relevance_threshold = 1
+                    st.write("""**Relevance judgements are binary, so <span style="color:red;">relevance threshold is set to 1.</span>**""", unsafe_allow_html=True)
 
                 st.session_state.selected_correction_alpha = st.slider(
                     "Correction Value (alpha)",
@@ -481,19 +491,24 @@ with st.container():
     if 'me_selected_qrels' not in st.session_state:
         st.warning("Please select retrieval experiment and qrels to begin your evaluation.", icon="⚠")
     else:
-        st.session_state.relevance_threshold = st.slider(
-            "Select from the Available Relevance Thresholds (Slide)",
-            min_value=1,
-            max_value=2,
-            value=1,
-            key="slider3"
-        )
+        if st.session_state.me_max_relevance >= 2:
+            st.session_state.me_relevance_threshold = st.slider(
+                "Select from the Available Relevance Thresholds (Slide)",
+                min_value=1,
+                max_value=2,
+                value=1,
+                key="me_slider5",
+                help='Fragment rerun'
+            )
 
-        if 'prev_relevance_threshold' not in st.session_state:
-            st.session_state.prev_relevance_threshold = 1
+            if 'me_prev_relevance_threshold' not in st.session_state:
+                st.session_state.me_prev_relevance_threshold = 1
 
-        if st.session_state.relevance_threshold != st.session_state.prev_relevance_threshold:
-            st.session_state.prev_relevance_threshold = st.session_state.relevance_threshold
+            if st.session_state.me_relevance_threshold != st.session_state.me_prev_relevance_threshold:
+                st.session_state.me_prev_relevance_threshold = st.session_state.me_relevance_threshold
+        else:
+            st.session_state.me_relevance_threshold = 1
+            st.write("""**Relevance judgements are binary, so <span style="color:red;">relevance threshold is set to 1.</span>**""", unsafe_allow_html=True)
 
         if 'me_selected_runs' in st.session_state:
             num_runs = len(st.session_state.me_selected_runs)
@@ -510,8 +525,8 @@ with st.container():
                             st.markdown(f"""#### Experiment: <span style="color:red;"> {str(run_key).replace('.txt', '').replace('.csv', '')}</span>""", unsafe_allow_html=True)
 
                             # Generate and plot the precision-recall curve for this run
-                            prec_recall_graph = generate_prec_recall_graphs(st.session_state.relevance_threshold, st.session_state.me_selected_qrels, run_value)
-                            plot_precision_recall_curve(prec_recall_graph, st.session_state.relevance_threshold)
+                            prec_recall_graph = generate_prec_recall_graphs(st.session_state.me_relevance_threshold, st.session_state.me_selected_qrels, run_value)
+                            plot_precision_recall_curve(prec_recall_graph, st.session_state.me_relevance_threshold)
 
 st.divider()
 

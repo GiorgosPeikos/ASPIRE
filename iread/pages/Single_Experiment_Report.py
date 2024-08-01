@@ -7,7 +7,7 @@ from utils.eval_core import evaluate_single_run, return_available_measures, get_
 from utils.plots import dist_of_retrieved_docs, plot_precision_recall_curve
 
 # Set the page configuration to wide mode
-# st.set_page_config(layout="wide")
+st.set_page_config(layout="wide")
 
 # Load custom CSS
 load_css("css/styles.css")
@@ -40,7 +40,7 @@ with st.container():
 if st.button("Begin the Experimental Evaluation!", key='stButtonCenter'):
     if qrels_file:
         st.session_state.selected_qrels = load_qrel_data(os.path.join(qrels_dir, qrels_file))
-        st.session_state.max_relevance = st.session_state['selected_qrels']["relevance"].max()
+        st.session_state.max_relevance = st.session_state.selected_qrels["relevance"].max()
     else:
         st.write("Please select Qrels file to proceed.")
         st.stop()
@@ -72,19 +72,24 @@ with st.container():
         st.warning("Please select retrieval experiment and qrels to begin your evaluation.", icon="⚠")
 
     else:
-        st.session_state.relevance_threshold = st.slider(
-            f"Select from the Available Relevance Thresholds (Slide)",
-            min_value=1,
-            max_value=2,
-            value=1,
-            key="slider1"
-        )
+        if st.session_state.max_relevance >= 2:
+            st.session_state.relevance_threshold = st.slider(
+                "Select from the Available Relevance Thresholds (Slide)",
+                min_value=1,
+                max_value=2,
+                value=1,
+                key="me_slider4",
+                help='Fragment rerun'
+            )
 
-        if 'prev_relevance_threshold' not in st.session_state:
-            st.session_state.prev_relevance_threshold = 1
+            if 'prev_relevance_threshold' not in st.session_state:
+                st.session_state.prev_relevance_threshold = 1
 
-        if st.session_state.relevance_threshold != st.session_state.prev_relevance_threshold:
-            st.session_state.prev_relevance_threshold = st.session_state.relevance_threshold
+            if st.session_state.relevance_threshold != st.session_state.prev_relevance_threshold:
+                st.session_state.prev_relevance_threshold = st.session_state.relevance_threshold
+        else:
+            st.session_state.relevance_threshold = 1
+            st.write("""**Relevance judgements are binary, so <span style="color:red;">relevance threshold is set to 1.</span>**""", unsafe_allow_html=True)
 
         columns = st.columns(2)
         _, _, _, _, overall_measures, precision_measures = return_available_measures()
@@ -142,19 +147,24 @@ with st.container():
         st.warning("Please select retrieval experiment and qrels to begin your evaluation.", icon="⚠")
 
     else:
-        st.session_state.relevance_threshold = st.slider(
-            "Select from the Available Relevance Thresholds (Slide)",
-            min_value=1,
-            max_value=2,
-            value=1,
-            key="slider2"
-        )
+        if st.session_state.max_relevance >= 2:
+            st.session_state.relevance_threshold = st.slider(
+                "Select from the Available Relevance Thresholds (Slide)",
+                min_value=1,
+                max_value=2,
+                value=1,
+                key="me_slider5",
+                help='Fragment rerun'
+            )
 
-        if 'prev_relevance_threshold' not in st.session_state:
-            st.session_state.prev_relevance_threshold = 1
+            if 'prev_relevance_threshold' not in st.session_state:
+                st.session_state.prev_relevance_threshold = 1
 
-        if st.session_state.relevance_threshold != st.session_state.prev_relevance_threshold:
-            st.session_state.prev_relevance_threshold = st.session_state.relevance_threshold
+            if st.session_state.relevance_threshold != st.session_state.prev_relevance_threshold:
+                st.session_state.prev_relevance_threshold = st.session_state.relevance_threshold
+        else:
+            st.session_state.relevance_threshold = 1
+            st.write("""**Relevance judgements are binary, so <span style="color:red;">relevance threshold is set to 1.</span>**""", unsafe_allow_html=True)
 
         if 'selected_qrels' in st.session_state and not st.session_state.selected_qrels.empty:
             freq_measures_results = {}
@@ -225,19 +235,24 @@ with st.container():
     if 'selected_qrels' not in st.session_state:
         st.warning("Please select retrieval experiment and qrels to begin your evaluation.", icon="⚠")
     else:
-        st.session_state.relevance_threshold = st.slider(
-            "Select from the Available Relevance Thresholds (Slide)",
-            min_value=1,
-            max_value=2,
-            value=1,
-            key="slider3"
-        )
+        if st.session_state.max_relevance >= 2:
+            st.session_state.relevance_threshold = st.slider(
+                "Select from the Available Relevance Thresholds (Slide)",
+                min_value=1,
+                max_value=2,
+                value=1,
+                key="me_slider6",
+                help='Fragment rerun'
+            )
 
-        if 'prev_relevance_threshold' not in st.session_state:
-            st.session_state.prev_relevance_threshold = 1
+            if 'prev_relevance_threshold' not in st.session_state:
+                st.session_state.prev_relevance_threshold = 1
 
-        if st.session_state.relevance_threshold != st.session_state.prev_relevance_threshold:
-            st.session_state.prev_relevance_threshold = st.session_state.relevance_threshold
+            if st.session_state.relevance_threshold != st.session_state.prev_relevance_threshold:
+                st.session_state.prev_relevance_threshold = st.session_state.relevance_threshold
+        else:
+            st.session_state.relevance_threshold = 1
+            st.write("""**Relevance judgements are binary, so <span style="color:red;">relevance threshold is set to 1.</span>**""", unsafe_allow_html=True)
 
         prec_recall_graphs = generate_prec_recall_graphs(st.session_state.relevance_threshold, st.session_state.selected_qrels, st.session_state.selected_runs)
 

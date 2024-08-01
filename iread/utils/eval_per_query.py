@@ -15,39 +15,40 @@ def per_query_evaluation(qrel, runs, metric_list, relevance_threshold, selected_
     results_per_run = {}
     parsed_metrics = []
 
+    # Parse each metric in metric_list
+    for metric in metric_list:
+        parsed_metric = metric_parser(metric, relevance_threshold, selected_cutoff)
+        parsed_metrics.append(parsed_metric)
+
     if baseline_run is None:
-        # Parse each metric in metric_list
-        for metric in metric_list:
-            parsed_metric = metric_parser(metric, relevance_threshold, selected_cutoff)
-            parsed_metrics.append(parsed_metric)
+        # Calculate evaluation results for each other experiment and collect p-values
+        for run_name, run_data in runs.items():
+            experiment = get_experiment_name(run_name, baseline_run)
+            results_per_run[experiment] = {}
+            for parsed_metric in parsed_metrics:
+                results_per_run[experiment][str(parsed_metric)] = calculate_evaluation(parsed_metric, qrel, run_data)
 
-            # Calculate evaluation results for each other experiment and collect p-values
-            for run_name, run_data in runs.items():
-                experiment = get_experiment_name(run_name, baseline_run)
-                results_per_run[experiment] = {}
-                for parsed_metric in parsed_metrics:
-                    results_per_run[experiment][str(parsed_metric)] = calculate_evaluation(parsed_metric, qrel, run_data)
-
-        # Call the plot function
+        # Call the plot function per measure scores
         plot_performance_measures_per_q(results_per_run)
 
         return results_per_run
 
-    elif baseline_run is not None:
+    elif baseline_run:
         for run_name, run_data in runs.items():
-            if run_name == baseline_run:
-                experiment = get_experiment_name(run_name, baseline_run)
-                results_per_run[experiment] = {}
-                for parsed_metric in parsed_metrics:
-                    results_per_run[experiment][str(parsed_metric)] = calculate_evaluation(parsed_metric, qrel, run_data)
+            experiment = get_experiment_name(run_name, baseline_run)
+            results_per_run[experiment] = {}
+            for parsed_metric in parsed_metrics:
+                results_per_run[experiment][str(parsed_metric)] = calculate_evaluation(parsed_metric, qrel, run_data)
 
-        return
+        # Call the plot function for differences to the baseline
+        plot_performance_difference(results_per_run)
+        return results_per_run
 
-    if threshold_value:
+    elif threshold_value:
         # call function that estimate the performance to this threshold, default value is the median performance of all runs per query.
         return
 
-    if threshold_value and baseline_run:
+    elif threshold_value and baseline_run:
         # call function that estimate the performance to this threshold, default value is the median performance of all runs per query.
         return
 
@@ -88,7 +89,7 @@ def find_large_gap_queries(data, runs, measure, max_queries):
     return large_gaps, threshold
 
 
-def analyze_performance(data):
+def analyze_performance_perq(data):
     # Extract measures and runs
     eval_measures = list(data[list(data.keys())[0]].keys())
     runs = list(data.keys())
@@ -108,6 +109,58 @@ def analyze_performance(data):
         }
 
     return results
+
+import numpy as np
+
+@st.cache_data
+def analyze_performance_difference(results):
+    # Extract measures and runs
+    eval_measures = list(results[list(results.keys())[0]].keys())
+    runs = list(results.keys())
+
+    # Find the baseline run
+    baseline_run = next(run for run in runs if "(Baseline)" in run)
+    other_runs = [run for run in runs if run != baseline_run]
+
+    analysis_results = {}
+
+    for run in other_runs:
+        analysis_results[run] = {}
+        for measure in eval_measures:
+            baseline_values = results[baseline_run][measure][measure]
+            run_values = results[run][measure][measure]
+
+            # Compare each query's performance
+            diff_values = [run_val - baseline_val for run_val, baseline_val in zip(run_values, baseline_values)]
+            improved_queries = [i+1 for i, diff in enumerate(diff_values) if diff > 0]
+            degraded_queries = [i+1 for i, diff in enumerate(diff_values) if diff < 0]
+            unchanged_queries = [i+1 for i, diff in enumerate(diff_values) if diff == 0]
+
+            # Calculate statistics
+            avg_diff = np.mean(diff_values)
+            median_diff = np.median(diff_values)
+            std_diff = np.std(diff_values)
+
+            # Calculate percentages
+            total_queries = len(diff_values)
+            pct_improved = (len(improved_queries) / total_queries) * 100
+            pct_degraded = (len(degraded_queries) / total_queries) * 100
+            pct_unchanged = (len(unchanged_queries) / total_queries) * 100
+
+            analysis_results[run][measure] = {
+                "improved_queries": improved_queries,
+                "degraded_queries": degraded_queries,
+                "unchanged_queries": unchanged_queries,
+                "total_queries": total_queries,
+                "pct_improved": pct_improved,
+                "pct_degraded": pct_degraded,
+                "pct_unchanged": pct_unchanged,
+                "avg_diff": avg_diff,
+                "median_diff": median_diff,
+                "std_diff": std_diff
+            }
+
+    return analysis_results, baseline_run
 
 
 @st.cache_data
@@ -149,19 +202,3 @@ def get_frequently_retrieved_docs(runs, selected_cutoff):
 
     return frequent_docs
 
-
-@st.cache_data()
-def good_bad_queries(res_eval):
-    # Assuming res_eval is a list of dictionaries like: [{'Query ID': '1', 'Score': 0.1049}, ...]
-    data = [
-        {"Query ID": int(metric.query_id), "Score": metric.value} for metric in res_eval
-    ]
-
-    scores = [entry["Score"] for entry in data]
-    ids = [entry["Query ID"] for entry in data]
-
-    median = statistics.median(scores)
-
-    average = statistics.mean(scores)
-
-    return scores, ids, median, average

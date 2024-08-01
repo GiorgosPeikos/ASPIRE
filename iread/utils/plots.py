@@ -7,6 +7,7 @@ import plotly.graph_objects as go
 from utils.eval_single_exp import *
 from plotly.subplots import make_subplots
 import colorsys
+import random
 
 
 # Function that displays the distribution of ranking position of all retrieved documents based on their relevance label.
@@ -142,8 +143,35 @@ def plot_precision_recall_curve(prec_recall_graphs, relevance_thres):
 
 # Generate colors dynamically
 def generate_colors(n):
-    HSV_tuples = [(x * 1.0 / n, 0.5, 0.5) for x in range(n)]
-    return ['rgb' + str(tuple(int(x * 255) for x in colorsys.hsv_to_rgb(*hsv))) for hsv in HSV_tuples]
+    # Predefined list of LaTeX-friendly colors
+    predefined_colors = [
+        '#E69F00',  # Orange
+        '#56B4E9',  # Sky Blue
+        '#009E73',  # Bluish Green
+        '#F0E442',  # Yellow
+        '#0072B2',  # Blue
+        '#D55E00',  # Vermilion
+        '#CC79A7',  # Reddish Purple
+        '#000000',  # Black
+        '#E69F00',  # Orange
+        '#56B4E9',  # Sky Blue
+        '#009E73',  # Bluish Green
+        '#F0E442',  # Yellow
+        '#0072B2',  # Blue
+        '#D55E00',  # Vermilion
+        '#CC79A7',  # Reddish Purple
+    ]
+
+    # If we need more colors than predefined, cycle through the list
+    if n > len(predefined_colors):
+        # Calculate how many times to repeat the color list
+        repeat_count = (n // len(predefined_colors)) + 1
+        predefined_colors = predefined_colors * repeat_count
+
+    # Shuffle the colors to ensure a good mix if we're using repeated colors
+    random.shuffle(predefined_colors)
+
+    return predefined_colors[:n]
 
 
 @st.cache_data
@@ -221,6 +249,113 @@ def plot_performance_measures_per_q(data):
             xanchor="right",
             x=1
         )
+    )
+
+    # Display the plot in Streamlit
+    st.plotly_chart(fig, use_container_width=True)
+
+
+@st.cache_data
+def plot_performance_difference(data):
+    # Extract measures and runs
+    eval_measures = list(data[list(data.keys())[0]].keys())
+    runs = list(data.keys())
+
+    # Find the baseline run
+    baseline_run = next(run for run in runs if "(Baseline)" in run)
+    other_runs = [run for run in runs if run != baseline_run]
+
+    # Determine the maximum number of queries
+    max_queries = max(len(data[run][measure][measure]) for run in runs for measure in eval_measures)
+
+    # Generate colors and patterns
+    colors = generate_colors(len(other_runs))
+    base_patterns = ['', '/', '\\', 'x', '-', '|', '+', '.']
+    patterns = [base_patterns[i % len(base_patterns)] for i in range(len(other_runs))]
+
+    # Check if any query ID is longer than 5 characters
+    long_labels = any(len(str(x)) > 5 for x in range(1, max_queries + 1))
+
+    # Create a subplot for each measure
+    fig = make_subplots(rows=len(eval_measures), cols=1, subplot_titles=eval_measures, vertical_spacing=0.1)
+
+    for i, measure in enumerate(eval_measures, start=1):
+        for j, run in enumerate(other_runs):
+            baseline_values = data[baseline_run][measure][measure]
+            run_values = data[run][measure][measure]
+
+            # Calculate the difference
+            diff_values = [run_val - baseline_val for run_val, baseline_val in zip(run_values, baseline_values)]
+            x_values = list(range(1, len(diff_values) + 1))
+
+            fig.add_trace(
+                go.Bar(
+                    x=x_values,
+                    y=diff_values,
+                    name=run,
+                    marker_color=colors[j],
+                    marker_pattern_shape=patterns[j],
+                    opacity=0.8,
+                    showlegend=(i == 1),  # Only show legend for the first subplot
+                    hovertemplate='Query: %{x}<br>Difference: %{y:.3f}<extra></extra>'
+                ),
+                row=i, col=1
+            )
+
+        # Add a horizontal line at y=0
+        fig.add_shape(
+            type="line",
+            x0=0.5,
+            x1=max_queries + 0.5,
+            y0=0,
+            y1=0,
+            line=dict(color="black", width=1, dash="dash"),
+            row=i,
+            col=1
+        )
+
+        # Update y-axis title
+        fig.update_yaxes(title_text=f"{measure} Difference", row=i, col=1)
+
+        # Update x-axis settings
+        if long_labels:
+            fig.update_xaxes(
+                title_text='Query ID',
+                tickmode='array',
+                tickvals=list(range(1, max_queries + 1, 5)),  # Show every 5th tick
+                ticktext=[str(x) for x in range(1, max_queries + 1, 5)],
+                tickangle=90,  # Rotate labels 90 degrees
+                range=[0.5, max_queries + 0.5],  # Ensure all bars are visible
+                row=i, col=1
+            )
+        else:
+            fig.update_xaxes(
+                title_text='Query ID',
+                tickmode='linear',
+                tick0=1,
+                dtick=1,
+                range=[0.5, max_queries + 0.5],  # Ensure all bars are visible
+                row=i, col=1
+            )
+
+    # Update layout
+    fig.update_layout(
+        height=400 * len(eval_measures),  # Increase height
+        title={
+            'text': f"Performance Difference from Baseline: {baseline_run.replace('(Baseline)', '')}",
+            'x': 0.01,  # Move title to the left
+            'xanchor': 'left',
+            'yanchor': 'top'
+        },
+        barmode='group',
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        ),
+        margin=dict(b=100, l=100, r=50, t=100),  # Increase bottom margin for labels
     )
 
     # Display the plot in Streamlit

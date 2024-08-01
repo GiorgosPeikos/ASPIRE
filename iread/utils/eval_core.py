@@ -6,6 +6,7 @@ from utils.eval_single_exp import *
 import pandas as pd
 
 
+@st.fragment
 @st.cache_data
 def return_available_measures():
     default_measures = [
@@ -172,6 +173,8 @@ measures_with_cutoff = {
 # Define a set of measures that need to be return as int
 measures_int = ["NumRelRet", "NumRel", "NumRet", "NumQ"]
 
+
+@st.fragment
 @st.cache_data()
 def evaluate_single_run(qrel, run, metric, relevance_threshold):
     # Check if metric contains '@' and split if it does
@@ -203,6 +206,7 @@ def evaluate_single_run(qrel, run, metric, relevance_threshold):
         return round(list(res_eval.values())[0], 4)
 
 
+@st.fragment
 @st.cache_data()
 def evaluate_single_run_custom(qrel, run, metric, cutoff, relevance_threshold):
     # Check if metric contains '@' and split if it does
@@ -231,6 +235,7 @@ def evaluate_single_run_custom(qrel, run, metric, cutoff, relevance_threshold):
         return str(parsed_metric), round(list(res_eval.values())[0], 4)
 
 
+@st.fragment
 @st.cache_data()
 def get_relevant_and_unjudged(qrel, res) -> dict:
     """
@@ -284,6 +289,7 @@ def get_relevant_and_unjudged(qrel, res) -> dict:
     return ranking_per_relevance
 
 
+@st.fragment
 @st.cache_resource()
 def generate_prec_recall_graphs(relevance_threshold, selected_qrel, selected_runs):
     """

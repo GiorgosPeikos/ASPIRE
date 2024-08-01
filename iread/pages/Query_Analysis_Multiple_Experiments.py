@@ -145,7 +145,6 @@ with st.container():
                 max_value=2,
                 value=1,
                 key="me_slider3",
-                help='Fragment rerun'
             )
 
             if 'qme_prev_relevance_threshold' not in st.session_state:
@@ -166,13 +165,13 @@ with st.container():
             if 'qme_selected_measures' not in st.session_state:
                 st.session_state.qme_selected_measures = custom_user[0:4]  # Default selected measures
 
-            selected_measures = st.multiselect("Select additional measures:", custom_user, default=custom_user[1:5], help='Fragment rerun')
+            selected_measures = st.multiselect("Select additional measures:", custom_user, default=custom_user[1:5])
 
         with col2:
             if 'qme_selected_cutoff' not in st.session_state:
                 st.session_state.qme_selected_cutoff = 10  # Default cutoff value
 
-            selected_cutoff = st.number_input("Enter cutoff value:", min_value=1, value=10, max_value=1000, step=1, help='Fragment rerun')
+            selected_cutoff = st.number_input("Enter cutoff value:", min_value=1, value=10, max_value=1000, step=1)
 
             # Update session state with current selections
             st.session_state.qme_selected_measures = selected_measures
@@ -307,7 +306,6 @@ with st.container():
                 max_value=2,
                 value=1,
                 key="me_slider2",
-                help='Fragment rerun'
             )
 
             if 'qme_prev_relevance_threshold' not in st.session_state:
@@ -328,13 +326,13 @@ with st.container():
             if 'qme_selected_measures' not in st.session_state:
                 st.session_state.qme_selected_measures = custom_user[1:2]  # Default selected measures
 
-            selected_measures = st.multiselect("Select additional measures:", custom_user, default=custom_user[1:3], key="multiselect_3", help='Fragment rerun')
+            selected_measures = st.multiselect("Select additional measures:", custom_user, default=custom_user[1:3], key="multiselect_3")
 
         with col2:
             if 'qme_selected_cutoff' not in st.session_state:
                 st.session_state.qme_selected_cutoff = 10  # Default cutoff value
 
-            selected_cutoff = st.number_input("Enter cutoff value:", min_value=1, value=10, max_value=1000, step=1, key="cutoff_3", help='Fragment rerun')
+            selected_cutoff = st.number_input("Enter cutoff value:", min_value=1, value=10, max_value=1000, step=1, key="cutoff_3")
 
             # Update session state with current selections
             st.session_state.qme_selected_measures = selected_measures
@@ -344,8 +342,7 @@ with st.container():
             # Add a selectbox to choose the baseline run
             st.session_state.qme_baseline = st.selectbox(
                 "Select a baseline run file:",
-                list(st.session_state.qme_selected_runs.keys()),
-                help='Fragment rerun'
+                list(st.session_state.qme_selected_runs.keys())
             )
 
         results = per_query_evaluation(st.session_state.qme_selected_qrels, st.session_state.qme_selected_runs, st.session_state.qme_selected_measures, st.session_state.qme_relevance_threshold,

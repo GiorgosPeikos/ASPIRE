@@ -79,7 +79,6 @@ with st.container():
                 max_value=2,
                 value=1,
                 key="me_slider4",
-                help='Fragment rerun'
             )
 
             if 'prev_relevance_threshold' not in st.session_state:
@@ -154,7 +153,6 @@ with st.container():
                 max_value=2,
                 value=1,
                 key="me_slider5",
-                help='Fragment rerun'
             )
 
             if 'prev_relevance_threshold' not in st.session_state:
@@ -242,7 +240,6 @@ with st.container():
                 max_value=2,
                 value=1,
                 key="me_slider6",
-                help='Fragment rerun'
             )
 
             if 'prev_relevance_threshold' not in st.session_state:

@@ -74,7 +74,7 @@ st.divider()
 with st.container():
     st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Overall Retrieval Characteristics</span></h3>""", unsafe_allow_html=True)
 
-    if 'me_selected_qrels' not in st.session_state:
+    if 'me_selected_runs' not in st.session_state:
         st.warning("Please select retrieval experiment and qrels to begin your evaluation.", icon="⚠")
     else:
         if st.session_state.me_max_relevance >= 2:
@@ -84,7 +84,6 @@ with st.container():
                 max_value=2,
                 value=1,
                 key="me_slider3",
-                help='Fragment rerun'
             )
 
             if 'me_prev_relevance_threshold' not in st.session_state:
@@ -224,7 +223,6 @@ with st.container():
                         max_value=2,
                         value=1,
                         key="me_slider4",
-                        help='Fragment rerun'
                     )
 
                     if 'me_prev_relevance_threshold' not in st.session_state:
@@ -242,7 +240,7 @@ with st.container():
                     max_value=0.05,
                     value=0.05,
                     step=0.04,
-                    key="me_slider_alpha"
+                    key="me_slider_alpha",
                 )
 
             with col2:
@@ -250,13 +248,13 @@ with st.container():
                 st.session_state.selected_correction = st.selectbox(
                     "Select a correction method:",
                     correction_methods,
-                    index=0
+                    index=0,
                 )
                 if selected_runs_files:
                     # Add a selectbox to choose the baseline run
                     st.session_state.baseline = st.selectbox(
                         "Select a baseline run file:",
-                        list(st.session_state.me_selected_runs.keys())
+                        list(st.session_state.me_selected_runs.keys()),
                     )
 
             st.session_state.results_table, style_table = evaluate_multiple_runs_custom(st.session_state.me_selected_qrels, st.session_state.me_selected_runs, default_measures,
@@ -368,7 +366,7 @@ with st.container():
             st.session_state.baseline = st.selectbox(
                 "Select a baseline run file:",
                 list(st.session_state.me_selected_runs.keys()),
-                key="selectbox1"
+                key="selectbox1",
             )
 
         with col2:
@@ -430,7 +428,7 @@ with st.container():
                 value=1,
                 max_value=1000,
                 step=1,
-                key='cutoff_retrieved_docs'
+                key='cutoff_retrieved_docs',
             )
             st.write(f"""
             **Cutoff Value**: {selected_cutoff}. The analysis considers the top {selected_cutoff} ranked documents for each query across all experiments.
@@ -443,7 +441,7 @@ with st.container():
                 value=10,
                 max_value=100,
                 step=1,
-                key='sampled_retrieved_docs'
+                key='sampled_retrieved_docs',
             )
             st.write(f"""
             **Sample Size**: {sample_documents}. The number of document IDs to display in the results.
@@ -498,7 +496,6 @@ with st.container():
                 max_value=2,
                 value=1,
                 key="me_slider5",
-                help='Fragment rerun'
             )
 
             if 'me_prev_relevance_threshold' not in st.session_state:

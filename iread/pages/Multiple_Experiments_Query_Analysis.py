@@ -5,9 +5,6 @@ import numpy as np
 import streamlit as st
 from utils.data_handler import load_run_data, load_qrel_data, load_query_data
 from utils.ui import load_css
-from utils.eval_multiple_exp import evaluate_multiple_runs_custom, get_doc_intersection, get_docs_retrieved_by_all_systems
-from utils.eval_core import evaluate_single_run, return_available_measures, get_relevant_and_unjudged, generate_prec_recall_graphs
-from utils.plots import dist_of_retrieved_docs, plot_precision_recall_curve
 from utils.eval_per_query import *
 
 # Set the page configuration to wide mode
@@ -129,7 +126,7 @@ if 'qme_selected_queries' in st.session_state and not st.session_state.qme_selec
 
 # Per query Measure Performance Plots
 with st.container():
-    st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Query-based Experimental Evaluation</span></h3>""", unsafe_allow_html=True)
+    st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Experimental Evaluation per Query</span></h3>""", unsafe_allow_html=True)
     _, _, custom_user, default_measures, _, _ = return_available_measures()
 
     if 'qme_selected_qrels' not in st.session_state:
@@ -290,7 +287,7 @@ st.divider()
 
 # Per query Measure Performance Plots Comparison with a Baseline Run
 with st.container():
-    st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Query-based Experimental Evaluation</span> Vs <span style="color:red;">Baseline</span></h3>""", unsafe_allow_html=True)
+    st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Experimental Evaluation</span> Vs <span style="color:red;">Baseline</span></h3>""", unsafe_allow_html=True)
     _, _, custom_user, default_measures, _, _ = return_available_measures()
 
     if 'qme_selected_runs' not in st.session_state or len(st.session_state.qme_selected_runs) < 2:
@@ -480,7 +477,7 @@ st.divider()
 
 # Per query Measure Performance Plots Comparison with a Threshold
 with st.container():
-    st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Query-based Experimental Evaluation</span> Vs <span style="color:red;">Threshold</span></h3>""",
+    st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Experimental Evaluation</span> Vs <span style="color:red;">Median/Threshold</span></h3>""",
                 unsafe_allow_html=True)
     _, _, custom_user, default_measures, _, _ = return_available_measures()
 

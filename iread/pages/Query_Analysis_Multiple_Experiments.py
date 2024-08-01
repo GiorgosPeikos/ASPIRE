@@ -187,7 +187,7 @@ with st.container():
                 analysis_results = analyze_performance_perq(results)
 
                 # Display the analysis results in two columns
-                st.header("Result Analysis")
+                st.write("""<h4><span style="color:red;">Information Related to the Analysis</span></h4>""", unsafe_allow_html=True)
 
                 col1, col2 = st.columns(2)
 
@@ -196,13 +196,14 @@ with st.container():
                     This analysis identifies two aspects of the retrieval performance:
                     1. Queries with consistent performance across all experiments
                     2. Queries with large performance gaps between experiments
+                    
+                    For identifying large performance gaps, we use the Interquartile Range (IQR) method:
+                    - We calculate the IQR for each measure across all queries and experiments.
+                    - A performance gap is considered 'large' if it's greater than 1.5 times the IQR.
                     """)
 
                 with col2:
                     st.markdown("""
-                    For identifying large performance gaps, we use the Interquartile Range (IQR) method:
-                    - We calculate the IQR for each measure across all queries and experiments.
-                    - A performance gap is considered 'large' if it's greater than 1.5 times the IQR.
                     - This method adapts to each measure's scale and distribution.
 
                     Large gaps may indicate sensitivity to specific experimental conditions and should be investigated further.
@@ -353,32 +354,24 @@ with st.container():
             # Perform analysis
             analysis_results, baseline_run = analyze_performance_difference(results)
             # Display summary statistics and analysis
-            st.header("Performance Analysis")
+            st.write("""<h4><span style="color:red;">Information Related to the Analysis</span></h4>""", unsafe_allow_html=True)
 
             col1, col2 = st.columns(2)
 
             with col1:
                 st.markdown("""
-                This analysis compares each run against the baseline, identifying:
+                This analysis compares each run against the selected baseline, identifying:
                 1. Percentage of queries improved, degraded, or unchanged
                 2. Average and median differences in performance
                 3. Variability in performance differences across queries
-
-                High improvement percentages may indicate:
-                - More effective retrieval methods for these queries
-                - Potential areas where the new approach excels
                 """)
 
             with col2:
                 st.markdown("""
                 The analysis also provides insights on:
-                - Overall trend of improvement or degradation
-                - Presence of extreme values affecting the results
-                - Variability in performance differences
-
-                Large variability or presence of extreme values may suggest:
-                - Inconsistent performance across different types of queries
-                - Potential areas for focused improvement or investigation
+                1. Overall trend of improvement or degradation
+                2. Presence of extreme values affecting the results
+                3. Variability in performance differences
                 """)
 
             # Calculate the number of runs
@@ -386,7 +379,7 @@ with st.container():
 
             # Create a row for each run
             for run, run_analysis in analysis_results.items():
-                st.subheader(f"{run} vs {baseline_run}")
+                st.write(f"""<center><h4>{run} <span style="color:red;">vs</span> {baseline_run}</h4></center>""", unsafe_allow_html=True)
 
                 # Calculate the number of measures
                 measures = list(run_analysis.keys())
@@ -402,7 +395,7 @@ with st.container():
                         measure = measures[i * 2]
                         analysis = run_analysis[measure]
                         with col1:
-                            st.subheader(f"Analysis for {measure}")
+                            st.subheader(f"Result Analysis based on {measure}")
                             st.write(f"Improved Queries: {len(analysis['improved_queries'])} ({analysis['pct_improved']:.2f}%)")
                             st.write(f"Degraded Queries: {len(analysis['degraded_queries'])} ({analysis['pct_degraded']:.2f}%)")
                             st.write(f"Unchanged Queries: {len(analysis['unchanged_queries'])} ({analysis['pct_unchanged']:.2f}%)")
@@ -410,41 +403,41 @@ with st.container():
                                 st.write(f"Average Difference: {analysis['avg_diff']:.3f}")
                                 st.write(f"Median Difference: {analysis['median_diff']:.3f}")
                                 st.write(f"Standard Deviation of Difference: {analysis['std_diff']:.3f}")
-
+                                st.write('----')
                                 # Additional insights
                                 insights = []
                                 if analysis['pct_improved'] > analysis['pct_degraded']:
-                                    insights.append(f"This run shows overall improvement over the baseline for {measure}, with {analysis['pct_improved']:.2f}% of queries improved.")
+                                    insights.append(f"""This run shows overall improvement over the baseline for <span style="color:red;">{measure}</span>, with <span style="color:red;">{analysis['pct_improved']:.2f}</span>% of queries improved.""")
                                 elif analysis['pct_improved'] < analysis['pct_degraded']:
-                                    insights.append(f"This run shows overall degradation compared to the baseline for {measure}, with {analysis['pct_degraded']:.2f}% of queries degraded.")
+                                    insights.append(f"""This run shows overall degradation compared to the baseline for <span style="color:red;">{measure}</span>, with <span style="color:red;">{analysis['pct_degraded']:.2f}</span>% of queries degraded.""")
                                 else:
-                                    insights.append(f"This run shows no significant overall difference from the baseline for {measure}.")
+                                    insights.append(f"""This run shows no significant overall difference from the baseline for <span style="color:red;">{measure}</span>.""")
 
                                 if analysis['avg_diff'] > 0:
-                                    insights.append(f"The average difference is positive ({analysis['avg_diff']:.3f}), indicating an overall improvement.")
+                                    insights.append(f"""The average difference is positive (<span style="color:red;">{analysis['avg_diff']:.3f}</span>), indicating an overall improvement.""")
                                 elif analysis['avg_diff'] < 0:
-                                    insights.append(f"The average difference is negative ({analysis['avg_diff']:.3f}), indicating an overall degradation.")
+                                    insights.append(f"""The average difference is negative (<span style="color:red;">{analysis['avg_diff']:.3f}</span>), indicating an overall degradation.""")
 
                                 if abs(analysis['median_diff']) > abs(analysis['avg_diff']):
-                                    insights.append("The median difference is larger than the average, suggesting some extreme values are influencing the results.")
+                                    insights.append("The median difference is larger than the average, suggesting some extreme values are influencing the results.""")
 
                                 if analysis['std_diff'] > abs(analysis['avg_diff']):
-                                    insights.append("High variability in differences across queries. Some queries may have significantly larger improvements or degradations than others.")
+                                    insights.append("""High variability in differences across queries. Some queries may have significantly larger improvements or degradations than others.""")
 
                                 for insight in insights:
-                                    st.write(f"- {insight}")
+                                    st.write(f"- {insight}", unsafe_allow_html=True)
 
-                                st.write("Specific Queries:")
-                                st.write(f"- Improved: {', '.join(map(str, analysis['improved_queries']))}")
-                                st.write(f"- Degraded: {', '.join(map(str, analysis['degraded_queries']))}")
-                                st.write(f"- Unchanged: {', '.join(map(str, analysis['unchanged_queries']))}")
+                                st.write("Specifically:")
+                                st.write(f"- Improved Queries: {', '.join(map(str, analysis['improved_queries']))}")
+                                st.write(f"- Degraded Queries: {', '.join(map(str, analysis['degraded_queries']))}")
+                                st.write(f"- Unchanged Queries: {', '.join(map(str, analysis['unchanged_queries']))}")
 
                     # Second column
                     if i * 2 + 1 < num_measures:
                         measure = measures[i * 2 + 1]
                         analysis = run_analysis[measure]
                         with col2:
-                            st.subheader(f"Analysis for {measure}")
+                            st.subheader(f"Result Analysis based on {measure}")
                             st.write(f"Improved Queries: {len(analysis['improved_queries'])} ({analysis['pct_improved']:.2f}%)")
                             st.write(f"Degraded Queries: {len(analysis['degraded_queries'])} ({analysis['pct_degraded']:.2f}%)")
                             st.write(f"Unchanged Queries: {len(analysis['unchanged_queries'])} ({analysis['pct_unchanged']:.2f}%)")
@@ -452,34 +445,89 @@ with st.container():
                                 st.write(f"Average Difference: {analysis['avg_diff']:.3f}")
                                 st.write(f"Median Difference: {analysis['median_diff']:.3f}")
                                 st.write(f"Standard Deviation of Difference: {analysis['std_diff']:.3f}")
-
+                                st.write('----')
                                 # Additional insights
                                 insights = []
                                 if analysis['pct_improved'] > analysis['pct_degraded']:
-                                    insights.append(f"This run shows overall improvement over the baseline for {measure}, with {analysis['pct_improved']:.2f}% of queries improved.")
+                                    insights.append(
+                                        f"""This run shows overall improvement over the baseline for <span style="color:red;">{measure}</span>, with <span style="color:red;">{analysis['pct_improved']:.2f}</span>% of queries improved.""")
                                 elif analysis['pct_improved'] < analysis['pct_degraded']:
-                                    insights.append(f"This run shows overall degradation compared to the baseline for {measure}, with {analysis['pct_degraded']:.2f}% of queries degraded.")
+                                    insights.append(
+                                        f"""This run shows overall degradation compared to the baseline for <span style="color:red;">{measure}</span>, with <span style="color:red;">{analysis['pct_degraded']:.2f}</span>% of queries degraded.""")
                                 else:
-                                    insights.append(f"This run shows no significant overall difference from the baseline for {measure}.")
+                                    insights.append(f"""This run shows no significant overall difference from the baseline for <span style="color:red;">{measure}</span>.""")
 
                                 if analysis['avg_diff'] > 0:
-                                    insights.append(f"The average difference is positive ({analysis['avg_diff']:.3f}), indicating an overall improvement.")
+                                    insights.append(f"""The average difference is positive (<span style="color:red;">{analysis['avg_diff']:.3f}</span>), indicating an overall improvement.""")
                                 elif analysis['avg_diff'] < 0:
-                                    insights.append(f"The average difference is negative ({analysis['avg_diff']:.3f}), indicating an overall degradation.")
+                                    insights.append(f"""The average difference is negative (<span style="color:red;">{analysis['avg_diff']:.3f}</span>), indicating an overall degradation.""")
 
                                 if abs(analysis['median_diff']) > abs(analysis['avg_diff']):
-                                    insights.append("The median difference is larger than the average, suggesting some extreme values are influencing the results.")
+                                    insights.append("The median difference is larger than the average, suggesting some extreme values are influencing the results.""")
 
                                 if analysis['std_diff'] > abs(analysis['avg_diff']):
-                                    insights.append("High variability in differences across queries. Some queries may have significantly larger improvements or degradations than others.")
+                                    insights.append("""High variability in differences across queries. Some queries may have significantly larger improvements or degradations than others.""")
 
                                 for insight in insights:
-                                    st.write(f"- {insight}")
+                                        st.write(f"- {insight}", unsafe_allow_html=True)
 
-                                st.write("Specific Queries:")
-                                st.write(f"- Improved: {', '.join(map(str, analysis['improved_queries']))}")
-                                st.write(f"- Degraded: {', '.join(map(str, analysis['degraded_queries']))}")
-                                st.write(f"- Unchanged: {', '.join(map(str, analysis['unchanged_queries']))}")
+                                st.write("Specifically:")
+                                st.write(f"- Improved Queries: {', '.join(map(str, analysis['improved_queries']))}")
+                                st.write(f"- Degraded Queries: {', '.join(map(str, analysis['degraded_queries']))}")
+                                st.write(f"- Unchanged Queries: {', '.join(map(str, analysis['unchanged_queries']))}")
 
 st.divider()
+
+# Per query Measure Performance Plots Comparison with a Threshold
+with st.container():
+    st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Query-based Experimental Evaluation</span> Vs <span style="color:red;">Threshold</span></h3>""",
+                unsafe_allow_html=True)
+    _, _, custom_user, default_measures, _, _ = return_available_measures()
+
+    if 'qme_selected_runs' not in st.session_state or len(st.session_state.qme_selected_runs) < 2:
+        st.warning("This analysis requires at least two retrieval experiments to be selected.", icon="⚠")
+
+    else:
+        # Get the list of selected run files
+        selected_runs_files = list(st.session_state.qme_selected_runs.keys())
+
+        if st.session_state.qme_max_relevance >= 2:
+            st.session_state.qme_relevance_threshold = st.slider(
+                "Select from the Available Relevance Thresholds (Slide)",
+                min_value=1,
+                max_value=2,
+                value=1,
+                key="me_slider4",
+            )
+
+            if 'qme_prev_relevance_threshold' not in st.session_state:
+                st.session_state.qme_prev_relevance_threshold = 1
+
+            if st.session_state.qme_relevance_threshold != st.session_state.qme_prev_relevance_threshold:
+                st.session_state.qme_prev_relevance_threshold = st.session_state.qme_relevance_threshold
+        else:
+            st.session_state.qme_relevance_threshold = 1
+            st.write("""**Relevance judgements are binary, so <span style="color:red;">relevance threshold is set to 1.</span>**""", unsafe_allow_html=True)
+
+        # Create columns
+        col1, col2 = st.columns(2)  # Adjust the column width ratio as needed
+
+        with col1:
+
+            # Initialize session state variables if they don't exist
+            if 'qme_selected_measures' not in st.session_state:
+                st.session_state.qme_selected_measures = custom_user[1:2]  # Default selected measures
+
+            selected_measures = st.multiselect("Select additional measures:", custom_user, default=custom_user[1:3], key="multiselect_4")
+
+        with col2:
+            if 'qme_selected_cutoff' not in st.session_state:
+                st.session_state.qme_selected_cutoff = 10  # Default cutoff value
+
+            selected_cutoff = st.number_input("Enter cutoff value:", min_value=1, value=10, max_value=1000, step=1, key="cutoff_4")
+
+            # Update session state with current selections
+            st.session_state.qme_selected_measures = selected_measures
+            st.session_state.qme_selected_cutoff = selected_cutoff
+
 

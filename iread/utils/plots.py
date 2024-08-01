@@ -191,7 +191,7 @@ def plot_performance_measures_per_q(data):
     colors = generate_colors(len(runs))
 
     # Generate patterns dynamically
-    base_patterns = ['', '/', '\\', 'x', '-', '|', '+', '.']
+    base_patterns = ['', '/', 'x', '-', '|', '+', '.']
     patterns = [base_patterns[i % len(base_patterns)] for i in range(len(runs))]
 
     # Check if any query ID is longer than 5 characters
@@ -241,7 +241,7 @@ def plot_performance_measures_per_q(data):
 
     # Update layout
     fig.update_layout(
-        height=350 * len(eval_measures),
+        height=300 * len(eval_measures),
         title_text="Performance Measures Across Queries",
         barmode='group',
         legend=dict(
@@ -273,7 +273,7 @@ def plot_performance_difference(data):
 
     # Generate colors and patterns
     colors = generate_colors(len(other_runs))
-    base_patterns = ['', '/', '\\', 'x', '-', '|', '+', '.']
+    base_patterns = ['', '/', 'x', '-', '|', '+', '.']
     patterns = [base_patterns[i % len(base_patterns)] for i in range(len(other_runs))]
 
     # Check if any query ID is longer than 5 characters

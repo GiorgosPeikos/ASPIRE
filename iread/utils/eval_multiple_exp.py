@@ -1,9 +1,5 @@
-import numpy as np
-import streamlit as st
 from scipy import stats
 import statsmodels.stats.multitest
-import ir_measures
-from ir_measures import *
 from utils.eval_single_exp import *
 from collections import defaultdict, Counter
 from utils.eval_core import *
@@ -35,7 +31,6 @@ def calculate_evaluation(parsed_metric, qrel, run_data):
             metric_scores[metric_name].append(metric_value)
 
     return dict(metric_scores)
-
 
 
 @st.cache_resource
@@ -131,7 +126,6 @@ def evaluate_multiple_runs_custom(qrel, runs, metric_list, relevance_threshold, 
     return df, style_df
 
 
-
 @st.cache_resource
 def get_doc_intersection(runs, baseline, selected_cutoff):
     # Get unique query IDs and document IDs
@@ -177,7 +171,6 @@ def get_doc_intersection(runs, baseline, selected_cutoff):
     df['Intersection Percentage'] = (df['Intersected Documents'] / df['Total Documents'] * 100).round(2)
 
     return df
-
 
 
 @st.cache_resource

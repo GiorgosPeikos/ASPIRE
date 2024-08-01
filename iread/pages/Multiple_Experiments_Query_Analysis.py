@@ -1,8 +1,4 @@
-import os
 import math
-import pandas as pd
-import numpy as np
-import streamlit as st
 from utils.data_handler import load_run_data, load_qrel_data, load_query_data
 from utils.ui import load_css
 from utils.eval_per_query import *
@@ -466,7 +462,7 @@ with st.container():
                                     insights.append("""High variability in differences across queries. Some queries may have significantly larger improvements or degradations than others.""")
 
                                 for insight in insights:
-                                        st.write(f"- {insight}", unsafe_allow_html=True)
+                                    st.write(f"- {insight}", unsafe_allow_html=True)
 
                                 st.write("Specifically:")
                                 st.write(f"- Improved Queries: {', '.join(map(str, analysis['improved_queries']))}")
@@ -702,3 +698,16 @@ with st.container():
                                     st.write(f"- Queries on Threshold: {', '.join(map(str, analysis['unchanged_queries']))}")
 
 st.divider()
+
+# Additional Analysis
+with st.container():
+    st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Personal Notes</span></h3>""", unsafe_allow_html=True)
+
+    st.text_area(
+        "Please add additional comments regarding this experiment.",
+        "",
+        key="placeholder",
+    )
+st.divider()
+
+st.markdown("""<h4 style="text-align:center;"><span style="color:red;">To export the report as PDF press (⌘+P or Ctrl+P)</span></h4>""", unsafe_allow_html=True)

@@ -1,14 +1,8 @@
-import numpy as np
-import streamlit
-import streamlit as st
-import statistics
-import ir_measures
-from utils.eval_single_exp import *
 from utils.eval_multiple_exp import *
-from collections import defaultdict, Counter
 from utils.plots import *
 from utils.eval_core import *
-from typing import Dict, Any, List
+import statistics
+from typing import Dict, List
 
 
 @st.cache_data
@@ -44,7 +38,6 @@ def calculate_median_metrics(results_per_run: Dict[str, Dict[str, Dict[str, List
             median_results[current_exp][f"median_{metric}"] = median_values
 
     return median_results
-
 
 
 @st.cache_data
@@ -116,7 +109,6 @@ def per_query_evaluation(qrel, runs, metric_list, relevance_threshold, selected_
         return
 
 
-
 @st.cache_data
 def find_same_performance_queries(data, runs, measure, max_queries):
     same_performance = []
@@ -125,7 +117,6 @@ def find_same_performance_queries(data, runs, measure, max_queries):
         if all(v is not None and abs(v - values[0]) < 1e-6 for v in values):  # Using small epsilon for float comparison
             same_performance.append(query_id + 1)  # +1 to make it 1-indexed
     return same_performance
-
 
 
 @st.cache_data

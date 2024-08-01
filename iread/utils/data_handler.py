@@ -7,7 +7,6 @@ from typing import Union, List
 from pathlib import Path
 
 
-
 # Function to get all files present in folders and sub folders
 @st.cache_data
 def get_all_files(directory):
@@ -21,7 +20,6 @@ def get_all_files(directory):
     return file_list
 
 
-
 @st.cache_data
 def make_unique_column_names(columns: List[str]) -> List[str]:
     seen = {}
@@ -33,7 +31,6 @@ def make_unique_column_names(columns: List[str]) -> List[str]:
             seen[col] += 1
             columns[i] = f"{col}_{seen[col]}"
     return columns
-
 
 
 # Function to load retrieval experiment data with caching to optimize performance
@@ -138,7 +135,6 @@ def load_run_data(file_path: Union[str, Path]) -> pd.DataFrame:
     return df
 
 
-
 # Function to load qrels data with caching
 @st.cache_data
 def load_qrel_data(qrel_path):
@@ -152,7 +148,6 @@ def load_qrel_data(qrel_path):
         engine="python",
         header=0,
     )
-
 
 
 @st.cache_data

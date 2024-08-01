@@ -1,10 +1,6 @@
-import statistics
-import statsmodels.stats.multitest
-import ir_measures
-import streamlit as st
 from utils.eval_single_exp import *
+import streamlit as st
 import pandas as pd
-
 
 
 @st.cache_data
@@ -174,7 +170,6 @@ measures_with_cutoff = {
 measures_int = ["NumRelRet", "NumRel", "NumRet", "NumQ"]
 
 
-
 @st.cache_data()
 def evaluate_single_run(qrel, run, metric, relevance_threshold):
     # Check if metric contains '@' and split if it does
@@ -206,7 +201,6 @@ def evaluate_single_run(qrel, run, metric, relevance_threshold):
         return round(list(res_eval.values())[0], 4)
 
 
-
 @st.cache_data()
 def evaluate_single_run_custom(qrel, run, metric, cutoff, relevance_threshold):
     # Check if metric contains '@' and split if it does
@@ -233,7 +227,6 @@ def evaluate_single_run_custom(qrel, run, metric, cutoff, relevance_threshold):
         return str(parsed_metric), int(list(res_eval.values())[0])
     else:
         return str(parsed_metric), round(list(res_eval.values())[0], 4)
-
 
 
 @st.cache_data()
@@ -287,7 +280,6 @@ def get_relevant_and_unjudged(qrel, res) -> dict:
         ranking_per_relevance[query_id] = query_result
 
     return ranking_per_relevance
-
 
 
 @st.cache_resource()

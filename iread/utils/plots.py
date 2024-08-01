@@ -1,12 +1,7 @@
-import pandas as pd
-import plotly.express as px
-import streamlit as st
-import matplotlib.pyplot as plt
 from collections import defaultdict
 import plotly.graph_objects as go
 from utils.eval_single_exp import *
 from plotly.subplots import make_subplots
-import colorsys
 import random
 
 
@@ -171,7 +166,6 @@ def generate_colors(n):
     random.shuffle(predefined_colors)
 
     return predefined_colors[:n]
-
 
 
 @st.cache_data

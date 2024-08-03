@@ -28,6 +28,81 @@ def classify_queries(values, n_hard=5, n_easy=5):
     }
 
 
+def compare_relevance_labels(data, queries, relevance_labels):
+    results = {}
+    irrelevant_label = 'Relevance_Label_0'
+
+    for label in relevance_labels:
+        if label == irrelevant_label:
+            continue
+
+        label_judgements = get_label_judgements(data, queries, label)
+        irrelevant_judgements = get_label_judgements(data, queries, irrelevant_label)
+
+        easy_queries = []
+        hard_queries = []
+        min_query = max_query = queries[0]
+        min_count = max_count = label_judgements[queries[0]]
+
+        for query in queries:
+            label_count = label_judgements[query]
+            irrelevant_count = irrelevant_judgements[query]
+
+            if label_count >= irrelevant_count:
+                easy_queries.append(query)
+            elif label_count < irrelevant_count / 2:  # Arbitrary threshold for "very few"
+                hard_queries.append(query)
+
+            if label_count < min_count:
+                min_count = label_count
+                min_query = query
+            if label_count > max_count:
+                max_count = label_count
+                max_query = query
+
+        results[label] = {
+            'easy_queries': easy_queries,
+            'hard_queries': hard_queries,
+            'min_query': min_query,
+            'max_query': max_query
+        }
+
+    # Combine all relevant labels
+    combined_judgements = {q: sum(get_label_judgements(data, [q], label)[q] for label in relevance_labels if label != irrelevant_label)
+                           for q in queries}
+    irrelevant_judgements = get_label_judgements(data, queries, irrelevant_label)
+
+    easy_queries = []
+    hard_queries = []
+    min_query = max_query = queries[0]
+    min_count = max_count = combined_judgements[queries[0]]
+
+    for query in queries:
+        combined_count = combined_judgements[query]
+        irrelevant_count = irrelevant_judgements[query]
+
+        if combined_count >= irrelevant_count:
+            easy_queries.append(query)
+        elif combined_count < irrelevant_count / 2:
+            hard_queries.append(query)
+
+        if combined_count < min_count:
+            min_count = combined_count
+            min_query = query
+        if combined_count > max_count:
+            max_count = combined_count
+            max_query = query
+
+    results['combined'] = {
+        'easy_queries': easy_queries,
+        'hard_queries': hard_queries,
+        'min_query': min_query,
+        'max_query': max_query
+    }
+
+    return results
+
+
 @st.cache_data
 def analyze_query_judgements(data):
     analysis_results = {}
@@ -72,5 +147,8 @@ def analyze_query_judgements(data):
     total_judgements = sum(analysis_results['overall_stats'].values())
     for label in relevance_labels:
         analysis_results['overall_stats'][f'{label}_percentage'] = (analysis_results['overall_stats'][label] / total_judgements) * 100
+
+    # Add new analysis
+    analysis_results['label_comparison'] = compare_relevance_labels(data, queries, relevance_labels)
 
     return analysis_results

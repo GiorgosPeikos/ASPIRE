@@ -16,7 +16,7 @@ from utils.eval_core import (
 )
 from utils.plots import create_evaluation_plot, plot_queries, plot_pca
 from utils.eval_single_exp import find_unjudged
-from utils.query_text_processing import (
+from utils.eval_query_text_based import (
     get_huggingface_model,
     get_embeddings,
     perform_pca,

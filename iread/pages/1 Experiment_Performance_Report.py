@@ -6,7 +6,7 @@ from utils.data_handler import load_run_data, load_qrel_data, load_query_data
 from utils.ui import load_css
 from utils.eval_multiple_exp import evaluate_multiple_runs_custom, get_doc_intersection, get_docs_retrieved_by_all_systems
 from utils.eval_core import evaluate_single_run, return_available_measures, get_relevant_and_unjudged, generate_prec_recall_graphs
-from utils.plots import dist_of_retrieved_docs, plot_precision_recall_curve
+from utils.plots import plot_dist_of_retrieved_docs, plot_precision_recall_curve
 
 # Set the page configuration to wide mode
 st.set_page_config(layout="wide")
@@ -344,7 +344,7 @@ with st.container():
 
                         with cols[j]:
                             st.markdown(f"""#### Experiment: <span style="color:red;"> {str(run_key).replace('.txt', '').replace('.csv', '')}</span>""", unsafe_allow_html=True)
-                            dist_of_retrieved_docs(ranking_per_relevance)
+                            plot_dist_of_retrieved_docs(ranking_per_relevance)
 st.divider()
 
 # Retrieved Document Intersection

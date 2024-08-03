@@ -1,3 +1,4 @@
+import streamlit
 from scipy import stats
 import statsmodels.stats.multitest
 from utils.eval_single_exp import *
@@ -33,7 +34,7 @@ def calculate_evaluation(parsed_metric, qrel, run_data):
     return dict(metric_scores)
 
 
-@st.cache_resource
+@st.cache_data
 def evaluate_multiple_runs_custom(qrel, runs, metric_list, relevance_threshold, baseline, selected_cutoff, correction_method='bonferroni', correction_alpha=0.05):
     results_per_run = {}
     parsed_metrics = []
@@ -126,7 +127,7 @@ def evaluate_multiple_runs_custom(qrel, runs, metric_list, relevance_threshold, 
     return df, style_df
 
 
-@st.cache_resource
+@st.cache_data
 def get_doc_intersection(runs, baseline, selected_cutoff):
     # Get unique query IDs and document IDs
     all_queries = set()
@@ -173,7 +174,7 @@ def get_doc_intersection(runs, baseline, selected_cutoff):
     return df
 
 
-@st.cache_resource
+@st.cache_data
 def get_docs_retrieved_by_all_systems(runs, selected_cutoff, sample_size):
     # Get unique query IDs and document IDs
     all_queries = set()

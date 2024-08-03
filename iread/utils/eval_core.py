@@ -310,3 +310,5 @@ def generate_prec_recall_graphs(relevance_threshold, selected_qrel, selected_run
         )
 
     return prec_recall_graphs
+
+

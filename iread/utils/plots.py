@@ -2,13 +2,13 @@ from collections import defaultdict
 import plotly.graph_objects as go
 from utils.eval_single_exp import *
 from plotly.subplots import make_subplots
+import matplotlib.colors as mcolors
 import random
 
 
 # Function that displays the distribution of ranking position of all retrieved documents based on their relevance label.
-
 @st.cache_resource
-def dist_of_retrieved_docs(relevance_ret_pos: dict) -> None:
+def plot_dist_of_retrieved_docs(relevance_ret_pos: dict) -> None:
     # Define constants for bucket ranges
     bucket_ranges = {
         '1': (1, 1),
@@ -533,3 +533,105 @@ def plot_performance_difference_threshold(data, threshold):
         # Display the plot in Streamlit
         st.write(f"""<center><h4>Analysis of the <span style="color:red;">{run}</span> Experiment</h4></center>""", unsafe_allow_html=True)
         st.plotly_chart(fig, use_container_width=True)
+
+
+@st.cache_data
+def plot_query_relevance_judgements(selected_qrel):
+    # Group by query_id and relevance, count occurrences
+    relevance_counts = selected_qrel.groupby(['query_id', 'relevance']).size().unstack(fill_value=0)
+
+    # Rename columns
+    relevance_counts.columns = ['Irrelevant' if col == 0 else f'Relevance_Label_{col}' for col in relevance_counts.columns]
+
+    # Create subplots
+    fig = make_subplots(rows=1, cols=1, subplot_titles=['Relevance Judgements per Query'])
+
+    # Create color scale for relevance labels
+    relevant_columns = [col for col in relevance_counts.columns if col != 'Irrelevant']
+    num_relevant_labels = len(relevant_columns)
+
+    if num_relevant_labels > 1:
+        blue_scale = mcolors.LinearSegmentedColormap.from_list("", ["lightblue", "darkblue"])
+        blue_colors = [mcolors.rgb2hex(blue_scale(i / (num_relevant_labels - 1))) for i in range(num_relevant_labels)]
+    elif num_relevant_labels == 1:
+        blue_colors = ["blue"]
+    else:
+        blue_colors = []
+
+    # Create traces for each relevance level
+    for i, column in enumerate(relevance_counts.columns):
+        if column == 'Irrelevant':
+            color = 'red'
+        else:
+            color = blue_colors[relevant_columns.index(column)]
+
+        fig.add_trace(
+            go.Bar(
+                name=column,
+                x=[i + 1 for i in range(len(relevance_counts.index))],  # Adjust x-axis to start from 1
+                y=relevance_counts[column],
+                text=relevance_counts[column],
+                textposition='auto',
+                marker_color=color,
+                hovertemplate='Query: %{x}<br>' + f'{column}: ' + '%{y}<extra></extra>'
+            ),
+            row=1, col=1
+        )
+
+    # Update layout
+    fig.update_layout(
+        height=550,
+        title={
+            'text': "Query Relevance Judgements Analysis",
+            'x': 0.01,
+            'xanchor': 'left',
+            'yanchor': 'top'
+        },
+        barmode='stack',
+        xaxis_title="Query ID",
+        yaxis_title="Number of Documents",
+        legend_title="Relevance Labels",
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        )
+    )
+
+    # Update x-axis settings
+    max_queries = len(relevance_counts.index)
+    long_labels = any(len(str(x)) > 5 for x in relevance_counts.index)
+
+    if long_labels:
+        fig.update_xaxes(
+            tickmode='array',
+            tickvals=list(range(1, max_queries + 1)),  # Start from 1
+            ticktext=[str(x) for x in range(1, max_queries + 1)],  # Start from 1
+            tickangle=90,
+            range=[0.5, max_queries + 0.5]  # Adjust range
+        )
+    else:
+        fig.update_xaxes(
+            tickmode='linear',
+            tick0=1,  # Start from 1
+            dtick=1,
+            range=[0.5, max_queries + 0.5]  # Adjust range
+        )
+
+    # Display the plot in Streamlit
+    st.plotly_chart(fig, use_container_width=True)
+
+    # Prepare results dictionary
+    results = {}
+    for i, query_id in enumerate(relevance_counts.index, start=1):  # Start enumeration from 1
+        results[i] = {  # Use i (1-based) as the key instead of query_id
+            "irrelevant": int(relevance_counts.loc[query_id, "Irrelevant"]),
+            "relevant": {}
+        }
+        for column in relevance_counts.columns:
+            if column != "Irrelevant":
+                results[i]["relevant"][column] = int(relevance_counts.loc[query_id, column])
+
+    return results

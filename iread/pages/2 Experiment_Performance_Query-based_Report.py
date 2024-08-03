@@ -272,6 +272,10 @@ with st.container():
                                     st.markdown(f"<span style='color:{color}'>{label_name}</span>: **{count}** ({percentage:.2f}% of total)", unsafe_allow_html=True)
                             st.write(f"Total judgements:  **{total_judgements}**", unsafe_allow_html=True)
 
+        st.markdown("### Manually Examine Sampled Queries")
+        with st.expander("See Queries"):
+            st.dataframe(st.session_state.qmet_selected_queries_random[['query_id', 'query_text']], use_container_width=True, hide_index=True)
+
 st.divider()
 
 # Per query Measure Performance Plots

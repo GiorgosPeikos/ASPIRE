@@ -763,7 +763,7 @@ def plot_query_performance_vs_query_length_buckets(df, measure):
     fig.update_yaxes(title_text=f"Mean {measure}")
 
     fig.update_layout(
-        height=300,
+        height=450,
         showlegend=False,
         title={
             'text': f"""Mean <span style="color:red;">{measure}</span> vs Query Length Buckets""",
@@ -773,6 +773,7 @@ def plot_query_performance_vs_query_length_buckets(df, measure):
         },
     )
     return fig
+
 
 @st.cache_data
 def plot_query_performance_vs_query_length(data):
@@ -807,11 +808,11 @@ def plot_query_performance_vs_query_length(data):
 
             if p_value_ew < 0.05 or p_value_ef < 0.05:
                 st.write(f"""At least one of the bucketing methods shows statistically significant differences between buckets (p < <span style="color: red;">0.05</span>). 
-                            ANOVA results (Equal-width buckets): F-statistic = <span style="color: red;">{f_statistic_ew:.4f}</span>, p-value = <span style="color: red;">{p_value_ew:.4f}</span>
-                            ANOVA results (Equal-frequency buckets): F-statistic = <span style="color: red;">{f_statistic_ef:.4f}</span>, p-value = <span style="color: red;">{p_value_ef:.4f}</span>
-                """, unsafe_allow_html=True)
+                            ANOVA results (Equal-width buckets): F-statistic = <span style="color: red;">{f_statistic_ew:.4f}</span>, p-value = <span style="color: red;">{p_value_ew:.4f}.</span>
+                            ANOVA results (Equal-frequency buckets): F-statistic = <span style="color: red;">{f_statistic_ef:.4f}</span>, p-value = <span style="color: red;">{p_value_ef:.4f}.</span>
+                            """, unsafe_allow_html=True)
             else:
                 st.write(f"""Neither bucketing method shows statistically significant differences between buckets (p >= <span style="color: red;">0.05</span>).
-                            ANOVA results (Equal-width buckets): F-statistic = <span style="color: red;">{f_statistic_ew:.4f}</span>, p-value = <span style="color: red;">{p_value_ew:.4f}</span>
-                            ANOVA results (Equal-frequency buckets): F-statistic = <span style="color: red;">{f_statistic_ef:.4f}</span>, p-value = <span style="color: red;">{p_value_ef:.4f}</span>""",
-                         unsafe_allow_html=True)
+                            ANOVA results (Equal-width buckets): F-statistic = <span style="color: red;">{f_statistic_ew:.4f}</span>, p-value = <span style="color: red;">{p_value_ew:.4f}.</span>
+                            ANOVA results (Equal-frequency buckets): F-statistic = <span style="color: red;">{f_statistic_ef:.4f}</span>, p-value = <span style="color: red;">
+                            {p_value_ef:.4f}.</span>""", unsafe_allow_html=True)

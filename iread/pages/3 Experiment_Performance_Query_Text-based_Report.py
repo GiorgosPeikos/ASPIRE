@@ -113,7 +113,7 @@ if 'qmet_selected_queries' in st.session_state and not st.session_state.qmet_sel
 
             st.divider()
     else:
-        if 'qmet__selected_queries_random' not in st.session_state:
+        if 'qmet_selected_queries_random' not in st.session_state:
             st.session_state.qmet_selected_queries_random = st.session_state.qmet_selected_queries
             st.write(f"""<div style="text-align: center;"> All <span style="color:red;">{len(st.session_state.qmet_selected_queries_random)}</span> provided queries will be used for the 
             following analyses.</div>""", unsafe_allow_html=True)
@@ -168,6 +168,9 @@ with st.container():
             - Hard queries have significantly fewer relevant documents than irrelevant ones.
             - Min and Max queries have the least and most relevant documents respectively, considering all relevance labels.
             """)
+        st.markdown("### Manually Examine Sampled Queries")
+        with st.expander("See Queries"):
+            st.dataframe(st.session_state.qmet_selected_queries_random[['query_id', 'query_text']], use_container_width=True, hide_index=True)
 
 st.divider()
 
@@ -278,4 +281,19 @@ with st.container():
                                                   st.session_state.qmet_relevance_threshold,
                                                   st.session_state.qmet_selected_cutoff,
                                                   None, None)
+
+
+# Query Performance vs Query terms
+with st.container():
+    st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Query Texts vs Query Performance</span></h3>""", unsafe_allow_html=True)
+    _, _, custom_user, default_measures, _, _ = return_available_measures()
+
+    if 'qmet_selected_runs' not in st.session_state:
+        st.warning("Please select a set of queries to begin your evaluation.", icon="⚠")
+
+    else:
+
+        st.write('Query terms of queries with many and few relevance judgements.')
+
+        st.write('Evaluate the queries, those that performed better than a selected baseline, show their most common terms. show the most common terms of those that do not perform well.')
 

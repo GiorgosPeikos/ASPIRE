@@ -114,12 +114,12 @@ if 'qme_selected_queries' in st.session_state and not st.session_state.qme_selec
             st.divider()
     else:
 
-        st.session_state.qme_selected_queries_random = st.session_state.qme_selected_queries
-        st.write(f"""<div style="text-align: center;"> All <span style="color:red;">{len(st.session_state.qme_selected_queries_random)}</span> provided queries will be used for the 
-        following analyses.</div>""", unsafe_allow_html=True)
+        if 'qme_selected_runs' not in st.session_state:
+            st.session_state.qme_selected_queries_random = st.session_state.qme_selected_queries
+            st.write(f"""<div style="text-align: center;"> All <span style="color:red;">{len(st.session_state.qme_selected_queries_random)}</span> provided queries will be used for the 
+            following analyses.</div>""", unsafe_allow_html=True)
 
         st.divider()
-
 # Per query Relevance Judgements
 with st.container():
     st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Relevance Judgments per Query</span></h3>""", unsafe_allow_html=True)

@@ -412,7 +412,7 @@ with st.container():
     st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Documents Retrieved by All Systems</span></h3>""", unsafe_allow_html=True)
 
     if 'me_selected_runs' not in st.session_state or len(st.session_state.me_selected_runs) < 2:
-        st.warning("Please select at least two retrieval experiments to begin your evaluation.", icon="⚠")
+        st.warning("This analysis requires at least two retrieval experiments to be selected.", icon="⚠")
     else:
         st.write("""
         This analysis identifies documents that are retrieved by all selected retrieval systems within a specified cutoff rank.

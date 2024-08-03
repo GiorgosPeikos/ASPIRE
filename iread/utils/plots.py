@@ -4,6 +4,7 @@ from utils.eval_single_exp import *
 from plotly.subplots import make_subplots
 import matplotlib.colors as mcolors
 import random
+from scipy import stats
 
 
 # Function that displays the distribution of ranking position of all retrieved documents based on their relevance label.
@@ -635,3 +636,182 @@ def plot_query_relevance_judgements(selected_qrel):
                 results[i]["relevant"][column] = int(relevance_counts.loc[query_id, column])
 
     return results
+
+
+@st.cache_data
+def plot_query_performance_vs_query_length_moving_avg(df, measure):
+    # Sort DataFrame by Token Length
+    df = df.sort_values('Token Length')
+
+    # Calculate moving average
+    window = 20  # Adjust this value to change the smoothness of the line
+    df['MA'] = df['Performance'].rolling(window=window, center=True).mean()
+
+    # Create figure
+    fig = go.Figure()
+
+    # Add scatter plot for individual queries
+    fig.add_trace(go.Scatter(
+        x=df['Token Length'],
+        y=df['Performance'],
+        mode='markers',
+        name='Individual Queries',
+        marker=dict(
+            size=6,
+            color=df['Performance'],
+            colorscale='Viridis',
+            showscale=True,
+            colorbar=dict(title=measure)
+        ),
+        text=[f"Query ID: {qid}<br>Token Length: {tl}<br>{measure}: {perf:.4f}"
+              for qid, tl, perf in zip(df['Query ID'], df['Token Length'], df['Performance'])],
+        hoverinfo='text'
+    ))
+
+    # Add moving average line
+    fig.add_trace(go.Scatter(
+        x=df['Token Length'],
+        y=df['MA'],
+        mode='lines',
+        name=f'Moving Average (window={window})',
+        line=dict(color='red', width=2)
+    ))
+
+    # Update layout
+    fig.update_layout(
+        xaxis_title="Token Length",
+        title={
+            'text': f"""<span style="color:red;">{measure}</span> vs Query Length""",
+            'x': 0.01,
+            'xanchor': 'left',
+            'yanchor': 'top'
+        },
+        yaxis_title=measure,
+        height=450,
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        )
+    )
+    return fig
+
+
+@st.cache_data
+def plot_query_performance_vs_query_length_buckets(df, measure):
+    fig = make_subplots(rows=1, cols=2, subplot_titles=["Equal-width Buckets", "Equal-frequency Buckets"])
+
+    # Function to create hover text
+    def create_hover_text(row):
+        return (f"Bucket Range: {row.name}<br>"
+                f"Mean {measure}: {row['Performance']['mean']:.4f}<br>"
+                f"Number of Queries: {row['Performance']['count']}<br>"
+                f"Queries: {', '.join(map(str, row['Query ID']))}<br>"
+                f"Token Lengths: {', '.join(map(str, row['Token Length']))}")
+
+    # Equal-width buckets
+    df['Token Length Bucket'] = pd.cut(df['Token Length'], bins=10)
+    grouped_equal_width = df.groupby('Token Length Bucket').agg({
+        'Performance': ['mean', 'count'],
+        'Query ID': list,
+        'Token Length': list
+    })
+
+    x_labels_equal_width = [f"{int(interval.left)}-{int(interval.right)}" for interval in grouped_equal_width.index]
+    hover_text_equal_width = grouped_equal_width.apply(create_hover_text, axis=1)
+
+    fig.add_trace(
+        go.Bar(
+            x=x_labels_equal_width,
+            y=grouped_equal_width['Performance']['mean'],
+            name="Equal-width",
+            hovertext=hover_text_equal_width,
+            hoverinfo='text',
+            text=grouped_equal_width['Performance']['count'],
+            textposition='auto'
+        ),
+        row=1, col=1
+    )
+
+    # Equal-frequency buckets
+    df['Token Length Bucket'] = pd.qcut(df['Token Length'], q=10, duplicates='drop')
+    grouped_equal_freq = df.groupby('Token Length Bucket').agg({
+        'Performance': ['mean', 'count'],
+        'Query ID': list,
+        'Token Length': list
+    })
+
+    x_labels_equal_freq = [f"{int(interval.left)}-{int(interval.right)}" for interval in grouped_equal_freq.index]
+    hover_text_equal_freq = grouped_equal_freq.apply(create_hover_text, axis=1)
+
+    fig.add_trace(
+        go.Bar(
+            x=x_labels_equal_freq,
+            y=grouped_equal_freq['Performance']['mean'],
+            name="Equal-frequency",
+            hovertext=hover_text_equal_freq,
+            hoverinfo='text',
+            text=grouped_equal_freq['Performance']['count'],
+            textposition='auto'
+        ),
+        row=1, col=2
+    )
+
+    fig.update_xaxes(title_text="Token Length Ranges", tickangle=45)
+    fig.update_yaxes(title_text=f"Mean {measure}")
+
+    fig.update_layout(
+        height=300,
+        showlegend=False,
+        title={
+            'text': f"""Mean <span style="color:red;">{measure}</span> vs Query Length Buckets""",
+            'x': 0.01,
+            'xanchor': 'left',
+            'yanchor': 'top'
+        },
+    )
+    return fig
+
+@st.cache_data
+def plot_query_performance_vs_query_length(data):
+    experiments = list(data.keys())
+    measures_eval = [measure for measure in data[experiments[0]].keys() if measure != 'token_length']
+
+    for experiment in experiments:
+        st.write(f"""<center><h4>Analysis of the <span style="color:red;">{experiment}</span> Experiment</h4></center>""", unsafe_allow_html=True)
+
+        for measure in measures_eval:
+            # Create DataFrame with token lengths, performance, and query IDs
+            df = pd.DataFrame({
+                'Token Length': data[experiment]['token_length']['token_length'],
+                'Performance': data[experiment][measure][measure],
+                'Query ID': range(1, len(data[experiment][measure][measure]) + 1)
+            })
+
+            # Remove rows where Token Length is -1 (placeholder for missing data)
+            df = df[df['Token Length'] != -1]
+
+            # Create and display the combined plot
+            fig_combined = plot_query_performance_vs_query_length_moving_avg(df, measure)
+            st.plotly_chart(fig_combined, use_container_width=True)
+
+            # Bucket analysis
+            fig_buckets = plot_query_performance_vs_query_length_buckets(df, measure)
+            st.plotly_chart(fig_buckets, use_container_width=True)
+
+            # ANOVA analysis
+            f_statistic_ew, p_value_ew = stats.f_oneway(*[group['Performance'].values for name, group in df.groupby(pd.cut(df['Token Length'], bins=10), observed=False)])
+            f_statistic_ef, p_value_ef = stats.f_oneway(*[group['Performance'].values for name, group in df.groupby(pd.qcut(df['Token Length'], q=10, duplicates='drop'), observed=False)])
+
+            if p_value_ew < 0.05 or p_value_ef < 0.05:
+                st.write(f"""At least one of the bucketing methods shows statistically significant differences between buckets (p < <span style="color: red;">0.05</span>). 
+                            ANOVA results (Equal-width buckets): F-statistic = <span style="color: red;">{f_statistic_ew:.4f}</span>, p-value = <span style="color: red;">{p_value_ew:.4f}</span>
+                            ANOVA results (Equal-frequency buckets): F-statistic = <span style="color: red;">{f_statistic_ef:.4f}</span>, p-value = <span style="color: red;">{p_value_ef:.4f}</span>
+                """, unsafe_allow_html=True)
+            else:
+                st.write(f"""Neither bucketing method shows statistically significant differences between buckets (p >= <span style="color: red;">0.05</span>).
+                            ANOVA results (Equal-width buckets): F-statistic = <span style="color: red;">{f_statistic_ew:.4f}</span>, p-value = <span style="color: red;">{p_value_ew:.4f}</span>
+                            ANOVA results (Equal-frequency buckets): F-statistic = <span style="color: red;">{f_statistic_ef:.4f}</span>, p-value = <span style="color: red;">{p_value_ef:.4f}</span>""",
+                         unsafe_allow_html=True)

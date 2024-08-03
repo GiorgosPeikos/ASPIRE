@@ -1,10 +1,72 @@
-import numpy as np
-import pandas as pd
-import streamlit as st
 import torch
 import torch.nn.functional as F
 from sklearn.manifold import TSNE
 from transformers import AutoModel, AutoTokenizer
+from utils.eval_per_query import *
+
+# Initialize the tokenizer
+tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+
+
+@st.cache_resource
+def tokenize_text(text):
+    return tokenizer.tokenize(text)
+
+
+@st.cache_data
+def get_query_len(selected_queries):
+    # Tokenize each query_text and calculate the length of tokens
+    selected_queries['tokens'] = selected_queries['query_text'].apply(tokenize_text)
+    selected_queries['token_len'] = selected_queries['tokens'].apply(len)
+
+    # Create the dictionary with query_id as key and len of tokens as value
+    token_len_dict = {row['query_id']: row['token_len'] for index, row in selected_queries.iterrows()}
+    return token_len_dict
+
+
+def add_token_lengths(results, token_lengths):
+    for experiment in results:
+        # Find the first measure that's not 'token_length'
+        first_measure = next(measure for measure in results[experiment] if measure != 'token_length')
+
+        # Use this measure to determine the number of queries
+        num_queries = len(results[experiment][first_measure][first_measure])
+
+        results[experiment]['token_length'] = {'token_length': []}
+        for i in range(num_queries):
+            query_id = str(i + 1)  # Assuming query IDs start from 1
+            if query_id in token_lengths:
+                results[experiment]['token_length']['token_length'].append(token_lengths[query_id])
+            else:
+                # If token length is not available, use a placeholder value (e.g., -1)
+                results[experiment]['token_length']['token_length'].append(-1)
+    return results
+
+
+@st.cache_data
+def per_query_length_evaluation(qrel, runs, selected_queries, metric_list, relevance_threshold, selected_cutoff, baseline_run, threshold_value):
+    results_per_run = {}
+    parsed_metrics = []
+
+    # Parse each metric in metric_list
+    for metric in metric_list:
+        parsed_metric = metric_parser(metric, relevance_threshold, selected_cutoff)
+        parsed_metrics.append(parsed_metric)
+
+    if baseline_run is None and threshold_value is None:
+        # Calculate evaluation results for each other experiment and collect p-values
+        for run_name, run_data in runs.items():
+            experiment = get_experiment_name(run_name, baseline_run)
+            results_per_run[experiment] = {}
+            for parsed_metric in parsed_metrics:
+                results_per_run[experiment][str(parsed_metric)] = calculate_evaluation(parsed_metric, qrel, run_data)
+
+        query_length = get_query_len(selected_queries)
+        results = add_token_lengths(results_per_run, query_length)
+        # Call the plot function per measure scores
+        plot_query_performance_vs_query_length(results)
+
+        return results
 
 
 @st.cache_resource()

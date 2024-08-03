@@ -113,8 +113,7 @@ if 'qme_selected_queries' in st.session_state and not st.session_state.qme_selec
 
             st.divider()
     else:
-
-        if 'qme_selected_runs' not in st.session_state:
+        if 'qme_selected_queries_random' not in st.session_state:
             st.session_state.qme_selected_queries_random = st.session_state.qme_selected_queries
             st.write(f"""<div style="text-align: center;"> All <span style="color:red;">{len(st.session_state.qme_selected_queries_random)}</span> provided queries will be used for the 
             following analyses.</div>""", unsafe_allow_html=True)
@@ -313,7 +312,7 @@ with st.container():
             if 'qme_selected_measures' not in st.session_state:
                 st.session_state.qme_selected_measures = custom_user[0:4]  # Default selected measures
 
-            selected_measures = st.multiselect("Select additional measures:", custom_user, default=custom_user[1:5])
+            selected_measures = st.multiselect("Select additional measures:", custom_user, default=custom_user[1:3])
 
         with col2:
             if 'qme_selected_cutoff' not in st.session_state:
@@ -475,7 +474,7 @@ with st.container():
             if 'qme_selected_measures' not in st.session_state:
                 st.session_state.qme_selected_measures = custom_user[1:2]  # Default selected measures
 
-            selected_measures = st.multiselect("Select additional measures:", custom_user, default=custom_user[1:3], key="multiselect_3")
+            selected_measures = st.multiselect("Select additional measures:", custom_user, default=custom_user[2:4], key="multiselect_3")
 
         with col2:
             if 'qme_selected_cutoff' not in st.session_state:

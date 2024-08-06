@@ -4,7 +4,7 @@ import numpy as np
 import ir_measures
 from ir_measures import *
 import os
-from utils.eval_core import *
+from utils.eval_core import measures_with_rel_param, measures_with_cutoff
 
 
 @st.cache_data  # Assuming this is a decorator for caching resources

@@ -1,6 +1,8 @@
-from utils.eval_single_exp import *
+# from utils.eval_single_exp
 import streamlit as st
 import pandas as pd
+import ir_measures
+from ir_measures import *
 
 
 @st.cache_data

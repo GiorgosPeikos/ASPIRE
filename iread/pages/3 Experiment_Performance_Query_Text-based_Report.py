@@ -1,11 +1,16 @@
-import math
-from utils.data_handler import load_run_data, load_qrel_data, load_query_data
-from utils.ui import load_css
-from utils.eval_query_collection import analyze_query_judgements
-from utils.eval_query_text_based import *
+import os
+import streamlit as st
 
 # Set the page configuration to wide mode
 st.set_page_config(layout="wide")
+
+import numpy as np
+from utils.data_handler import load_run_data, load_qrel_data, load_query_data
+from utils.ui import load_css
+from utils.eval_core import return_available_measures
+from utils.eval_query_collection import analyze_query_judgements
+from utils.eval_query_text_based import per_query_length_evaluation
+from utils.plots import plot_query_relevance_judgements
 
 # Load custom CSS
 load_css("css/styles.css")
@@ -282,7 +287,6 @@ with st.container():
                                                   st.session_state.qmet_selected_cutoff,
                                                   None, None)
 
-
 # Query Performance vs Query terms
 with st.container():
     st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Query Texts vs Query Performance</span></h3>""", unsafe_allow_html=True)
@@ -292,8 +296,7 @@ with st.container():
         st.warning("Please select a set of queries to begin your evaluation.", icon="⚠")
 
     else:
+        # results = plot_query_terms_rel_judgements(st.session_state.qmet_selected_qrels, st.session_state.qmet_selected_queries_random)
+        st.write(results)
 
-        st.write('Query terms of queries with many and few relevance judgements.')
-
-        st.write('Evaluate the queries, those that performed better than a selected baseline, show their most common terms. show the most common terms of those that do not perform well.')
-
+        st.write('DO Query terms of queries with many and few relevance judgements.')

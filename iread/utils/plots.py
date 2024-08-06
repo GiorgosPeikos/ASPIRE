@@ -1,10 +1,13 @@
 from collections import defaultdict
 import plotly.graph_objects as go
-from utils.eval_single_exp import *
+import streamlit as st
 from plotly.subplots import make_subplots
 import matplotlib.colors as mcolors
 import random
+import pandas as pd
 from scipy import stats
+from utils.eval_query_collection import get_query_rel_judgements
+# from utils.eval_query_text_based import get_term_frequencies
 
 
 # Function that displays the distribution of ranking position of all retrieved documents based on their relevance label.
@@ -538,11 +541,8 @@ def plot_performance_difference_threshold(data, threshold):
 
 @st.cache_data
 def plot_query_relevance_judgements(selected_qrel):
-    # Group by query_id and relevance, count occurrences
-    relevance_counts = selected_qrel.groupby(['query_id', 'relevance']).size().unstack(fill_value=0)
 
-    # Rename columns
-    relevance_counts.columns = ['Irrelevant' if col == 0 else f'Relevance_Label_{col}' for col in relevance_counts.columns]
+    relevance_counts, results = get_query_rel_judgements(selected_qrel)
 
     # Create subplots
     fig = make_subplots(rows=1, cols=1, subplot_titles=['Relevance Judgements per Query'])
@@ -623,17 +623,6 @@ def plot_query_relevance_judgements(selected_qrel):
 
     # Display the plot in Streamlit
     st.plotly_chart(fig, use_container_width=True)
-
-    # Prepare results dictionary
-    results = {}
-    for i, query_id in enumerate(relevance_counts.index, start=1):  # Start enumeration from 1
-        results[i] = {  # Use i (1-based) as the key instead of query_id
-            "irrelevant": int(relevance_counts.loc[query_id, "Irrelevant"]),
-            "relevant": {}
-        }
-        for column in relevance_counts.columns:
-            if column != "Irrelevant":
-                results[i]["relevant"][column] = int(relevance_counts.loc[query_id, column])
 
     return results
 
@@ -816,3 +805,4 @@ def plot_query_performance_vs_query_length(data):
                             ANOVA results (Equal-width buckets): F-statistic = <span style="color: red;">{f_statistic_ew:.4f}</span>, p-value = <span style="color: red;">{p_value_ew:.4f}.</span>
                             ANOVA results (Equal-frequency buckets): F-statistic = <span style="color: red;">{f_statistic_ef:.4f}</span>, p-value = <span style="color: red;">
                             {p_value_ef:.4f}.</span>""", unsafe_allow_html=True)
+

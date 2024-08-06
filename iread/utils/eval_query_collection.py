@@ -1,6 +1,5 @@
 import streamlit as st
 import numpy as np
-from collections import Counter
 
 
 # Helper function to get judgements for a specific label
@@ -26,6 +25,27 @@ def classify_queries(values, n_hard=5, n_easy=5):
         'min': min(values_list),
         'max': max(values_list)
     }
+
+
+def get_query_rel_judgements(qrels):
+    # Group by query_id and relevance, count occurrences
+    relevance_counts = qrels.groupby(['query_id', 'relevance']).size().unstack(fill_value=0)
+
+    # Rename columns
+    relevance_counts.columns = ['Irrelevant' if col == 0 else f'Relevance_Label_{col}' for col in relevance_counts.columns]
+
+    # Prepare results dictionary
+    results = {}
+    for i, query_id in enumerate(relevance_counts.index, start=1):  # Start enumeration from 1
+        results[i] = {  # Use i (1-based) as the key instead of query_id
+            "irrelevant": int(relevance_counts.loc[query_id, "Irrelevant"]),
+            "relevant": {}
+        }
+        for column in relevance_counts.columns:
+            if column != "Irrelevant":
+                results[i]["relevant"][column] = int(relevance_counts.loc[query_id, column])
+
+    return relevance_counts, results
 
 
 def compare_relevance_labels(data, queries, relevance_labels):

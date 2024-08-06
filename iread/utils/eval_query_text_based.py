@@ -1,11 +1,29 @@
 import torch
 import torch.nn.functional as F
+import streamlit as st
+import pandas as pd
+import numpy as np
 from sklearn.manifold import TSNE
 from transformers import AutoModel, AutoTokenizer
-from utils.eval_per_query import *
+from utils.eval_single_exp import metric_parser, get_experiment_name
+from utils.eval_per_query import calculate_evaluation
+from utils.plots import plot_query_performance_vs_query_length
+from collections import Counter
+import nltk
+from nltk.corpus import stopwords
+import re
 
 # Initialize the tokenizer
 tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+
+
+@st.cache_resource
+def download_nltk_resources():
+    nltk.download('stopwords', quiet=True)
+    nltk.download('punkt', quiet=True)
+
+
+download_nltk_resources()
 
 
 @st.cache_resource
@@ -24,6 +42,7 @@ def get_query_len(selected_queries):
     return token_len_dict
 
 
+@st.cache_data
 def add_token_lengths(results, token_lengths):
     for experiment in results:
         # Find the first measure that's not 'token_length'
@@ -41,6 +60,17 @@ def add_token_lengths(results, token_lengths):
                 # If token length is not available, use a placeholder value (e.g., -1)
                 results[experiment]['token_length']['token_length'].append(-1)
     return results
+
+
+def preprocess_text(text):
+    # Convert to lowercase and remove punctuation
+    text = re.sub(r'[^\w\s]', '', text.lower())
+    # Tokenize
+    tokens = nltk.word_tokenize(text)
+    # Remove stopwords
+    stop_words = set(stopwords.words('english'))
+    tokens = [token for token in tokens if token not in stop_words]
+    return tokens
 
 
 @st.cache_data

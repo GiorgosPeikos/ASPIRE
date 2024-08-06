@@ -118,7 +118,8 @@ if 'qme_selected_queries' in st.session_state and not st.session_state.qme_selec
             st.write(f"""<div style="text-align: center;"> All <span style="color:red;">{len(st.session_state.qme_selected_queries_random)}</span> provided queries will be used for the 
             following analyses.</div>""", unsafe_allow_html=True)
 
-        st.divider()
+st.divider()
+
 # Per query Relevance Judgements
 with st.container():
     st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Relevance Judgments per Query</span></h3>""", unsafe_allow_html=True)
@@ -274,7 +275,7 @@ with st.container():
 
         st.markdown("### Manually Examine Sampled Queries")
         with st.expander("See Queries"):
-            st.dataframe(st.session_state.qmet_selected_queries_random[['query_id', 'query_text']], use_container_width=True, hide_index=True)
+            st.dataframe(st.session_state.qme_selected_queries_random[['query_id', 'query_text']], use_container_width=True, hide_index=True)
 
 st.divider()
 

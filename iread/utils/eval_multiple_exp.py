@@ -1,4 +1,3 @@
-import streamlit
 from scipy import stats
 import statsmodels.stats.multitest
 from utils.eval_single_exp import *

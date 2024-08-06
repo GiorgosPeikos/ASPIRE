@@ -8,7 +8,8 @@ from transformers import AutoModel, AutoTokenizer
 from utils.eval_single_exp import metric_parser, get_experiment_name
 from utils.eval_per_query import calculate_evaluation
 from utils.plots import plot_query_performance_vs_query_length
-from collections import Counter
+from utils.eval_core import return_available_measures
+from utils.eval_query_collection import analyze_query_judgements
 import nltk
 from nltk.corpus import stopwords
 import re
@@ -62,6 +63,7 @@ def add_token_lengths(results, token_lengths):
     return results
 
 
+@st.cache_data
 def preprocess_text(text):
     # Convert to lowercase and remove punctuation
     text = re.sub(r'[^\w\s]', '', text.lower())
@@ -165,3 +167,4 @@ def perform_pca(query_data):
     pca_df["query_id"] = query_data["query_id"]
     pca_df["query_type"] = query_data["query_type"]
     return pca_df
+

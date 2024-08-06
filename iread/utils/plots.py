@@ -5,9 +5,10 @@ from plotly.subplots import make_subplots
 import matplotlib.colors as mcolors
 import random
 import pandas as pd
-from scipy import stats
 from utils.eval_query_collection import get_query_rel_judgements
-# from utils.eval_query_text_based import get_term_frequencies
+from scipy import stats
+from collections import Counter
+from wordcloud import WordCloud
 
 
 # Function that displays the distribution of ranking position of all retrieved documents based on their relevance label.
@@ -806,3 +807,71 @@ def plot_query_performance_vs_query_length(data):
                             ANOVA results (Equal-frequency buckets): F-statistic = <span style="color: red;">{f_statistic_ef:.4f}</span>, p-value = <span style="color: red;">
                             {p_value_ef:.4f}.</span>""", unsafe_allow_html=True)
 
+
+@st.cache_data
+def create_wordcloud(word_freq):
+    wordcloud = WordCloud(width=800, height=400, background_color='white').generate_from_frequencies(word_freq)
+    return wordcloud
+
+
+@st.cache_data
+def get_query_word_frequencies(relevance_data, query_df, threshold=5):
+    relevant_words = Counter()
+    irrelevant_words = Counter()
+
+    for query_id, data in relevance_data.items():
+        total_relevant = sum(data['relevant'].values())
+        query_text = query_df[query_df['query_id'] == int(query_id)]['query_text'].values[0]
+        words = preprocess_text(query_text)
+
+        if total_relevant > threshold:
+            relevant_words.update(words)
+        elif data['irrelevant'] > threshold:
+            irrelevant_words.update(words)
+
+    return relevant_words, irrelevant_words
+
+
+@st.cache_data
+def plot_query_terms_rel_judgements(relevance_data, query_df):
+    relevant_words, irrelevant_words = get_query_word_frequencies(relevance_data, query_df)
+
+    # Create subplots
+    fig = make_subplots(rows=1, cols=2, subplot_titles=['Relevant Queries Wordcloud', 'Irrelevant Queries Wordcloud'])
+
+    # Create and plot relevant queries wordcloud
+    relevant_wc = create_wordcloud(relevant_words)
+    relevant_wc_img = relevant_wc.to_array()
+    fig.add_trace(
+        go.Image(z=relevant_wc_img),
+        row=1, col=1
+    )
+
+    # Create and plot irrelevant queries wordcloud
+    irrelevant_wc = create_wordcloud(irrelevant_words)
+    irrelevant_wc_img = irrelevant_wc.to_array()
+    fig.add_trace(
+        go.Image(z=irrelevant_wc_img),
+        row=1, col=2
+    )
+
+    # Update layout
+    fig.update_layout(
+        height=500,
+        title={
+            'text': "Query Text Analysis: Wordclouds",
+            'x': 0.01,
+            'xanchor': 'left',
+            'yanchor': 'top'
+        }
+    )
+
+    # Remove axes
+    fig.update_xaxes(showticklabels=False, showgrid=False, zeroline=False)
+    fig.update_yaxes(showticklabels=False, showgrid=False, zeroline=False)
+
+    # Display the plot in Streamlit
+    st.plotly_chart(fig, use_container_width=True)
+
+    # Return word frequencies for further analysis if needed
+    return relevant_words, irrelevant_words

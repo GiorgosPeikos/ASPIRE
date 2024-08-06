@@ -1,15 +1,14 @@
-import os
-import numpy as np
-from utils.data_handler import load_run_data, load_qrel_data, load_query_data
-from utils.ui import load_css
-from utils.eval_core import return_available_measures
-from utils.eval_query_collection import analyze_query_judgements
-from utils.eval_query_text_based import per_query_length_evaluation
-from utils.plots import plot_query_relevance_judgements
 import streamlit as st
 st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed")
+import numpy as np
+from utils.ui import load_css
+from utils.data_handler import *
+from utils.eval_core import return_available_measures
+from utils.eval_query_collection import analyze_query_judgements
+from utils.plots import plot_query_relevance_judgements
+from utils.eval_query_text_based import per_query_length_evaluation
 
 # Load custom CSS
 load_css("css/styles.css")
@@ -131,8 +130,16 @@ with st.container():
     if 'qmet_selected_runs' not in st.session_state:
         st.warning("Please select a set of queries to begin your evaluation.", icon="⚠")
     else:
-        results = plot_query_relevance_judgements(st.session_state.qmet_selected_qrels)
-        analysis_results = analyze_query_judgements(results)
+        # st.session_state.qmet_query_rel_judg --> Usage later on the code --> Contains for each query its relevance assessments, in dictionary format:
+        # "2":{
+        #   "irrelevant": 478,
+        #   "relevant": {
+        #     "Relevance_Label_1": 36,
+        #     "Relevance_Label_2": 11
+        #   }
+        # }
+        st.session_state.qmet_query_rel_judg = plot_query_relevance_judgements(st.session_state.qmet_selected_qrels)
+        analysis_results = analyze_query_judgements(st.session_state.qmet_query_rel_judg)
 
         relevance_labels = [label for label in analysis_results['label_comparison'] if label != 'combined']
         num_columns = len(relevance_labels)
@@ -295,7 +302,8 @@ with st.container():
         st.warning("Please select a set of queries to begin your evaluation.", icon="⚠")
 
     else:
-        # results = plot_query_terms_rel_judgements(st.session_state.qmet_selected_qrels, st.session_state.qmet_selected_queries_random)
-        st.write(results)
+        st.write(st.session_state.qmet_query_rel_judg)
+        plot_query_terms_rel_judgements(st.session_state.qmet_query_rel_judg, st.session_state.qmet_selected_queries_random)
+
 
         st.write('DO Query terms of queries with many and few relevance judgements.')

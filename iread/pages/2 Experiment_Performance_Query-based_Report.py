@@ -3,9 +3,10 @@ from utils.data_handler import load_run_data, load_qrel_data, load_query_data
 from utils.ui import load_css
 from utils.eval_per_query import *
 from utils.eval_query_collection import analyze_query_judgements
-
-# Set the page configuration to wide mode
-st.set_page_config(layout="wide")
+import streamlit as st
+st.set_page_config(
+    layout="wide",
+    initial_sidebar_state="collapsed")
 
 # Load custom CSS
 load_css("css/styles.css")

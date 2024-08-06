@@ -1,4 +1,5 @@
 import streamlit as st
+
 st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed")
@@ -7,7 +8,7 @@ from utils.ui import load_css
 from utils.data_handler import *
 from utils.eval_core import return_available_measures
 from utils.eval_query_collection import analyze_query_judgements
-from utils.plots import plot_query_relevance_judgements
+from utils.plots import plot_query_relevance_judgements, plot_query_performance_vs_query_length, create_relevance_wordclouds
 from utils.eval_query_text_based import per_query_length_evaluation
 
 # Load custom CSS
@@ -286,24 +287,99 @@ with st.container():
             st.session_state.qmet_selected_cutoff = selected_cutoff
 
         if len(st.session_state.qmet_selected_measures) >= 1:
-            results = per_query_length_evaluation(st.session_state.qmet_selected_qrels, st.session_state.qmet_selected_runs,
-                                                  st.session_state.qmet_selected_queries_random,
-                                                  st.session_state.qmet_selected_measures,
-                                                  st.session_state.qmet_relevance_threshold,
-                                                  st.session_state.qmet_selected_cutoff,
-                                                  None, None)
+            st.session_state.per_query_length_res = per_query_length_evaluation(st.session_state.qmet_selected_qrels, st.session_state.qmet_selected_runs,
+                                                                                st.session_state.qmet_selected_queries_random,
+                                                                                st.session_state.qmet_selected_measures,
+                                                                                st.session_state.qmet_relevance_threshold,
+                                                                                st.session_state.qmet_selected_cutoff,
+                                                                                None, None)
 
-# Query Performance vs Query terms
+            # Call the plot function per measure scores
+            plot_query_performance_vs_query_length(st.session_state.per_query_length_res)
+
+# Query Text Analysis based on Relevance Judgements
 with st.container():
-    st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Query Texts vs Query Performance</span></h3>""", unsafe_allow_html=True)
+    st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Query Text Analysis based on Relevance Judgements</span></h3>""", unsafe_allow_html=True)
     _, _, custom_user, default_measures, _, _ = return_available_measures()
 
     if 'qmet_selected_runs' not in st.session_state:
         st.warning("Please select a set of queries to begin your evaluation.", icon="⚠")
 
     else:
-        st.write(st.session_state.qmet_query_rel_judg)
-        plot_query_terms_rel_judgements(st.session_state.qmet_query_rel_judg, st.session_state.qmet_selected_queries_random)
+        with st.expander("Outlier Detection Method Explanations"):
+            st.markdown("""
+            ### Median Absolute Deviation (MAD)
+            The MAD method uses the median of the absolute deviations from the median of the data. It's more robust against extreme outliers than methods based on mean and standard deviation.
 
+            - **Pros**: Robust against extreme outliers, works well with skewed distributions.
+            - **Cons**: May be less sensitive to subtle outliers in some cases.
+            - **When to use**: When your data may contain extreme outliers or is not normally distributed.
+            - **Threshold effect**: A higher threshold will result in fewer queries being classified as outliers. As you increase the threshold, only the most extreme values will be considered outliers.
 
-        st.write('DO Query terms of queries with many and few relevance judgements.')
+            ### Percentile-based method
+            This method defines outliers based on the data's percentiles. It considers values below the 5th percentile or above the 95th percentile as outliers.
+
+            - **Pros**: Simple to understand, always identifies a fixed proportion of the data as outliers.
+            - **Cons**: May not adapt well to different data distributions.
+            - **When to use**: When you want a straightforward method that always identifies a certain percentage of data points as outliers.
+            - **Threshold effect**: This method doesn't use a user-defined threshold. It always selects a fixed percentage of queries as outliers based on the predefined percentiles (5th and 95th).
+
+            ### Modified Z-score
+            Similar to the standard Z-score, but uses median and MAD instead of mean and standard deviation. This makes it more robust against outliers.
+
+            - **Pros**: More robust than standard Z-score, works well for skewed distributions.
+            - **Cons**: May be overly sensitive for very small datasets.
+            - **When to use**: When you want a balance between robustness and sensitivity to outliers.
+            - **Threshold effect**: The threshold determines how many standard deviations (calculated using MAD) a value needs to be from the median to be considered an outlier. A higher threshold will result in fewer outliers, focusing on more extreme values.
+
+            ### Dynamic thresholding
+            This method adjusts the threshold based on the coefficient of variation (CV) of the data. It's more flexible and can adapt to different data distributions.
+
+            - **Pros**: Adapts to the spread of the data, can catch subtle outliers in varied distributions.
+            - **Cons**: May be more complex to interpret.
+            - **When to use**: When your data has varying levels of spread across different metrics or queries.
+            - **Threshold effect**: The user-defined threshold influences the base multiplier for the dynamic threshold calculation. A higher threshold will generally result in fewer outliers being detected, but the exact effect can vary depending on the data's coefficient of variation.
+
+            ### Max-Min
+            This method simply selects the top 5, bottom 5, and 5 queries around the median.
+
+            - **Pros**: Straightforward, always provides a fixed number of queries for each category.
+            - **Cons**: Doesn't adapt to the data distribution, may not capture true outliers in all cases.
+            - **When to use**: When you want a quick overview of the extreme values and median in your dataset.
+            - **Threshold effect**: This method doesn't use a threshold. It always selects the same number of queries regardless of the data distribution.
+
+            ### General Note on Thresholds
+            For methods that use thresholds (MAD, Modified Z-score, Dynamic thresholding), increasing the threshold makes the outlier detection more conservative, resulting in fewer queries being classified as outliers. Decreasing the threshold makes the detection more sensitive, potentially identifying more queries as outliers. The optimal threshold often depends on your specific data and use case.
+            """)
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            # Method selection with 'Max-Min' as the default
+            st.session_state.qmet_method_text_plots = st.selectbox(
+                'Select outlier detection method',
+                ['Max-Min', 'Median Absolute Deviation', 'Percentile-based method', 'Modified Z-score', 'Dynamic thresholding'],
+                index=0  # This sets 'Max-Min' as the default
+            )
+
+        with col2:
+            # Threshold selection (not applicable for 'Percentile-based method' and 'Max-Min')
+            st.session_state.qmet_threshold_text_plots = None
+            if st.session_state.qmet_method_text_plots not in ['Percentile-based method', 'Max-Min']:
+                st.session_state.qmet_threshold_text_plots = st.slider('Select threshold', 1.0, 10.0, 3.5, 0.1)
+
+        # Run analysis button
+        with st.spinner('Analyzing...'):
+            result = create_relevance_wordclouds(
+                st.session_state.qmet_query_rel_judg,
+                st.session_state.qmet_selected_queries_random,
+                method=st.session_state.qmet_method_text_plots,
+                threshold=st.session_state.qmet_threshold_text_plots)
+
+            st.write(result)
+        #
+        # st.write(st.session_state.qmet_query_rel_judg)
+        # st.dataframe(st.session_state.qmet_selected_queries_random)
+        # create_relevance_wordclouds(st.session_state.qmet_query_rel_judg, st.session_state.qmet_selected_queries_random, )
+        # st.write('DO Query terms of queries with many and few relevance judgements.')
+        #

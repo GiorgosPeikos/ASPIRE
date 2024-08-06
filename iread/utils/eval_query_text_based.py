@@ -7,9 +7,9 @@ from sklearn.manifold import TSNE
 from transformers import AutoModel, AutoTokenizer
 from utils.eval_single_exp import metric_parser, get_experiment_name
 from utils.eval_per_query import calculate_evaluation
-from utils.plots import plot_query_performance_vs_query_length
 from utils.eval_core import return_available_measures
 from utils.eval_query_collection import analyze_query_judgements
+from typing import Dict, List, Tuple
 import nltk
 from nltk.corpus import stopwords
 import re
@@ -22,7 +22,6 @@ tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
 def download_nltk_resources():
     nltk.download('stopwords', quiet=True)
     nltk.download('punkt', quiet=True)
-
 
 download_nltk_resources()
 
@@ -95,10 +94,75 @@ def per_query_length_evaluation(qrel, runs, selected_queries, metric_list, relev
 
         query_length = get_query_len(selected_queries)
         results = add_token_lengths(results_per_run, query_length)
-        # Call the plot function per measure scores
-        plot_query_performance_vs_query_length(results)
 
         return results
+
+
+def query_clf_relevance(data: Dict[str, Dict], method: str = 'Median Absolute Deviation', threshold: float = 3.5) -> Dict[str, Dict[str, List[str]]]:
+    query_ids = list(data.keys())
+    metrics = ["irrelevant"] + list(next(iter(data.values()))["relevant"].keys())
+
+    # Pre-allocate numpy arrays
+    values = np.zeros((len(query_ids), len(metrics)))
+
+    # Populate the array in a single pass through the data
+    for i, (query_id, query_data) in enumerate(data.items()):
+        values[i, 0] = query_data["irrelevant"]
+        for j, metric in enumerate(metrics[1:], start=1):
+            values[i, j] = query_data["relevant"][metric]
+
+    results = {}
+
+    for j, metric in enumerate(metrics):
+        metric_values = values[:, j]
+
+        if method == 'Median Absolute Deviation':
+            median = np.median(metric_values)
+            mad = np.median(np.abs(metric_values - median))
+            lower_bound = median - threshold * mad
+            upper_bound = median + threshold * mad
+        elif method == 'Percentile-based method':
+            lower_bound, upper_bound = np.percentile(metric_values, [5, 95])
+        elif method == 'Modified Z-score':
+            median = np.median(metric_values)
+            mad = np.median(np.abs(metric_values - median))
+            modified_z_scores = 0.6745 * (metric_values - median) / mad
+            lower_bound = median - threshold * mad
+            upper_bound = median + threshold * mad
+        elif method == 'Dynamic thresholding':
+            mean = np.mean(metric_values)
+            std = np.std(metric_values)
+            cv = std / mean if mean != 0 else 0
+            dynamic_threshold = max(2, min(5, 10 * cv))
+            lower_bound = mean - dynamic_threshold * std
+            upper_bound = mean + dynamic_threshold * std
+        elif method == 'Max-Min':
+            sorted_indices = np.argsort(metric_values)
+            high = sorted_indices[-5:]
+            low = sorted_indices[:5]
+            median = np.median(metric_values)
+            middle = sorted_indices[np.abs(metric_values - median).argsort()[:5]]
+            results[metric] = {
+                "high": [query_ids[i] for i in high],
+                "normal": [query_ids[i] for i in middle],
+                "low": [query_ids[i] for i in low]
+            }
+            continue
+        else:
+            raise ValueError("Invalid method specified")
+
+        if method != 'Max-Min':
+            high = np.where(metric_values > upper_bound)[0]
+            low = np.where(metric_values < lower_bound)[0]
+            normal = np.where((metric_values >= lower_bound) & (metric_values <= upper_bound))[0]
+
+            results[metric] = {
+                "high": [query_ids[i] for i in high],
+                "normal": [query_ids[i] for i in normal],
+                "low": [query_ids[i] for i in low]
+            }
+
+    return results
 
 
 @st.cache_resource()

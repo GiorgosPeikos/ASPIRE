@@ -12,10 +12,10 @@ from collections import Counter
 from wordcloud import WordCloud
 import json
 from typing import Dict, Any
-import pandas as pd
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 from concurrent.futures import ThreadPoolExecutor
+
 
 # Function that displays the distribution of ranking position of all retrieved documents based on their relevance label.
 @st.cache_resource

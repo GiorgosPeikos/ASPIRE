@@ -1,5 +1,4 @@
 import streamlit as st
-
 st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed")
@@ -299,14 +298,14 @@ with st.container():
 
 # Query Text Analysis based on Relevance Judgements
 with st.container():
-    st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Query Text Analysis based on Relevance Judgements</span></h3>""", unsafe_allow_html=True)
+    st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Query Text Analysis based on their Relevance Judgements</span></h3>""", unsafe_allow_html=True)
     _, _, custom_user, default_measures, _, _ = return_available_measures()
 
     if 'qmet_selected_runs' not in st.session_state:
         st.warning("Please select a set of queries to begin your evaluation.", icon="⚠")
 
     else:
-        with st.expander("Outlier Detection Method Explanations"):
+        with st.expander("Details of the Query Outlier Detection Methods"):
             st.markdown("""
             ### Median Absolute Deviation (MAD)
             The MAD method uses the median of the absolute deviations from the median of the data. It's more robust against extreme outliers than methods based on mean and standard deviation.

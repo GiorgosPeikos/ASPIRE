@@ -6,10 +6,8 @@ import numpy as np
 from sklearn.manifold import TSNE
 from transformers import AutoModel, AutoTokenizer
 from utils.eval_single_exp import metric_parser, get_experiment_name
-from utils.eval_per_query import calculate_evaluation
-from utils.eval_core import return_available_measures
-from utils.eval_query_collection import analyze_query_judgements
-from typing import Dict, List, Tuple
+from utils.eval_multiple_exp import calculate_evaluation
+from typing import Dict, List
 import nltk
 from nltk.corpus import stopwords
 import re

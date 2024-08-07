@@ -38,7 +38,7 @@ if not any(
 run_path = st.session_state["selected_run"]
 qrel_path = st.session_state["selected_qrels"]
 run = load_run_data(run_path)
-qrels = load_qrel_data(qrel_path)  # todo: check why first row is missing
+qrels = load_qrel_data(qrel_path)
 relevance_max = qrels["relevance"].max()  # Get maximum relevance level
 
 # Displaying the experiment's name

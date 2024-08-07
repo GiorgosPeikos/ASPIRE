@@ -328,7 +328,7 @@ with st.container():
             if 'qme_selected_cutoff' not in st.session_state:
                 st.session_state.qme_selected_cutoff = 10  # Default cutoff value
 
-            selected_cutoff = st.number_input("Enter cutoff value:", min_value=1, value=10, max_value=1000, step=1)
+            selected_cutoff = st.number_input("Enter measure cutoff value:", min_value=1, value=10, max_value=1000, step=1)
 
             # Update session state with current selections
             st.session_state.qme_selected_measures = selected_measures
@@ -490,7 +490,7 @@ with st.container():
             if 'qme_selected_cutoff' not in st.session_state:
                 st.session_state.qme_selected_cutoff = 10  # Default cutoff value
 
-            selected_cutoff = st.number_input("Enter cutoff value:", min_value=1, value=10, max_value=1000, step=1, key="cutoff_3")
+            selected_cutoff = st.number_input("Enter measure cutoff value:", min_value=1, value=10, max_value=1000, step=1, key="cutoff_3")
 
             # Update session state with current selections
             st.session_state.qme_selected_measures = selected_measures
@@ -683,7 +683,7 @@ with st.container():
             if 'qme_selected_cutoff' not in st.session_state:
                 st.session_state.qme_selected_cutoff = 10  # Default cutoff value
 
-            selected_cutoff = st.number_input("Enter cutoff value:", min_value=1, value=10, max_value=1000, step=1, key="cutoff_4")
+            selected_cutoff = st.number_input("Enter measure cutoff value:", min_value=1, value=10, max_value=1000, step=1, key="cutoff_4")
 
             # Update session state with current selections
             st.session_state.qme_selected_measures = selected_measures

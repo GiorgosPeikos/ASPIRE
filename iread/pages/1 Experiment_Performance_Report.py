@@ -298,7 +298,7 @@ with st.container():
             with col[0]:
                 selected_measures = st.multiselect("Select additional measures:", custom_user, default=custom_user[5:6])
             with col[1]:
-                selected_cutoff = st.number_input("Enter cutoff value:", min_value=1, value=25, max_value=1000, step=1)
+                selected_cutoff = st.number_input("Enter measure cutoff value:", min_value=1, value=25, max_value=1000, step=1)
 
             # Update session state with current selections
             st.session_state.selected_measures = selected_measures
@@ -469,7 +469,7 @@ with st.container():
 
         with col1:
             selected_cutoff = st.number_input(
-                "Enter cutoff value:",
+                "Number of top-ranked documents considered:",
                 min_value=1,
                 value=1,
                 max_value=1000,

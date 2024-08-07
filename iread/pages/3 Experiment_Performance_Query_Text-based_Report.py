@@ -249,7 +249,7 @@ with st.container():
                 st.session_state.qmet_threshold_text_plots = st.slider('Select threshold', 1.0, 10.0, 1.5, 0.1)
 
         # Run analysis button
-        result = create_relevance_wordclouds(
+        create_relevance_wordclouds(
             st.session_state.qmet_query_rel_judg,
             st.session_state.qmet_selected_queries_random,
             method=st.session_state.qmet_method_text_plots,
@@ -352,7 +352,7 @@ with st.container():
             if 'qmet_selected_cutoff' not in st.session_state:
                 st.session_state.qmet_selected_cutoff = 10  # Default cutoff value
 
-            selected_cutoff = st.number_input("Enter cutoff value:", min_value=1, value=10, max_value=1000, step=1)
+            selected_cutoff = st.number_input("Enter measure cutoff value:", min_value=1, value=10, max_value=1000, step=1)
 
             # Update session state with current selections
             st.session_state.qmet_selected_measures = selected_measures
@@ -371,3 +371,61 @@ with st.container():
 
 st.divider()
 
+
+# Query Performance vs Query Similarity
+with st.container():
+    st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Query Performance vs Query Text Similarity</span></h3>""", unsafe_allow_html=True)
+
+    if 'qmet_selected_runs' not in st.session_state:
+        st.warning("Please select a set of queries to begin your evaluation.", icon="⚠")
+    else:
+        with st.expander('See Details and Interpretations'):
+            st.write('Add details.')
+
+        # Get the list of selected run files
+        selected_runs_files = list(st.session_state.qmet_selected_runs.keys())
+
+        if st.session_state.qmet_max_relevance >= 2:
+            st.session_state.qmet_relevance_threshold = st.slider(
+                "Select from the Available Relevance Thresholds (Slide)",
+                min_value=1,
+                max_value=2,
+                value=1,
+                key="me_slider4",
+            )
+
+            if 'qmet_prev_relevance_threshold' not in st.session_state:
+                st.session_state.qmet_prev_relevance_threshold = 1
+
+            if st.session_state.qmet_relevance_threshold != st.session_state.qmet_prev_relevance_threshold:
+                st.session_state.qmet_prev_relevance_threshold = st.session_state.qmet_relevance_threshold
+        else:
+            st.session_state.qmet_relevance_threshold = 1
+            st.write("""**Relevance judgements are binary, so <span style="color:red;">relevance threshold is set to 1.</span>**""", unsafe_allow_html=True)
+
+        col1, col2 = st.columns(2)  # Adjust the column width ratio as needed
+
+        with col1:
+
+            # Initialize session state variables if they don't exist
+            if 'qmet_selected_measures' not in st.session_state:
+                st.session_state.qmet_selected_measures = custom_user[0:4]  # Default selected measures
+
+            selected_measures = st.multiselect("Select additional measures:", custom_user, default=custom_user[1:2], key='select_measures2')
+
+        with col2:
+            if 'qmet_selected_cutoff' not in st.session_state:
+                st.session_state.qmet_selected_cutoff = 10  # Default cutoff value
+
+            selected_cutoff = st.number_input("Enter measure cutoff value:", min_value=1, value=10, max_value=1000, step=1, key='cutoff2')
+
+            # Update session state with current selections
+            st.session_state.qmet_selected_measures = selected_measures
+            st.session_state.qmet_selected_cutoff = selected_cutoff
+
+        st.session_state.model_name = st.text_input(
+            "**Enter a HuggingFace model name that will be used to estimate the query embeddings. Default model:**",
+            "sentence-transformers/all-MiniLM-L6-v2",
+        )
+
+        # Here I need to estimate the query-based similarity.

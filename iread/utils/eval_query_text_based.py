@@ -96,7 +96,7 @@ def per_query_length_evaluation(qrel, runs, selected_queries, metric_list, relev
         return results
 
 
-def query_clf_relevance(data: Dict[str, Dict], method: str = 'Median Absolute Deviation', threshold: float = 3.5) -> Dict[str, Dict[str, List[str]]]:
+def query_clf_relevance_assesments(data: Dict[str, Dict], method: str = 'Median Absolute Deviation', threshold: float = 3.5) -> Dict[str, Dict[str, List[str]]]:
     query_ids = list(data.keys())
     metrics = ["irrelevant"] + list(next(iter(data.values()))["relevant"].keys())
 
@@ -127,40 +127,76 @@ def query_clf_relevance(data: Dict[str, Dict], method: str = 'Median Absolute De
             modified_z_scores = 0.6745 * (metric_values - median) / mad
             lower_bound = median - threshold * mad
             upper_bound = median + threshold * mad
-        elif method == 'Dynamic thresholding':
-            mean = np.mean(metric_values)
-            std = np.std(metric_values)
-            cv = std / mean if mean != 0 else 0
-            dynamic_threshold = max(2, min(5, 10 * cv))
-            lower_bound = mean - dynamic_threshold * std
-            upper_bound = mean + dynamic_threshold * std
-        elif method == 'Max-Min':
+        elif method == 'Max-Min-Median':
             sorted_indices = np.argsort(metric_values)
             high = sorted_indices[-5:]
             low = sorted_indices[:5]
             median = np.median(metric_values)
             middle = sorted_indices[np.abs(metric_values - median).argsort()[:5]]
             results[metric] = {
-                "high": [query_ids[i] for i in high],
-                "normal": [query_ids[i] for i in middle],
-                "low": [query_ids[i] for i in low]
+                "5_queries_most_assessments": [query_ids[i] for i in high],
+                "5_queries_around_median_assessments": [query_ids[i] for i in middle],
+                "5_queries_least_assessments": [query_ids[i] for i in low]
             }
             continue
         else:
             raise ValueError("Invalid method specified")
 
-        if method != 'Max-Min':
+        if method != 'Max-Min-Median':
             high = np.where(metric_values > upper_bound)[0]
             low = np.where(metric_values < lower_bound)[0]
             normal = np.where((metric_values >= lower_bound) & (metric_values <= upper_bound))[0]
 
-            results[metric] = {
-                "high": [query_ids[i] for i in high],
-                "normal": [query_ids[i] for i in normal],
-                "low": [query_ids[i] for i in low]
-            }
+            if method == "Percentile-based method":
+                results[metric] = {
+                    "queries_above_95th_percentile": [query_ids[i] for i in high],
+                    "queries_between_5th_95th_percentiles": [query_ids[i] for i in normal],
+                    "queries_below_5th_percentile": [query_ids[i] for i in low]
+                }
+            else:
+                results[metric] = {
+                    "queries_above_threshold": [query_ids[i] for i in high],
+                    "queries_within_normal_range": [query_ids[i] for i in normal],
+                    "queries_below_threshold": [query_ids[i] for i in low]
+                }
 
     return results
+
+
+@st.cache_data
+def remove_stopwords_from_queries(queries_df, text_column='query_text', id_column='query_id'):
+    """
+    Remove stopwords, numbers, and punctuation from queries in a DataFrame using a faster method.
+
+    Parameters:
+    queries_df (pd.DataFrame): DataFrame containing queries
+    text_column (str): Name of the column containing query text
+    id_column (str): Name of the column containing query IDs
+
+    Returns:
+    pd.DataFrame: DataFrame with stopwords, numbers, and punctuation removed from the specified text column
+    """
+    # Ensure the required columns exist
+    if text_column not in queries_df.columns or id_column not in queries_df.columns:
+        raise ValueError(f"Required columns {text_column} and/or {id_column} not found in DataFrame")
+
+    # Get English stopwords
+    stop_words = set(stopwords.words('english'))
+
+    # Compile regex pattern for word boundary, excluding numbers and punctuation
+    word_pattern = re.compile(r'\b[a-zA-Z]+\b')
+
+    # Create a vectorized function to remove stopwords, numbers, and punctuation
+    def clean_text_vectorized(text):
+        return ' '.join([word for word in word_pattern.findall(text.lower()) if word not in stop_words])
+
+    # Create a new DataFrame to avoid modifying the original
+    result_df = queries_df.copy()
+
+    # Apply cleaning to the text column using vectorized operation
+    result_df[text_column] = result_df[text_column].apply(clean_text_vectorized)
+
+    return result_df
 
 
 @st.cache_resource()

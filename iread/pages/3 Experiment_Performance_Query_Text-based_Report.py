@@ -185,9 +185,82 @@ with st.container():
 
 st.divider()
 
+# Query Text Analysis based on Relevance Judgements
+with st.container():
+    st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Query Text Analysis based on their Relevance Judgements</span></h3>""", unsafe_allow_html=True)
+    _, _, custom_user, default_measures, _, _ = return_available_measures()
+
+    if 'qmet_selected_runs' not in st.session_state:
+        st.warning("Please select a set of queries to begin your evaluation.", icon="⚠")
+
+    else:
+        with st.expander("Details of the Query Selection (Outlier Detection) Methods"):
+            st.markdown("""
+            ### Median Absolute Deviation (MAD)
+            The MAD method uses the median of the absolute deviations from the median of the data. It's more robust against extreme outliers than methods based on mean and standard deviation.
+
+            - **Pros**: Robust against extreme outliers, works well with skewed distributions.
+            - **Cons**: May be less sensitive to subtle outliers in some cases.
+            - **When to use**: When your data may contain extreme outliers or is not normally distributed.
+            - **Threshold effect**: A higher threshold will result in fewer queries being classified as outliers. As you increase the threshold, only the most extreme values will be considered outliers.
+
+            ### Percentile-based method
+            This method defines outliers based on the data's percentiles. It considers values below the 5th percentile or above the 95th percentile as outliers.
+
+            - **Pros**: Simple to understand, always identifies a fixed proportion of the data as outliers.
+            - **Cons**: May not adapt well to different data distributions.
+            - **When to use**: When you want a straightforward method that always identifies a certain percentage of data points as outliers.
+            - **Threshold effect**: This method doesn't use a user-defined threshold. It always selects a fixed percentage of queries as outliers based on the predefined percentiles (5th and 95th).
+
+            ### Modified Z-score
+            Similar to the standard Z-score, but uses median and MAD instead of mean and standard deviation. This makes it more robust against outliers.
+
+            - **Pros**: More robust than standard Z-score, works well for skewed distributions.
+            - **Cons**: May be overly sensitive for very small datasets.
+            - **When to use**: When you want a balance between robustness and sensitivity to outliers.
+            - **Threshold effect**: The threshold determines how many standard deviations (calculated using MAD) a value needs to be from the median to be considered an outlier. A higher threshold will result in fewer outliers, focusing on more extreme values.
+
+            ### Max-Min-Median
+            This method simply selects the top 5 queries with the most relevance assessments, the bottom 5, and 5 queries around the median number of relevance assessments.
+
+            - **Pros**: Straightforward, always provides a fixed number of queries for each category.
+            - **Cons**: Doesn't adapt to the data distribution, may not capture true outliers in all cases.
+            - **When to use**: When you want a quick overview of the extreme values and median in your dataset.
+            - **Threshold effect**: This method doesn't use a threshold. It always selects the same number of queries regardless of the data distribution.
+
+            ### General Note on Thresholds
+            For methods that use thresholds (MAD, Modified Z-score, Dynamic thresholding), increasing the threshold makes the outlier detection more conservative, resulting in fewer queries being classified as outliers. Decreasing the threshold makes the detection more sensitive, potentially identifying more queries as outliers. The optimal threshold often depends on your specific data and use case.
+            """)
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            # Method selection with 'Max-Min' as the default
+            st.session_state.qmet_method_text_plots = st.selectbox(
+                'Select outlier detection method to sample queries. By default, **5 queries** with the most, least, and around median relevance assessments are selected.',
+                ['Max-Min-Median', 'Median Absolute Deviation', 'Percentile-based method', 'Modified Z-score'],
+                index=0  # This sets 'Max-Min' as the default
+            )
+
+        with col2:
+            # Threshold selection (not applicable for 'Percentile-based method' and 'Max-Min')
+            st.session_state.qmet_threshold_text_plots = None
+            if st.session_state.qmet_method_text_plots not in ['Percentile-based method', 'Max-Min-Median']:
+                st.session_state.qmet_threshold_text_plots = st.slider('Select threshold', 1.0, 10.0, 1.5, 0.1)
+
+        # Run analysis button
+        result = create_relevance_wordclouds(
+            st.session_state.qmet_query_rel_judg,
+            st.session_state.qmet_selected_queries_random,
+            method=st.session_state.qmet_method_text_plots,
+            threshold=st.session_state.qmet_threshold_text_plots)
+
+st.divider()
+
+
 # Query Performance vs Query length
 with st.container():
-    st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Query Length vs Query Performance</span></h3>""", unsafe_allow_html=True)
+    st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Query Performance based on  Query Length</span></h3>""", unsafe_allow_html=True)
     _, _, custom_user, default_measures, _, _ = return_available_measures()
 
     if 'qmet_selected_runs' not in st.session_state:
@@ -205,7 +278,7 @@ with st.container():
                    - Y-axis: Performance measure (e.g., AP@10, nDCG@10).
                    - Color gradient: Indicates performance.
                    - Red line: Moving average of performance.
-    
+
                 2. **Moving Average**:
                    - Smooths out short-term fluctuations and highlights longer-term trends.
                    - Calculated using a window of 20 queries.
@@ -213,7 +286,7 @@ with st.container():
                    - Upward trend: Performance tends to improve with token length.
                    - Downward trend: Performance tends to decrease with token length.
                    - Flat line: No strong relationship between token length and performance.
-    
+
                 ### Bucketing Methods
                 This analysis compares two methods of grouping queries based on their token lengths:
                 1. **Equal-width buckets**: Each bucket represents an equal range of token lengths.
@@ -227,17 +300,17 @@ with st.container():
                   - Look for clusters or patterns in the distribution of points.
                   - Identify any outliers.
                   - Compare individual query performance to the moving average trend.
-    
+
                 - **Equal-width buckets**:
                   - Show the distribution of performance across the full range of token lengths.
                   - May have varying numbers of queries per bucket!
                   - Useful for identifying performance trends in specific token length ranges.
-    
+
                 - **Equal-frequency buckets**:
                   - Ensure a consistent sample size per bucket.
                   - May obscure the actual distribution of token lengths.
                   - Useful for comparing performance across equal-sized query groups.
-    
+
                 - Compare both bucketing methods to get a comprehensive understanding of the relationship between token length and performance.
                 - Pay attention to the number of queries in each bucket (written in each bar), especially for equal-width buckets.
                 - Consider how the bucket analysis results compare to the trends observed in the scatter plot and moving average.
@@ -296,89 +369,5 @@ with st.container():
             # Call the plot function per measure scores
             plot_query_performance_vs_query_length(st.session_state.per_query_length_res)
 
-# Query Text Analysis based on Relevance Judgements
-with st.container():
-    st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Query Text Analysis based on their Relevance Judgements</span></h3>""", unsafe_allow_html=True)
-    _, _, custom_user, default_measures, _, _ = return_available_measures()
+st.divider()
 
-    if 'qmet_selected_runs' not in st.session_state:
-        st.warning("Please select a set of queries to begin your evaluation.", icon="⚠")
-
-    else:
-        with st.expander("Details of the Query Outlier Detection Methods"):
-            st.markdown("""
-            ### Median Absolute Deviation (MAD)
-            The MAD method uses the median of the absolute deviations from the median of the data. It's more robust against extreme outliers than methods based on mean and standard deviation.
-
-            - **Pros**: Robust against extreme outliers, works well with skewed distributions.
-            - **Cons**: May be less sensitive to subtle outliers in some cases.
-            - **When to use**: When your data may contain extreme outliers or is not normally distributed.
-            - **Threshold effect**: A higher threshold will result in fewer queries being classified as outliers. As you increase the threshold, only the most extreme values will be considered outliers.
-
-            ### Percentile-based method
-            This method defines outliers based on the data's percentiles. It considers values below the 5th percentile or above the 95th percentile as outliers.
-
-            - **Pros**: Simple to understand, always identifies a fixed proportion of the data as outliers.
-            - **Cons**: May not adapt well to different data distributions.
-            - **When to use**: When you want a straightforward method that always identifies a certain percentage of data points as outliers.
-            - **Threshold effect**: This method doesn't use a user-defined threshold. It always selects a fixed percentage of queries as outliers based on the predefined percentiles (5th and 95th).
-
-            ### Modified Z-score
-            Similar to the standard Z-score, but uses median and MAD instead of mean and standard deviation. This makes it more robust against outliers.
-
-            - **Pros**: More robust than standard Z-score, works well for skewed distributions.
-            - **Cons**: May be overly sensitive for very small datasets.
-            - **When to use**: When you want a balance between robustness and sensitivity to outliers.
-            - **Threshold effect**: The threshold determines how many standard deviations (calculated using MAD) a value needs to be from the median to be considered an outlier. A higher threshold will result in fewer outliers, focusing on more extreme values.
-
-            ### Dynamic thresholding
-            This method adjusts the threshold based on the coefficient of variation (CV) of the data. It's more flexible and can adapt to different data distributions.
-
-            - **Pros**: Adapts to the spread of the data, can catch subtle outliers in varied distributions.
-            - **Cons**: May be more complex to interpret.
-            - **When to use**: When your data has varying levels of spread across different metrics or queries.
-            - **Threshold effect**: The user-defined threshold influences the base multiplier for the dynamic threshold calculation. A higher threshold will generally result in fewer outliers being detected, but the exact effect can vary depending on the data's coefficient of variation.
-
-            ### Max-Min
-            This method simply selects the top 5, bottom 5, and 5 queries around the median.
-
-            - **Pros**: Straightforward, always provides a fixed number of queries for each category.
-            - **Cons**: Doesn't adapt to the data distribution, may not capture true outliers in all cases.
-            - **When to use**: When you want a quick overview of the extreme values and median in your dataset.
-            - **Threshold effect**: This method doesn't use a threshold. It always selects the same number of queries regardless of the data distribution.
-
-            ### General Note on Thresholds
-            For methods that use thresholds (MAD, Modified Z-score, Dynamic thresholding), increasing the threshold makes the outlier detection more conservative, resulting in fewer queries being classified as outliers. Decreasing the threshold makes the detection more sensitive, potentially identifying more queries as outliers. The optimal threshold often depends on your specific data and use case.
-            """)
-
-        col1, col2 = st.columns(2)
-
-        with col1:
-            # Method selection with 'Max-Min' as the default
-            st.session_state.qmet_method_text_plots = st.selectbox(
-                'Select outlier detection method',
-                ['Max-Min', 'Median Absolute Deviation', 'Percentile-based method', 'Modified Z-score', 'Dynamic thresholding'],
-                index=0  # This sets 'Max-Min' as the default
-            )
-
-        with col2:
-            # Threshold selection (not applicable for 'Percentile-based method' and 'Max-Min')
-            st.session_state.qmet_threshold_text_plots = None
-            if st.session_state.qmet_method_text_plots not in ['Percentile-based method', 'Max-Min']:
-                st.session_state.qmet_threshold_text_plots = st.slider('Select threshold', 1.0, 10.0, 3.5, 0.1)
-
-        # Run analysis button
-        with st.spinner('Analyzing...'):
-            result = create_relevance_wordclouds(
-                st.session_state.qmet_query_rel_judg,
-                st.session_state.qmet_selected_queries_random,
-                method=st.session_state.qmet_method_text_plots,
-                threshold=st.session_state.qmet_threshold_text_plots)
-
-            st.write(result)
-        #
-        # st.write(st.session_state.qmet_query_rel_judg)
-        # st.dataframe(st.session_state.qmet_selected_queries_random)
-        # create_relevance_wordclouds(st.session_state.qmet_query_rel_judg, st.session_state.qmet_selected_queries_random, )
-        # st.write('DO Query terms of queries with many and few relevance judgements.')
-        #

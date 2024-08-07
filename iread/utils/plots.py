@@ -6,15 +6,10 @@ import matplotlib.colors as mcolors
 import random
 import pandas as pd
 from utils.eval_query_collection import get_query_rel_judgements
-from utils.eval_query_text_based import query_clf_relevance
+from utils.eval_query_text_based import query_clf_relevance_assesments, remove_stopwords_from_queries
 from scipy import stats
-from collections import Counter
-from wordcloud import WordCloud
-import json
-from typing import Dict, Any
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
-from concurrent.futures import ThreadPoolExecutor
 
 
 # Function that displays the distribution of ranking position of all retrieved documents based on their relevance label.
@@ -815,13 +810,115 @@ def plot_query_performance_vs_query_length(data):
 
 
 @st.cache_data
-def create_relevance_wordclouds(query_relevance, queries, method, threshold):
+def create_relevance_wordclouds(query_relevance, queries, method, threshold) -> None:
+    # Ensure query_ids in the DataFrame are strings
+    queries['query_id'] = queries['query_id'].astype(str)
 
-    q_ids_classified = query_clf_relevance(query_relevance, method, threshold)
+    q_ids_classified = query_clf_relevance_assesments(query_relevance, method, threshold)
 
-    st.write(q_ids_classified)
+    # Convert all query IDs in q_ids_classified to strings
+    q_ids_classified = {
+        relevance_class: {
+            subclass: [str(qid) for qid in query_ids]
+            for subclass, query_ids in subclasses.items()
+        }
+        for relevance_class, subclasses in q_ids_classified.items()
+    }
 
-    # write this function so that is prints for each relevance threshold a textual presentation wordcloud if a class has only a query, print the query, if a class has more than 10, sample 10.
+    def create_wordcloud(text):
+        if not text.strip():
+            return None
+        try:
+            return WordCloud(width=400, height=200, background_color='white',
+                             max_words=50, min_font_size=10, collocations=False, min_word_length=3).generate(text)
+        except ValueError:
+            return None
 
+    # Add an expander with explanation
+    with st.expander("Explanation of Word Clouds and Term Calculation"):
+        st.write("""
+        This visualization presents word clouds created based on sampled queries (using the aforementioned methods) for the different relevance labels. 
 
-    return q_ids_classified
+        1. Word Clouds: Each word cloud represents the most frequent words appearing in the sampled queries. 
+           The size of each word corresponds to its frequency - larger words appear more often in the queries.
+
+        4. Query Information: We show the IDs of the queries that contributed to each word cloud or single query display.
+
+        Calculation Process:
+        - All queries are classified into each subclass.
+        - For multiple queries, stopwords (common words like 'the', 'a', 'an'), numbers, and punctuation are removed.
+        - All remaining words from these queries.
+        - Word frequency is calculated from this combined text.
+        - The word cloud is generated based on these frequencies.
+        """)
+
+    for relevance_class, subclasses in q_ids_classified.items():
+        # Determine color based on relevance class
+        class_color = "red" if relevance_class.lower() == "irrelevant" else "blue"
+        relevance_class_name = 'Relevance_Label_0 (Irrelevant)'if relevance_class.lower() == "irrelevant" else relevance_class
+        st.markdown(f"""<h3>Analysis based on the <span style="color:{class_color};">{relevance_class_name}</span></h3>""", unsafe_allow_html=True)
+
+        # Create a 3x2 grid of columns
+        cols = st.columns(3)
+
+        for i, (subclass, query_ids) in enumerate(subclasses.items()):
+            with cols[i % 3]:
+                if len(query_ids) == 0:
+                    # Case: No queries
+                    st.write("""No queries classified as this subclass.""", unsafe_allow_html=True)
+                elif len(query_ids) == 1:
+                    # Case: Single query
+                    query = queries[queries['query_id'] == query_ids[0]]
+                    if not query.empty:
+                        st.write(f"""This class that contains <span style="color:red;">{str(subclass).replace('_',' ')}</span> consisted of one query with ID {query_ids[0]}.""",
+                                 unsafe_allow_html=True)
+                        with st.expander("See query text"):
+                            st.write(query['query_text'].iloc[0])
+                    else:
+                        st.write(f"Query with ID {query_ids[0]} not found in the dataset.")
+                else:
+                    # Case: Multiple queries
+                    relevant_queries = queries[queries['query_id'].isin(query_ids)]
+
+                    if not relevant_queries.empty:
+                        relevant_queries_no_stopwords = remove_stopwords_from_queries(relevant_queries)
+                        all_text = ' '.join(relevant_queries_no_stopwords['query_text'])
+
+                        wordcloud = create_wordcloud(all_text)
+
+                        if wordcloud:
+                            fig, ax = plt.subplots(figsize=(5, 2.5))
+                            ax.imshow(wordcloud, interpolation='bilinear')
+                            ax.axis('off')
+                            st.pyplot(fig)
+                        else:
+                            st.write("Could not generate word cloud due to insufficient unique words.")
+
+                        # Create message based on subclass
+                        if subclass == "queries_above_95th_percentile":
+                            message = f"""Wordcloud created based on the queries (<span style="color:red;">{', '.join(query_ids)}</span>) that have relevance judgements **above the 95th 
+                            percentile.**"""
+                        elif subclass == "queries_between_5th_95th_percentiles":
+                            message = f"""Wordcloud created based on the queries (<span style="color:red;">{', '.join(query_ids)}</span>) that have relevance judgements **between the 5th and 95th percentiles.**"""
+                        elif subclass == "queries_below_5th_percentile":
+                            message = f"""Wordcloud created based on the queries (<span style="color:red;">{', '.join(query_ids)}</span>) that have relevance judgements **below the 5th percentile.**"""
+                        elif subclass == "5_queries_most_assessments":
+                            message = f"""Wordcloud created based on the queries (<span style="color:red;">{', '.join(query_ids)}</span>) that have the **most relevance judgements.**"""
+                        elif subclass == "5_queries_around_median_assessments":
+                            message = f"""Wordcloud created based on the queries (<span style="color:red;">{', '.join(query_ids)}</span>) that have relevance judgements **close to the median 
+                            relevance judgements** of all analyzed queries."""
+                        elif subclass == "5_queries_least_assessments":
+                            message = f"""Wordcloud created based on the queries (<span style="color:red;">{', '.join(query_ids)}</span>) that have the **least relevance judgements.**"""
+                        elif subclass == "queries_above_threshold":
+                            message = f"""Wordcloud created based on the queries (<span style="color:red;">{', '.join(query_ids)}</span>) that are **above the selected threshold.**"""
+                        elif subclass == "queries_below_threshold":
+                            message = f"""Wordcloud created based on the queries (<span style="color:red;">{', '.join(query_ids)}</span>) that are **below the selected threshold.**"""
+                        elif subclass == "queries_within_normal_range":
+                            message = f"""Wordcloud created based on the queries (<span style="color:red;">{', '.join(query_ids)}</span>) that have relevance judgements **close to threshold.**"""
+                        else:
+                            message = f"""The wordcloud is generated based on the text of the following queries: <span style="color:red;">{', '.join(query_ids)}</span>"""
+
+                        # Add query information below the figure
+                        st.write(f"""{message}""", unsafe_allow_html=True)
+                    else:
+                        st.write("No matching queries found in the dataset.")

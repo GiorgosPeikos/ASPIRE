@@ -6,7 +6,7 @@ import matplotlib.colors as mcolors
 import random
 import pandas as pd
 from utils.eval_query_collection import get_query_rel_judgements
-from utils.eval_query_text_based import query_clf_relevance_assesments, remove_stopwords_from_queries
+from utils.eval_query_text_based import query_clf_relevance_assessments, remove_stopwords_from_queries, query_similarity_performance
 from scipy import stats
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
@@ -543,7 +543,6 @@ def plot_performance_difference_threshold(data, threshold):
 
 @st.cache_data
 def plot_query_relevance_judgements(selected_qrel):
-
     relevance_counts, results = get_query_rel_judgements(selected_qrel)
 
     # Create subplots
@@ -814,7 +813,7 @@ def create_relevance_wordclouds(query_relevance, queries, method, threshold) -> 
     # Ensure query_ids in the DataFrame are strings
     queries['query_id'] = queries['query_id'].astype(str)
 
-    q_ids_classified = query_clf_relevance_assesments(query_relevance, method, threshold)
+    q_ids_classified = query_clf_relevance_assessments(query_relevance, method, threshold)
 
     # Convert all query IDs in q_ids_classified to strings
     q_ids_classified = {
@@ -855,8 +854,8 @@ def create_relevance_wordclouds(query_relevance, queries, method, threshold) -> 
     for relevance_class, subclasses in q_ids_classified.items():
         # Determine color based on relevance class
         class_color = "red" if relevance_class.lower() == "irrelevant" else "blue"
-        relevance_class_name = 'Relevance_Label_0 (Irrelevant)'if relevance_class.lower() == "irrelevant" else relevance_class
-        st.markdown(f"""<h3>Analysis based on the <span style="color:{class_color};">{relevance_class_name}</span></h3>""", unsafe_allow_html=True)
+        relevance_class_name = 'Relevance_Label_0 (Irrelevant)' if relevance_class.lower() == "irrelevant" else relevance_class
+        st.markdown(f"""<h5>Analysis based on the <span style="color:{class_color};">{relevance_class_name}</span></h5>""", unsafe_allow_html=True)
 
         # Create a 3x2 grid of columns
         cols = st.columns(3)
@@ -870,7 +869,7 @@ def create_relevance_wordclouds(query_relevance, queries, method, threshold) -> 
                     # Case: Single query
                     query = queries[queries['query_id'] == query_ids[0]]
                     if not query.empty:
-                        st.write(f"""This class that contains <span style="color:red;">{str(subclass).replace('_',' ')}</span> consisted of one query with ID {query_ids[0]}.""",
+                        st.write(f"""This class that contains <span style="color:red;">{str(subclass).replace('_', ' ')}</span> consisted of one query with ID {query_ids[0]}.""",
                                  unsafe_allow_html=True)
                         with st.expander("See query text"):
                             st.write(query['query_text'].iloc[0])
@@ -922,3 +921,92 @@ def create_relevance_wordclouds(query_relevance, queries, method, threshold) -> 
                         st.write(f"""{message}""", unsafe_allow_html=True)
                     else:
                         st.write("No matching queries found in the dataset.")
+
+
+def plot_performance_similarity(queries, qrel, runs, metric_list, selected_cutoff, relevance_threshold, embedding_model_name) -> None:
+    pca_df, results_per_run = query_similarity_performance(queries, qrel, runs, metric_list, selected_cutoff, relevance_threshold, embedding_model_name)
+
+    for experiment, measures in results_per_run.items():
+        st.write(f"""<center><h4>Analysis of the <span style="color:red;">{experiment}</span> Experiment</h4></center>""", unsafe_allow_html=True)
+
+        eval_measures = [measure for measure in measures.keys() if measure != 'token_length']
+
+        for measure in eval_measures:
+            fig = make_subplots(rows=1, cols=2,
+                                subplot_titles=[f"2D {measure} Performance", f"3D {measure} Performance"],
+                                specs=[[{"type": "xy"}, {"type": "scene"}]])
+
+            # 2D Plot
+            scatter_2d = go.Scatter(
+                x=pca_df['Prin. Comp. 1'],
+                y=pca_df['Prin. Comp. 2'],
+                mode='markers',
+                marker=dict(
+                    size=10,
+                    color=measures[measure][measure],
+                    colorscale='RdYlBu_r',
+                    showscale=False,
+                    colorbar=dict(
+                        title=measure,
+                        thickness=15,
+                        len=0.9,
+                        yanchor="middle",
+                        y=0.5,
+                        x=0.45,
+                        outlinewidth=0
+                    )
+                ),
+                showlegend=False,  # Add this line
+                text=[f"Query ID: {q_id}<br>{measure}: {score:.4f}"
+                      for q_id, score in zip(pca_df['query_id'], measures[measure][measure])],
+                hoverinfo='text'
+            )
+
+            # 3D Plot
+            scatter_3d = go.Scatter3d(
+                x=pca_df['Prin. Comp. 1'],
+                y=pca_df['Prin. Comp. 2'],
+                z=pca_df['Prin. Comp. 3'],
+                mode='markers',
+                marker=dict(
+                    size=5,
+                    color=measures[measure][measure],
+                    colorscale='RdYlBu_r',
+                    showscale=True,
+                    colorbar=dict(
+                        title=measure,
+                        thickness=15,
+                        len=0.9,
+                        yanchor="middle",
+                        y=0.5,
+                        x=1.0,
+                        outlinewidth=0
+                    )
+                ),
+                showlegend=False,  # Add this line
+                text=[f"Query ID: {q_id}<br>{measure}: {score:.4f}"
+                      for q_id, score in zip(pca_df['query_id'], measures[measure][measure])],
+                hoverinfo='text'
+            )
+
+            fig.add_trace(scatter_2d, row=1, col=1)
+            fig.add_trace(scatter_3d, row=1, col=2)
+
+            fig.update_layout(
+                height=600,
+                width=1200,
+                title_text=f"{measure} Performance - 2D and 3D Visualization",
+                scene=dict(
+                    xaxis_title="Prin. Comp. 1",
+                    yaxis_title="Prin. Comp. 2",
+                    zaxis_title="Prin. Comp. 3"
+                )
+            )
+
+            fig.update_xaxes(title_text="Prin. Comp. 1", row=1, col=1)
+            fig.update_yaxes(title_text="Prin. Comp. 2", row=1, col=1)
+
+            st.plotly_chart(fig, use_container_width=True)
+
+        with st.expander("Manually Examine Sampled Queries"):
+            st.dataframe(queries[['query_id', 'query_text']], use_container_width=True, hide_index=True)

@@ -14,14 +14,8 @@ import re
 
 # Initialize the tokenizer
 tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
-
-
-@st.cache_resource
-def download_nltk_resources():
-    nltk.download('stopwords', quiet=True)
-    nltk.download('punkt', quiet=True)
-
-download_nltk_resources()
+nltk.download('stopwords', quiet=True)
+nltk.download('punkt', quiet=True)
 
 
 @st.cache_resource
@@ -96,7 +90,8 @@ def per_query_length_evaluation(qrel, runs, selected_queries, metric_list, relev
         return results
 
 
-def query_clf_relevance_assesments(data: Dict[str, Dict], method: str = 'Median Absolute Deviation', threshold: float = 3.5) -> Dict[str, Dict[str, List[str]]]:
+@st.cache_data
+def query_clf_relevance_assessments(data: Dict[str, Dict], method: str = 'Median Absolute Deviation', threshold: float = 3.5) -> Dict[str, Dict[str, List[str]]]:
     query_ids = list(data.keys())
     metrics = ["irrelevant"] + list(next(iter(data.values()))["relevant"].keys())
 
@@ -124,7 +119,7 @@ def query_clf_relevance_assesments(data: Dict[str, Dict], method: str = 'Median 
         elif method == 'Modified Z-score':
             median = np.median(metric_values)
             mad = np.median(np.abs(metric_values - median))
-            modified_z_scores = 0.6745 * (metric_values - median) / mad
+            # modified_z_scores = 0.6745 * (metric_values - median) / mad
             lower_bound = median - threshold * mad
             upper_bound = median + threshold * mad
         elif method == 'Max-Min-Median':
@@ -199,21 +194,16 @@ def remove_stopwords_from_queries(queries_df, text_column='query_text', id_colum
     return result_df
 
 
-@st.cache_resource()
-def get_huggingface_model(model_name):
-    # Load model & tokenizer
+@st.cache_resource
+def downloading_huggingface_model(model_name):
     model = AutoModel.from_pretrained(model_name)
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    return model, tokenizer
+    tokenizer_emb = AutoTokenizer.from_pretrained(model_name)
+    return model, tokenizer_emb
 
 
 def mean_pooling(model_output, attention_mask):
-    token_embeddings = model_output[
-        0
-    ]  # First element of model_output contains all token embeddings
-    input_mask_expanded = (
-        attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
-    )
+    token_embeddings = model_output[0]
+    input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
     sum_embeddings = torch.sum(token_embeddings * input_mask_expanded, 1)
     sum_mask = torch.clamp(input_mask_expanded.sum(1), min=1e-9)
     return sum_embeddings / sum_mask
@@ -259,10 +249,33 @@ def perform_pca(query_data):
     embeddings_array = np.vstack(aggregated_embeddings)
 
     # Perform PCA
-    pca = TSNE(n_components=2)
+    pca = TSNE(n_components=3)
     pca_result = pca.fit_transform(embeddings_array)
-    pca_df = pd.DataFrame(pca_result, columns=["PCA1", "PCA2"])
+    pca_df = pd.DataFrame(pca_result, columns=["Prin. Comp. 1", "Prin. Comp. 2", "Prin. Comp. 3"])
     pca_df["query_id"] = query_data["query_id"]
-    pca_df["query_type"] = query_data["query_type"]
     return pca_df
 
+
+@st.cache_data
+def query_similarity_performance(queries, qrel, runs, metric_list, selected_cutoff, relevance_threshold, embedding_model_name):
+    parsed_metrics = []
+    results_per_run = {}
+
+    embedding_model, model_tokenizer = downloading_huggingface_model(embedding_model_name)
+
+    queries = get_embeddings(queries, embedding_model,model_tokenizer)
+    pca_df = perform_pca(queries)
+
+    # Parse each metric in metric_list
+    for metric in metric_list:
+        parsed_metric = metric_parser(metric, relevance_threshold, selected_cutoff)
+        parsed_metrics.append(parsed_metric)
+
+    # Calculate evaluation results for each other experiment and collect p-values
+    for run_name, run_data in runs.items():
+        experiment = get_experiment_name(run_name, None)
+        results_per_run[experiment] = {}
+        for parsed_metric in parsed_metrics:
+            results_per_run[experiment][str(parsed_metric)] = calculate_evaluation(parsed_metric, qrel, run_data)
+
+    return pca_df, results_per_run

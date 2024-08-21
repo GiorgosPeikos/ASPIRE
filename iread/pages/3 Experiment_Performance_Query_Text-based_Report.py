@@ -7,7 +7,7 @@ from utils.ui import load_css
 from utils.data_handler import *
 from utils.eval_core import return_available_measures
 from utils.eval_query_collection import analyze_query_judgements
-from utils.plots import plot_query_relevance_judgements, plot_query_performance_vs_query_length, create_relevance_wordclouds
+from utils.plots import plot_query_relevance_judgements, plot_query_performance_vs_query_length, create_relevance_wordclouds, plot_performance_similarity
 from utils.eval_query_text_based import per_query_length_evaluation
 
 # Load custom CSS
@@ -166,7 +166,7 @@ with st.container():
                     st.write(f"**Max:** {comparison['max_query']}")
                     st.markdown("*Queries with the minimum and maximum number of relevant documents for this label.*")
 
-        st.markdown("### Combined Relevance Labels")
+        st.markdown("###### Combined Relevance Labels")
         with st.expander("See Analysis"):
             combined = analysis_results['label_comparison']['combined']
             st.write("**Easy Queries:** " + ", ".join(map(str, combined['easy_queries'][::])))
@@ -179,7 +179,7 @@ with st.container():
             - Hard queries have significantly fewer relevant documents than irrelevant ones.
             - Min and Max queries have the least and most relevant documents respectively, considering all relevance labels.
             """)
-        st.markdown("### Manually Examine Sampled Queries")
+        st.markdown("###### Manually Examine Sampled Queries")
         with st.expander("See Queries"):
             st.dataframe(st.session_state.qmet_selected_queries_random[['query_id', 'query_text']], use_container_width=True, hide_index=True)
 
@@ -229,7 +229,7 @@ with st.container():
             - **Threshold effect**: This method doesn't use a threshold. It always selects the same number of queries regardless of the data distribution.
 
             ### General Note on Thresholds
-            For methods that use thresholds (MAD, Modified Z-score, Dynamic thresholding), increasing the threshold makes the outlier detection more conservative, resulting in fewer queries being classified as outliers. Decreasing the threshold makes the detection more sensitive, potentially identifying more queries as outliers. The optimal threshold often depends on your specific data and use case.
+            For methods that use thresholds (MAD, Modified Z-score), increasing the threshold makes the outlier detection more conservative, resulting in fewer queries being classified as outliers. Decreasing the threshold makes the detection more sensitive, potentially identifying more queries as outliers. The optimal threshold often depends on your specific data and use case.
             """)
 
         col1, col2 = st.columns(2)
@@ -380,7 +380,13 @@ with st.container():
         st.warning("Please select a set of queries to begin your evaluation.", icon="⚠")
     else:
         with st.expander('See Details and Interpretations'):
-            st.write('Add details.')
+            st.write("""
+            This visualization shows queries in a 3D space based on their semantic similarity.
+            - Each point represents a query.
+            - The position of the point is determined by the query's embedding, reduced to 3 dimensions using t-SNE.
+            - The color of the point represents the performance measure for that query.
+            - Use the dropdown to select different performance measures and runs for coloring the points.
+            """)
 
         # Get the list of selected run files
         selected_runs_files = list(st.session_state.qmet_selected_runs.keys())
@@ -423,9 +429,18 @@ with st.container():
             st.session_state.qmet_selected_measures = selected_measures
             st.session_state.qmet_selected_cutoff = selected_cutoff
 
-        st.session_state.model_name = st.text_input(
+        st.session_state.emb_model_name = st.text_input(
             "**Enter a HuggingFace model name that will be used to estimate the query embeddings. Default model:**",
             "sentence-transformers/all-MiniLM-L6-v2",
         )
 
-        # Here I need to estimate the query-based similarity.
+        plot_performance_similarity(
+            st.session_state.qmet_selected_queries_random,
+            st.session_state.qmet_selected_qrels,
+            st.session_state.qmet_selected_runs,
+            st.session_state.qmet_selected_measures,
+            st.session_state.qmet_selected_cutoff,
+            st.session_state.qmet_relevance_threshold,
+            st.session_state.emb_model_name
+        )
+

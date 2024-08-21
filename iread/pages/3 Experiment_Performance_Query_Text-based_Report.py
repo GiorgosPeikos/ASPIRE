@@ -37,7 +37,7 @@ with st.container():
         selected_runs_files = st.multiselect("Select Retrieval Runs", os.listdir(runs_dir) if os.path.exists(runs_dir) else [])
 
 # Button to start evaluation
-if st.button("Begin the Experimental Evaluation!", key='me_stButtonCenter'):
+if st.button("Begin the Experimental Evaluation!", key='qmet_stButtonCenter'):
 
     if not qrels_file:
         st.write("Please select Qrels file to proceed.")
@@ -149,7 +149,7 @@ with st.container():
             with columns[i]:
                 color = 'red' if label == 'Relevance_Label_0' else 'blue'
                 label_name = 'Irrelevant' if label == 'Relevance_Label_0' else label
-                st.markdown(f"<h5><span style='color:{color};'>{label_name}</span></h5>", unsafe_allow_html=True)
+                st.markdown(f"<h5><span style='color:{color};'>{label_name}</span></h4>", unsafe_allow_html=True)
 
                 comparison = analysis_results['label_comparison'][label]
 
@@ -325,7 +325,7 @@ with st.container():
                 min_value=1,
                 max_value=2,
                 value=1,
-                key="me_slider3",
+                key="qmet_slider3",
             )
 
             if 'qmet_prev_relevance_threshold' not in st.session_state:
@@ -397,7 +397,7 @@ with st.container():
                 min_value=1,
                 max_value=2,
                 value=1,
-                key="me_slider4",
+                key="qmet_slider4",
             )
 
             if 'qmet_prev_relevance_threshold' not in st.session_state:
@@ -457,4 +457,4 @@ with st.container():
     )
 st.divider()
 
-st.markdown("""<h5 style="text-align:center;"><span style="color:red;">To export the report as PDF press (⌘+P or Ctrl+P)</span></h5>""", unsafe_allow_html=True)
+st.markdown("""<h4 style="text-align:center;"><span style="color:red;">To export the report as PDF press (⌘+P or Ctrl+P)</span></h4>""", unsafe_allow_html=True)

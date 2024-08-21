@@ -446,7 +446,7 @@ def plot_performance_and_median_per_experiment(data):
         )
 
         # Display the plot in Streamlit
-        st.write(f"""<center><h4>Analysis of the <span style="color:red;">{run}</span> Experiment</h4></center>""", unsafe_allow_html=True)
+        st.write(f"""<center><h5>Analysis of the <span style="color:red;">{run}</span> Experiment</h5></center>""", unsafe_allow_html=True)
         st.write(f"""<center>The median performance per measure, for each query, is computed based on the remaining selected experiments.</center>""", unsafe_allow_html=True)
         st.plotly_chart(fig, use_container_width=True)
 
@@ -537,7 +537,7 @@ def plot_performance_difference_threshold(data, threshold):
         )
 
         # Display the plot in Streamlit
-        st.write(f"""<center><h4>Analysis of the <span style="color:red;">{run}</span> Experiment</h4></center>""", unsafe_allow_html=True)
+        st.write(f"""<center><h5>Analysis of the <span style="color:red;">{run}</span> Experiment</h5></center>""", unsafe_allow_html=True)
         st.plotly_chart(fig, use_container_width=True)
 
 
@@ -771,7 +771,7 @@ def plot_query_performance_vs_query_length(data):
     measures_eval = [measure for measure in data[experiments[0]].keys() if measure != 'token_length']
 
     for experiment in experiments:
-        st.write(f"""<center><h4>Analysis of the <span style="color:red;">{experiment}</span> Experiment</h4></center>""", unsafe_allow_html=True)
+        st.write(f"""<center><h5>Analysis of the <span style="color:red;">{experiment}</span> Experiment</h5></center>""", unsafe_allow_html=True)
 
         for measure in measures_eval:
             # Create DataFrame with token lengths, performance, and query IDs
@@ -927,7 +927,7 @@ def plot_performance_similarity(queries, qrel, runs, metric_list, selected_cutof
     pca_df, results_per_run = query_similarity_performance(queries, qrel, runs, metric_list, selected_cutoff, relevance_threshold, embedding_model_name)
 
     for experiment, measures in results_per_run.items():
-        st.write(f"""<center><h4>Analysis of the <span style="color:red;">{experiment}</span> Experiment</h4></center>""", unsafe_allow_html=True)
+        st.write(f"""<center><h5>Analysis of the <span style="color:red;">{experiment}</span> Experiment</h5></center>""", unsafe_allow_html=True)
 
         eval_measures = [measure for measure in measures.keys() if measure != 'token_length']
 

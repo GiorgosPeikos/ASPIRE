@@ -149,7 +149,7 @@ with st.container():
             with columns[i]:
                 color = 'red' if label == 'Relevance_Label_0' else 'blue'
                 label_name = 'Irrelevant' if label == 'Relevance_Label_0' else label
-                st.markdown(f"<h4><span style='color:{color};'>{label_name}</span></h4>", unsafe_allow_html=True)
+                st.markdown(f"<h5><span style='color:{color};'>{label_name}</span></h5>", unsafe_allow_html=True)
 
                 comparison = analysis_results['label_comparison'][label]
 
@@ -457,4 +457,4 @@ with st.container():
     )
 st.divider()
 
-st.markdown("""<h4 style="text-align:center;"><span style="color:red;">To export the report as PDF press (⌘+P or Ctrl+P)</span></h4>""", unsafe_allow_html=True)
+st.markdown("""<h5 style="text-align:center;"><span style="color:red;">To export the report as PDF press (⌘+P or Ctrl+P)</span></h5>""", unsafe_allow_html=True)

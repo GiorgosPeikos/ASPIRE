@@ -163,13 +163,13 @@ with st.container():
             progress_text.empty()
 
             # Display the combined DataFrames
-            st.markdown("<h4>Overall Measures Combined</h4>", unsafe_allow_html=True)
+            st.markdown("<h5>Overall Measures Combined</h5>", unsafe_allow_html=True)
             st.dataframe(overall_measures_combined, use_container_width=True)
 
-            st.markdown("<h4>Precision Measures Combined</h4>", unsafe_allow_html=True)
+            st.markdown("<h5>Precision Measures Combined</h5>", unsafe_allow_html=True)
             st.dataframe(precision_measures_combined, use_container_width=True)
 
-            st.markdown("<h4>Recall Measures Combined</h4>", unsafe_allow_html=True)
+            st.markdown("<h5>Recall Measures Combined</h5>", unsafe_allow_html=True)
             st.dataframe(recall_measures_combined, use_container_width=True)
 
 st.divider()
@@ -538,4 +538,4 @@ with st.container():
     )
 st.divider()
 
-st.markdown("""<h4 style="text-align:center;"><span style="color:red;">To export the report as PDF press (⌘+P or Ctrl+P)</span></h4>""", unsafe_allow_html=True)
+st.markdown("""<h5 style="text-align:center;"><span style="color:red;">To export the report as PDF press (⌘+P or Ctrl+P)</span></h5>""", unsafe_allow_html=True)

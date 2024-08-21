@@ -136,7 +136,7 @@ with st.container():
         analysis_results = analyze_query_judgements(results)
 
         # Display the analysis results
-        st.write("""<h4><span style="color:red;">Query Judgement Analysis Results</span></h4>""", unsafe_allow_html=True)
+        st.write("""<h5><span style="color:red;">Query Judgement Analysis Results</span></h5>""", unsafe_allow_html=True)
 
         col1, col2 = st.columns(2)
 
@@ -174,7 +174,7 @@ with st.container():
             if i * 2 < len(sections):
                 section_title, section_key = sections[i * 2]
                 with col1:
-                    st.subheader(section_title)
+                    st.write(f"""<h5>{section_title}</h5>""", unsafe_allow_html=True)
                     with st.expander("See Analysis"):
                         if section_title == "Queries sorted based on Rel. Judgements":
                             st.markdown("""
@@ -250,7 +250,7 @@ with st.container():
             if i * 2 + 1 < len(sections):
                 section_title, section_key = sections[i * 2 + 1]
                 with col2:
-                    st.subheader(section_title)
+                    st.write(f"""<h5>{section_title}</h5>""", unsafe_allow_html=True)
                     with st.expander("See Analysis"):
                         if section_title == "Relevance Labels - Statistics":
                             for label in analysis_results:
@@ -278,8 +278,7 @@ with st.container():
                                     st.markdown(f"<span style='color:{color}'>{label_name}</span>: **{count}** ({percentage:.2f}% of total)", unsafe_allow_html=True)
                             st.write(f"Total judgements:  **{total_judgements}**", unsafe_allow_html=True)
 
-        st.markdown("### Manually Examine Sampled Queries")
-        with st.expander("See Queries"):
+        with st.expander("Manually Examine Sampled Queries"):
             st.dataframe(st.session_state.qme_selected_queries_random[['query_id', 'query_text']], use_container_width=True, hide_index=True)
 
 st.divider()
@@ -344,7 +343,7 @@ with st.container():
                 analysis_results = analyze_performance_perq(results)
 
                 # Display the analysis results in two columns
-                st.write("""<h4><span style="color:red;">Information Related to the Analysis</span></h4>""", unsafe_allow_html=True)
+                st.write("""<h5><span style="color:red;">Information Related to the Analysis</span></h5>""", unsafe_allow_html=True)
 
                 col1, col2 = st.columns(2)
 
@@ -382,7 +381,7 @@ with st.container():
                     if i * 2 < len(measures):
                         measure = measures[i * 2]
                         with col1:
-                            st.subheader(f"Result Analysis based on {measure}")
+                            st.write(f"<h5>Result Analysis based on {measure}</h5>", unsafe_allow_html=True)
                             with st.expander("See Analysis"):
 
                                 same_performance = analysis_results[measure]["same_performance"]
@@ -412,7 +411,7 @@ with st.container():
                     if i * 2 + 1 < len(measures):
                         measure = measures[i * 2 + 1]
                         with col2:
-                            st.subheader(f"Result Analysis based on {measure}")
+                            st.write(f"<h5>Result Analysis based on {measure}</h5>", unsafe_allow_html=True)
                             with st.expander("See Analysis"):
                                 same_performance = analysis_results[measure]["same_performance"]
                                 if same_performance:
@@ -511,7 +510,7 @@ with st.container():
             # Perform analysis
             analysis_results, baseline_run = analyze_performance_difference(results)
             # Display summary statistics and analysis
-            st.write("""<h4><span style="color:red;">Information Related to the Analysis</span></h4>""", unsafe_allow_html=True)
+            st.write("""<h5><span style="color:red;">Information Related to the Analysis</span></h5>""", unsafe_allow_html=True)
 
             col1, col2 = st.columns(2)
 
@@ -536,7 +535,7 @@ with st.container():
 
             # Create a row for each run
             for run, run_analysis in analysis_results.items():
-                st.write(f"""<center><h4>{run} <span style="color:red;">vs</span> {baseline_run}</h4></center>""", unsafe_allow_html=True)
+                st.write(f"""<center><h5>{run} <span style="color:red;">vs</span> {baseline_run}</h5></center>""", unsafe_allow_html=True)
 
                 # Calculate the number of measures
                 measures = list(run_analysis.keys())
@@ -552,7 +551,7 @@ with st.container():
                         measure = measures[i * 2]
                         analysis = run_analysis[measure]
                         with col1:
-                            st.subheader(f"Result Analysis based on {measure}")
+                            st.write(f"<h5>Result Analysis based on {measure}</h5>", unsafe_allow_html=True)
                             st.write(f"Improved Queries: {len(analysis['improved_queries'])} ({analysis['pct_improved']:.2f}%)")
                             st.write(f"Degraded Queries: {len(analysis['degraded_queries'])} ({analysis['pct_degraded']:.2f}%)")
                             st.write(f"Unchanged Queries: {len(analysis['unchanged_queries'])} ({analysis['pct_unchanged']:.2f}%)")
@@ -596,7 +595,7 @@ with st.container():
                         measure = measures[i * 2 + 1]
                         analysis = run_analysis[measure]
                         with col2:
-                            st.subheader(f"Result Analysis based on {measure}")
+                            st.write(f"<h5>Result Analysis based on {measure}</h5>", unsafe_allow_html=True)
                             st.write(f"Improved Queries: {len(analysis['improved_queries'])} ({analysis['pct_improved']:.2f}%)")
                             st.write(f"Degraded Queries: {len(analysis['degraded_queries'])} ({analysis['pct_degraded']:.2f}%)")
                             st.write(f"Unchanged Queries: {len(analysis['unchanged_queries'])} ({analysis['pct_unchanged']:.2f}%)")
@@ -704,7 +703,7 @@ with st.container():
         if st.session_state.qme_comparison_thresh == 0.0:
             analysis_results = analyze_performance_difference_median(results)
 
-            st.write("""<h4><span style="color:red;">Information Related to the Analysis</span></h4>""", unsafe_allow_html=True)
+            st.write("""<h5><span style="color:red;">Information Related to the Analysis</span></h5>""", unsafe_allow_html=True)
 
             col1, col2 = st.columns(2)
 
@@ -726,7 +725,7 @@ with st.container():
 
             # Create a row for each run
             for run, run_analysis in analysis_results.items():
-                st.write(f"""<center><h4>{run} <span style="color:red;">vs</span> Median Threshold</h4></center>""", unsafe_allow_html=True)
+                st.write(f"""<center><h5>{run} <span style="color:red;">vs</span> Median Threshold</h5></center>""", unsafe_allow_html=True)
 
                 # Calculate the number of measures
                 measures = list(run_analysis.keys())
@@ -742,7 +741,7 @@ with st.container():
                             measure = measures[i * 2 + j]
                             analysis = run_analysis[measure]
                             with col:
-                                st.subheader(f"Result Analysis based on {measure}")
+                                st.write(f"<h5>Result Analysis based on {measure}</h5>", unsafe_allow_html=True)
                                 st.write(f"Improved Queries: {len(analysis['improved_queries'])} ({analysis['pct_improved']:.2f}%)")
                                 st.write(f"Degraded Queries: {len(analysis['degraded_queries'])} ({analysis['pct_degraded']:.2f}%)")
                                 st.write(f"Unchanged Queries: {len(analysis['unchanged_queries'])} ({analysis['pct_unchanged']:.2f}%)")
@@ -784,7 +783,7 @@ with st.container():
             # This analysis leverages a threshold selected by the user
             analysis_results = analyze_performance_difference_threshold(results, st.session_state.qme_comparison_thresh)
 
-            st.write("""<h4><span style="color:red;">Information Related to the Analysis</span></h4>""", unsafe_allow_html=True)
+            st.write("""<h5><span style="color:red;">Information Related to the Analysis</span></h5>""", unsafe_allow_html=True)
 
             col1, col2 = st.columns(2)
 
@@ -806,7 +805,7 @@ with st.container():
 
             # Create a row for each run
             for run, run_analysis in analysis_results.items():
-                st.write(f"""<center><h4>{run} <span style="color:red;">vs</span> Threshold ({st.session_state.qme_comparison_thresh:.2f})</h4></center>""", unsafe_allow_html=True)
+                st.write(f"""<center><h5>{run} <span style="color:red;">vs</span> Threshold ({st.session_state.qme_comparison_thresh:.2f})</h5></center>""", unsafe_allow_html=True)
 
                 # Calculate the number of measures
                 measures = list(run_analysis.keys())
@@ -822,7 +821,7 @@ with st.container():
                             measure = measures[i * 2 + j]
                             analysis = run_analysis[measure]
                             with col:
-                                st.subheader(f"Result Analysis based on {measure}")
+                                st.write(f"<h5>Result Analysis based on {measure}</h5>", unsafe_allow_html=True)
                                 st.write(f"Improved Queries: {len(analysis['improved_queries'])} ({analysis['pct_improved']:.2f}%)")
                                 st.write(f"Degraded Queries: {len(analysis['degraded_queries'])} ({analysis['pct_degraded']:.2f}%)")
                                 st.write(f"Unchanged Queries: {len(analysis['unchanged_queries'])} ({analysis['pct_unchanged']:.2f}%)")
@@ -876,4 +875,4 @@ with st.container():
     )
 st.divider()
 
-st.markdown("""<h4 style="text-align:center;"><span style="color:red;">To export the report as PDF press (⌘+P or Ctrl+P)</span></h4>""", unsafe_allow_html=True)
+st.markdown("""<h5 style="text-align:center;"><span style="color:red;">To export the report as PDF press (⌘+P or Ctrl+P)</span></h5>""", unsafe_allow_html=True)

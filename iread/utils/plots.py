@@ -1057,6 +1057,7 @@ def plot_multi_query_docs(multi_query_docs):
     )
     return fig
 
+
 @st.cache_resource
 def plot_documents_retrieved_by_experiments(result_df, excluded_runs=None) -> None:
     """

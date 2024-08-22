@@ -6,10 +6,10 @@ This Interactive Dashboard for IR Evaluation is a tool designed for researchers 
 ## Features
 
 ### Data Management
-	- Upload retrieval experiment files (TREC format)
-	- Upload qrels (relevance judgments) files
-	- Upload query files (supports txt, csv, and xml formats)
-	- Delete uploaded files through the interface
+- Upload retrieval experiment files (TREC format)
+- Upload qrels (relevance judgments) files
+- Upload query files (supports txt, csv, and xml formats)
+- Delete uploaded files through the interface
 
 ### Analysis Tools
 1. **Overall Retrieval Characteristics**

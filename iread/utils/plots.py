@@ -1057,7 +1057,7 @@ def plot_multi_query_docs(multi_query_docs):
     )
     return fig
 
-
+@st.cache_resource
 def plot_documents_retrieved_by_experiments(result_df, excluded_runs=None) -> None:
     """
     Analyze and display results of documents retrieved by different numbers of experiments.
@@ -1263,3 +1263,5 @@ def plot_documents_retrieved_by_experiments(result_df, excluded_runs=None) -> No
                 - A high percentage of all-system retrievals suggests good agreement among methods for this query.
                 - A high percentage of single-system retrievals might indicate a challenging or ambiguous query.
                 """)
+
+

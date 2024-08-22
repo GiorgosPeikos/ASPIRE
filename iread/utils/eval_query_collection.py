@@ -310,7 +310,7 @@ def find_ranked_pos_of_multi_query_docs(multi_query_docs, num_docs, experiments,
         else:
             st.write(f"**All examined documents have been retrieved by the evaluated experiment.**")
 
-
+@st.cache_data
 def documents_retrieved_by_experiments(dataframes_dict):
     """
     Process multiple dataframes to identify documents retrieved by different numbers of experiments for each query.
@@ -335,3 +335,4 @@ def documents_retrieved_by_experiments(dataframes_dict):
     }).rename(columns={'query_id': 'occurrence_count'})
 
     return result.reset_index()
+

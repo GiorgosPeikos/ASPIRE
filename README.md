@@ -43,20 +43,20 @@ This Interactive Dashboard for IR Evaluation is a tool designed for researchers 
 2. Install requirements: 
 
 	```
-		pip install -r requirements.txt
+	pip install -r requirements.txt
 	```
 3. Start the Streamlit Application:
 
 	```
-		streamlit run iread/_🏠_Homepage.py
+	streamlit run iread/_🏠_Homepage.py
 	```
 	
 4. The dashboard will open in your default web browser. Use the sidebar to navigate between different tools:
-	- Upload - Delete Files
-	- Experiment Performance Report
-	- Query-based Report
-	- Query Text-based Report
-	- Query Collection-based Report
+- Upload - Delete Files
+- Experiment Performance Report
+- Query-based Report
+- Query Text-based Report
+- Query Collection-based Report
 
 5. Begin by uploading your experimental data using the "Upload - Delete Files" page.
 
@@ -66,36 +66,36 @@ This Interactive Dashboard for IR Evaluation is a tool designed for researchers 
 
 ## File Structure
 
-	- `_🏠_Homepage.py`: Main entry point for the Streamlit app
-	- `Upload_-_Delete_Files.py`: Interface for managing experimental data files
-	- `Experiment_Performance_Report.py`: Overall performance analysis script
-	- `Experiment_Performance_Query-based_Report.py`: Query-based analysis script
-	- `Experiment_Performance_Query_Text-based_Report.py`: Text-based query analysis script
-	- `Experiment_Performance_Query_Collection-based_Report.py`: Collection-based analysis script
-	- `utils/`: Directory containing utility functions and modules
-	- `data_handler.py`: Functions for loading and processing data files
-	- `eval_core.py`: Core evaluation functions and metric definitions
-	- `eval_multiple_exp.py`: Functions for evaluating multiple experiments
-	- `eval_per_query.py`: Per-query evaluation functions
-	- `eval_query_collection.py`: Query collection analysis functions
-	- `eval_query_text_based.py`: Text-based query analysis functions
-	- `eval_single_exp.py`: Single experiment evaluation functions
-	- `plots.py`: Visualization functions
-	- `ui.py`: User interface utility functions
+- `_🏠_Homepage.py`: Main entry point for the Streamlit app
+- `Upload_-_Delete_Files.py`: Interface for managing experimental data files
+- `Experiment_Performance_Report.py`: Overall performance analysis script
+- `Experiment_Performance_Query-based_Report.py`: Query-based analysis script
+- `Experiment_Performance_Query_Text-based_Report.py`: Text-based query analysis script
+- `Experiment_Performance_Query_Collection-based_Report.py`: Collection-based analysis script
+- `utils/`: Directory containing utility functions and modules
+- `data_handler.py`: Functions for loading and processing data files
+- `eval_core.py`: Core evaluation functions and metric definitions
+- `eval_multiple_exp.py`: Functions for evaluating multiple experiments
+- `eval_per_query.py`: Per-query evaluation functions
+- `eval_query_collection.py`: Query collection analysis functions
+- `eval_query_text_based.py`: Text-based query analysis functions
+- `eval_single_exp.py`: Single experiment evaluation functions
+- `plots.py`: Visualization functions
+- `ui.py`: User interface utility functions
 
 ## Dependencies
 
-	- streamlit
-	- pandas
-	- numpy
-	- plotly
-	- matplotlib
-	- scipy
-	- ir_measures
-	- scikit-learn
-	- transformers
-	- wordcloud
-	- nltk
+- streamlit
+- pandas
+- numpy
+- plotly
+- matplotlib
+- scipy
+- ir_measures
+- scikit-learn
+- transformers
+- wordcloud
+- nltk
 
 For a complete list of dependencies with version numbers, refer to the `requirements.txt` file.
 
@@ -103,12 +103,12 @@ For a complete list of dependencies with version numbers, refer to the `requirem
 
 Contributions to improve the dashboard or add new features are welcome. Please follow these steps to contribute:
 
-	1. Fork the repository
-	2. Create a new branch (`git checkout -b feature/AmazingFeature`)
-	3. Make your changes
-	4. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-	5. Push to the branch (`git push origin feature/AmazingFeature`)
-	6. Open a Pull Request
+1. Fork the repository
+2. Create a new branch (`git checkout -b feature/AmazingFeature`)
+3. Make your changes
+4. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+5. Push to the branch (`git push origin feature/AmazingFeature`)
+6. Open a Pull Request
 
 ## Contact
 

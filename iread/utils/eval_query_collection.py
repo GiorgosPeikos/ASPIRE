@@ -311,3 +311,27 @@ def find_ranked_pos_of_multi_query_docs(multi_query_docs, num_docs, experiments,
             st.write(f"**All examined documents have been retrieved by the evaluated experiment.**")
 
 
+def documents_retrieved_by_experiments(dataframes_dict):
+    """
+    Process multiple dataframes to identify documents retrieved by different numbers of experiments for each query.
+
+    :param dataframes_dict: A dictionary where keys are run names and values are pandas DataFrames
+    :return: A DataFrame with aggregated results and counts for different retrieval thresholds
+    """
+    all_data = []
+    for run_name, df in dataframes_dict.items():
+        run_name = get_experiment_name(run_name, None)  # Assuming this function exists
+        df = df.copy()
+        df['run'] = run_name
+        all_data.append(df[['query_id', 'doc_id', 'run']])
+
+    combined_df = pd.concat(all_data, ignore_index=True)
+
+    # Group by query_id and doc_id, and count occurrences
+    grouped = combined_df.groupby(['query_id', 'doc_id'])
+    result = grouped.agg({
+        'run': lambda x: ','.join(sorted(set(x))),
+        'query_id': 'count'
+    }).rename(columns={'query_id': 'occurrence_count'})
+
+    return result.reset_index()

@@ -69,7 +69,7 @@ if st.button("Begin the Experimental Evaluation!", key='qmet_stButtonCenter'):
 
 # Functionality that allows to randomly select queries for analysis, size and queries.
 if 'qmet_selected_queries' in st.session_state and not st.session_state.qmet_selected_queries.empty:
-    if len(st.session_state.qmet_selected_queries) > 100:
+    if len(st.session_state.qmet_selected_queries) > 101:
         with st.container():
             st.write("""<h3>Query Sampling - <span style="color:red;">Sampling Queries to Facilitate Experiment Analysis</span></h3>""", unsafe_allow_html=True)
 
@@ -121,7 +121,7 @@ if 'qmet_selected_queries' in st.session_state and not st.session_state.qmet_sel
             st.write(f"""<div style="text-align: center;"> All <span style="color:red;">{len(st.session_state.qmet_selected_queries_random)}</span> provided queries will be used for the 
             following analyses.</div>""", unsafe_allow_html=True)
 
-        st.divider()
+            st.divider()
 
 # Per query Relevance Judgements
 with st.container():

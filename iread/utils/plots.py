@@ -1058,3 +1058,208 @@ def plot_multi_query_docs(multi_query_docs):
     return fig
 
 
+def plot_documents_retrieved_by_experiments(result_df, excluded_runs=None) -> None:
+    """
+    Analyze and display results of documents retrieved by different numbers of experiments.
+
+    :param result_df: DataFrame containing the aggregated results
+    :param excluded_runs: List of run names to exclude from the analysis
+    """
+    if excluded_runs:
+        # Filter out excluded runs
+        result_df['run'] = result_df['run'].apply(lambda x: ','.join([run for run in x.split(',') if run not in excluded_runs]))
+        result_df['occurrence_count'] = result_df['run'].apply(lambda x: len(x.split(',')) if x else 0)
+        result_df = result_df[result_df['occurrence_count'] > 0]
+
+    total_experiments = len(set(','.join(result_df['run']).split(',')))
+    total_pairs = len(result_df)
+
+    st.write(f"Number of experiments included in the analysis: <span style='color:red;'>{total_experiments}</span>", unsafe_allow_html=True)
+    st.write(f"Total unique query-document pairs retrieved across all experiments: <span style='color:red;'>{total_pairs}</span>", unsafe_allow_html=True)
+
+    # Create separate columns for different retrieval thresholds
+    thresholds = [1, 2, 3, 5]
+    threshold_data = []
+    for threshold in thresholds:
+        if threshold <= total_experiments:
+            result_df[f'by_{threshold}_exps'] = result_df['occurrence_count'] == threshold
+            count = result_df[f'by_{threshold}_exps'].sum()
+            percentage = count / total_pairs
+            st.write(f"<h9><b>Query-document pairs retrieved by exactly {threshold} experiment{'s' if threshold > 1 else ''} and no others: "
+                     f"<span style='color:red;'>{count}</span> (<span style='color:red;'>{percentage:.2%}</span> of total unique pairs)</b></h9>",
+                     unsafe_allow_html=True)
+            threshold_data.append({"Threshold": f"{threshold} exp{'s' if threshold > 1 else ''}", "Count": count, "Percentage": percentage})
+
+            # Display example pairs for all thresholds
+            example_pairs = result_df[result_df[f'by_{threshold}_exps']].sample(10)
+            with st.expander(f"Example pairs retrieved by exactly {threshold} experiment{'s' if threshold > 1 else ''}"):
+                for _, row in example_pairs.iterrows():
+                    st.write(f"Query ID: <span style='color:red;'>{row['query_id']}</span>, Document ID: <span style='color:red;'>{row['doc_id']}</span>, Retrieved by: <span style='color:red;'>"
+                             f"{row['run']}</span>", unsafe_allow_html=True)
+
+    # Special cases
+    result_df['by_all_exps'] = result_df['occurrence_count'] == total_experiments
+    half_plus_one_threshold = total_experiments // 2 + 1
+    result_df['by_half_plus_one_exps'] = result_df['occurrence_count'] >= half_plus_one_threshold
+
+    half_plus_one = result_df['by_half_plus_one_exps'].sum()
+    half_plus_one_percentage = half_plus_one / total_pairs
+    st.write(f"<h9><b>Query-document pairs retrieved by at least half+1 of the experiments ({half_plus_one_threshold}): "
+             f"<span style='color:red;'>{half_plus_one}</span> (<span style='color:red;'>{half_plus_one_percentage:.2%}</span> of total unique pairs)</b></h9>",
+             unsafe_allow_html=True)
+    threshold_data.append({"Threshold": "Half+1 exps", "Count": half_plus_one, "Percentage": half_plus_one_percentage})
+
+    # Display example pairs for half+1
+    half_plus_one_pairs = result_df[result_df['by_half_plus_one_exps']].sample(10)
+    with st.expander(f"Example pairs retrieved by at least {half_plus_one_threshold} experiments (half+1)"):
+        for _, row in half_plus_one_pairs.iterrows():
+            st.write(f"Query ID: <span style='color:red;'>{row['query_id']}</span>, Document ID: <span style='color:red;'>{row['doc_id']}</span>, Retrieved by: <span style='color:red;'>"
+                     f"{row['run']}</span>", unsafe_allow_html=True)
+
+    all_exps = result_df['by_all_exps'].sum()
+    all_exps_percentage = all_exps / total_pairs
+    st.write(f"<h9><b>Query-document pairs retrieved by all {total_experiments} experiments: "
+             f"<span style='color:red;'>{all_exps}</span> (<span style='color:red;'>{all_exps_percentage:.2%}</span> of total unique pairs)</b></h9>",
+             unsafe_allow_html=True)
+    threshold_data.append({"Threshold": "All exps", "Count": all_exps, "Percentage": all_exps_percentage})
+
+    # Display example pairs for all experiments
+    all_exps_pairs = result_df[result_df['by_all_exps']].sample(10)
+    with st.expander(f"Example pairs retrieved by all {total_experiments} experiments"):
+        for _, row in all_exps_pairs.iterrows():
+            st.write(f"Query ID: <span style='color:red;'>{row['query_id']}</span>, Document ID: <span style='color:red;'>{row['doc_id']}</span>, Retrieved by: <span style='color:red;'>"
+                     f"{row['run']}</span>", unsafe_allow_html=True)
+
+    st.write("<h5>Query Difficulty Analysis based on uniquely retrieved Documents</h5>", unsafe_allow_html=True)
+
+    # Query difficulty analysis
+    with st.expander("See Analysis"):
+        st.write("""
+        This section analyzes the difficulty of each query based on the retrieval results. 
+        We define query difficulty as the proportion of documents for that query that were retrieved by only one experiment.
+
+        - A higher percentage indicates a more difficult query (more unique retrievals).
+        - A lower percentage indicates an easier query (more agreement between experiments).
+           
+        Interpretation guide:
+           - Red colors indicate more difficult queries (higher percentage of unique retrievals).
+           - Green colors indicate easier queries (lower percentage of unique retrievals).
+           - The percentage shows how many of the documents for each query were retrieved by only one experiment.
+
+        Calculation method:
+        1. For each query, we count the number of documents retrieved by only one experiment.
+        2. We divide this count by the total number of documents retrieved for that query.
+        3. The result is expressed as a percentage.
+
+        For example:
+        Let's say for Query A, we have the following retrieval results:
+        - Document 1: Retrieved by Experiment 1, 2, and 3
+        - Document 2: Retrieved by Experiment 1 only
+        - Document 3: Retrieved by Experiment 2 and 3
+        - Document 4: Retrieved by Experiment 1 only
+        - Document 5: Retrieved by all experiments
+
+        In this case:
+        - Total documents retrieved: 5
+        - Documents retrieved by only one experiment: 2 (Documents 2 and 4)
+        - Difficulty score = 2 / 5 = 0.4 or 40%
+
+        This means that 40% of the documents retrieved for Query A were unique to a single experiment, 
+        suggesting a moderate level of difficulty.
+
+        Below, you'll see all queries ranked from most difficult to easiest based on this calculation.
+        """)
+
+        query_difficulty = result_df.groupby('query_id').apply(lambda x: (x['occurrence_count'] == 1).sum() / len(x))
+        query_difficulty_sorted = query_difficulty.sort_values(ascending=False)
+
+        st.write("<h6>All Queries Ranked by Difficulty (Hardest to Easiest)</h6>", unsafe_allow_html=True)
+
+        # Create a dataframe for display
+        difficulty_df = pd.DataFrame({
+            'Query ID': query_difficulty_sorted.index,
+            'Difficulty Score': query_difficulty_sorted.values
+        })
+
+        # Color formatting function
+        def color_difficulty(val):
+            color = f'rgb({int(255 * val)}, {int(255 * (1 - val))}, 0)'
+            return f'color: {color}'
+
+        cola, colb = st.columns(2)
+        with cola:
+            # Apply color formatting and display
+            st.dataframe(difficulty_df.style.format({'Difficulty Score': '{:.2%}'})
+                         .map(color_difficulty, subset=['Difficulty Score']), hide_index=True, use_container_width=True)
+        with colb:
+            st.write("""
+               What does this mean?
+               - Queries at the top of the list (with higher percentages) are more difficult. These queries have a higher proportion of documents that were only retrieved by one experiment.
+               - Queries at the bottom of the list (with lower percentages) are easier. These queries have more agreement between different retrieval methods.
+               - The distribution of difficulty can help you understand if certain types of queries are consistently challenging across different retrieval methods.
+               - If you see a clear divide between difficult and easy queries, it might indicate distinct categories of queries in your dataset.
+               """)
+
+            st.write("""
+               Possible Next steps:
+               - For difficult queries (those with high percentages), you might want to examine the specific documents that were uniquely retrieved.
+               - For easy queries (those with low percentages), you could look at which documents were consistently retrieved across experiments.
+               """)
+
+    # Display top documents for a specific query
+    st.write("<h5>Identify Commonly and Uniquely retrieved Documents per Query</h5>", unsafe_allow_html=True)
+    with st.expander('See Analysis'):
+        query_ids = sorted(result_df['query_id'].unique())
+        selected_query = st.selectbox("Select a query to view documents:", query_ids)
+
+        if selected_query:
+            st.write(f"Document retrieval analysis for query <span style='color:red;'>{selected_query}</span>.", unsafe_allow_html=True)
+
+            query_docs = result_df[result_df['query_id'] == selected_query]
+            total_experiments = len(set(','.join(query_docs['run']).split(',')))
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+                st.write("Documents retrieved by all systems:")
+                all_systems_docs = query_docs[query_docs['occurrence_count'] == total_experiments]
+                if not all_systems_docs.empty:
+                    st.dataframe(all_systems_docs[['doc_id', 'occurrence_count', 'run']], hide_index=True, use_container_width=True)
+                else:
+                    st.write("No documents were retrieved by all systems for this query.")
+
+            with col2:
+                single_system_docs = query_docs[query_docs['occurrence_count'] == 1]
+                two_system_docs = pd.DataFrame()  # Initialize as empty DataFrame
+                if not single_system_docs.empty:
+                    st.write("Documents retrieved by only one system:")
+                    st.dataframe(single_system_docs[['doc_id', 'occurrence_count', 'run']], hide_index=True, use_container_width=True)
+                else:
+                    two_system_docs = query_docs[query_docs['occurrence_count'] == 2]
+                    if not two_system_docs.empty:
+                        st.write("No documents were retrieved by only one system. Showing documents retrieved by two systems:")
+                        st.dataframe(two_system_docs[['doc_id', 'occurrence_count', 'run']], hide_index=True, use_container_width=True)
+                    else:
+                        st.write("No documents were retrieved by only one or two systems for this query.")
+
+            # Calculate and display percentages
+            total_docs = len(query_docs)
+            all_systems_percentage = len(all_systems_docs) / total_docs * 100
+            single_system_percentage = len(single_system_docs) / total_docs * 100
+            two_system_percentage = len(two_system_docs) / total_docs * 100
+
+            with col1:
+                st.write(f"- Total unique documents retrieved for this query: <span style='color:red;'>{total_docs}</span>", unsafe_allow_html=True)
+                st.write(f"- Percentage of documents retrieved by all systems: <span style='color:red;'>{all_systems_percentage:.2f}%</span>", unsafe_allow_html=True)
+                st.write(f"- Percentage of documents retrieved by only one system: <span style='color:red;'>{single_system_percentage:.2f}%</span>", unsafe_allow_html=True)
+                if single_system_percentage == 0:
+                    st.write(f"- Percentage of documents retrieved by only two systems: <span style='color:red;'>{two_system_percentage:.2f}%</span>", unsafe_allow_html=True)
+
+            with col2:
+                st.write("""
+                Interpretation:
+                - Documents retrieved by all systems represent a strong consensus among retrieval methods.
+                - Documents retrieved by only one (or two) systems might be unique findings or potential noise.
+                - A high percentage of all-system retrievals suggests good agreement among methods for this query.
+                - A high percentage of single-system retrievals might indicate a challenging or ambiguous query.
+                """)

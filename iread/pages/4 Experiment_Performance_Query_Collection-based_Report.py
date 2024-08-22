@@ -4,8 +4,9 @@ import numpy as np
 st.set_page_config(layout="wide", initial_sidebar_state="collapsed", )
 from utils.data_handler import load_run_data, load_qrel_data, load_query_data
 from utils.ui import load_css
-from utils.eval_query_collection import analyze_query_judgements, find_multi_query_docs, find_ranked_pos_of_multi_query_docs, display_further_details_multi_query_docs
-from utils.plots import plot_query_relevance_judgements, plot_multi_query_docs
+from utils.eval_query_collection import analyze_query_judgements, find_multi_query_docs, find_ranked_pos_of_multi_query_docs, display_further_details_multi_query_docs, \
+    documents_retrieved_by_experiments
+from utils.plots import plot_query_relevance_judgements, plot_multi_query_docs, plot_documents_retrieved_by_experiments
 
 
 # Load custom CSS
@@ -249,30 +250,77 @@ st.divider()
 
 # Documents that have been retrieved by all systems.
 with st.container():
-    st.markdown("""<h3>Document Collection - <span style="color:red;">Documents retrieved in all Experiments</span></h3>""", unsafe_allow_html=True)
-
-    with st.expander("See Analysis Details and Interpretations"):
-        col1, col2 = st.columns(2)
-
-        st.write('details')
+    st.markdown("""<h3>Document Collection - <span style="color:red;">Documents retrieved per query by 1, 2, 3, 5, and by all Experiments</span></h3>""", unsafe_allow_html=True)
 
     if 'qmed_selected_runs' in st.session_state:
-        st.write()
+        if len(st.session_state.qmed_selected_runs) >1:
+            with st.expander("See Analysis Details and Interpretations"):
+                st.write("**Overview**")
 
-st.divider()
+                st.write("""
+                This analysis measures how documents are retrieved across multiple systems for each query. 
+                We identify which documents have been retrieved by only 1, 2, 3, 5 (where applicable), at least half+1, 
+                and all systems for each query. This helps us understand the consistency and uniqueness of document retrieval 
+                across different systems and assess query difficulty.
+                """)
 
+                col1, col2 = st.columns(2)
 
-# Documents that have been retrieved by 1,2,3,5 systems.
-with st.container():
-    st.markdown("""<h3>Document Collection - <span style="color:red;">Documents retrieved in a few Experiments</span></h3>""", unsafe_allow_html=True)
+                with col1:
+                    st.write("**How Calculations Are Made**")
+                    st.write("- We combine all query-document pairs from all experiments.")
+                    st.write("- We count how many experiments retrieved each unique pair.")
+                    st.write("- We calculate the number of pairs retrieved by exactly 1, 2, 3, 5 experiments (where applicable).")
+                    st.write("- We identify pairs retrieved by at least half+1 of the experiments.")
+                    st.write("- We count pairs retrieved by all experiments.")
+                    st.write("- Percentages are calculated relative to the total number of unique pairs.")
+                    st.write("- For query difficulty, we calculate the proportion of documents retrieved by only one experiment for each query.")
 
-    with st.expander("See Analysis Details and Interpretations"):
-        col1, col2 = st.columns(2)
+                with col2:
+                    st.write("**Interpretation and Use of Results**")
+                    st.write("- Pairs retrieved by 1 experiment: Unique to specific approaches, might represent noise or novel findings.")
+                    st.write("- Pairs retrieved by multiple experiments: Higher agreement suggests more reliable results.")
+                    st.write("- Pairs retrieved by half+1 experiments: Represent a 'majority vote', considered more robust findings.")
+                    st.write("- Pairs retrieved by all experiments: Most consistent results across all approaches.")
+                    st.write("- Distribution across thresholds: Helps assess overall agreement between different experimental approaches.")
+                    st.write("- Query difficulty: Higher percentages indicate more difficult queries with more unique retrievals.")
+                    st.write("- These metrics guide further investigation, help in ensemble methods, and identify areas of disagreement.")
 
-        st.write('details')
+                st.write("**Additional Analysis Features**")
+                st.write("- Query Difficulty Ranking: All queries are ranked from most difficult to easiest based on unique retrievals.")
+                st.write("- Per-Query Document Analysis: For each query, you can view documents retrieved by all systems vs. those retrieved by only one or two systems.")
+                st.write("- Example Pairs: For each retrieval threshold, example document-query pairs are provided for closer examination.")
 
-    if 'qmed_selected_runs' in st.session_state:
-        st.write()
+                st.write("**Practical Applications**")
+                st.write("- Identify challenging queries that might need refinement or further investigation.")
+                st.write("- Recognize patterns in query difficulty related to query characteristics or retrieval method strengths/weaknesses.")
+                st.write("- Assess the overall performance and agreement of retrieval systems across different types of queries.")
+                st.write("- Guide the development of ensemble methods by understanding where systems agree or disagree.")
+                st.write("- Inform decisions on which documents to include in a final result set based on retrieval consistency.")
+            initial_result_df = documents_retrieved_by_experiments(st.session_state.qmed_selected_runs)
+
+            # Create a multiselect for excluding runs with a safeguard
+            all_runs = list(set(','.join(initial_result_df['run']).split(',')))
+            st.write("<h5>General Analysis</h5>", unsafe_allow_html=True)
+
+            if len(all_runs) > 1:
+                max_selectable = len(all_runs) - 2
+                excluded_runs = st.multiselect(
+                    "Select runs to exclude (at least two must remain):",
+                    all_runs,
+                    max_selections=max_selectable
+                )
+
+                if len(excluded_runs) == len(all_runs):
+                    st.warning("You must keep at least one experiment. The last selected experiment will be included.")
+                    excluded_runs = excluded_runs[:-1]
+            else:
+                st.info("Only one experiment available. No exclusion possible.")
+                excluded_runs = []
+
+            plot_documents_retrieved_by_experiments(initial_result_df, excluded_runs)
+    else:
+        st.write("Not sufficient experiments have been selected. Please select at least 2 experiments first.")
 
 st.divider()
 

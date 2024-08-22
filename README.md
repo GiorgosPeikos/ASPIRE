@@ -113,6 +113,7 @@ Contributions to improve the dashboard or add new features are welcome. Please f
 ## Contact
 
 [Georgios Peikos] - [georgios.peikos@unimib.it]
+
 [Wojciech Kusa] - [wojciech.kusa@tuwien.ac.at]
 
 Project Link: https://github.com/GiorgosPeikos/IREAD.git 

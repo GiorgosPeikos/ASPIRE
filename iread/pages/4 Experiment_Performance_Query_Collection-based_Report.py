@@ -248,7 +248,46 @@ st.divider()
 
 
 # Documents that have been retrieved by all systems.
+with st.container():
+    st.markdown("""<h3>Document Collection - <span style="color:red;">Documents retrieved in all Experiments</span></h3>""", unsafe_allow_html=True)
+
+    with st.expander("See Analysis Details and Interpretations"):
+        col1, col2 = st.columns(2)
+
+        st.write('details')
+
+    if 'qmed_selected_runs' in st.session_state:
+        st.write()
+
+st.divider()
+
 
 # Documents that have been retrieved by 1,2,3,5 systems.
+with st.container():
+    st.markdown("""<h3>Document Collection - <span style="color:red;">Documents retrieved in a few Experiments</span></h3>""", unsafe_allow_html=True)
+
+    with st.expander("See Analysis Details and Interpretations"):
+        col1, col2 = st.columns(2)
+
+        st.write('details')
+
+    if 'qmed_selected_runs' in st.session_state:
+        st.write()
+
+st.divider()
+
 
 # The box like plot for the top 10 positions showing how the documents are ranked.
+with st.container():
+    st.markdown("""<h3>Document Collection - <span style="color:red;">Retrieved Documents, Relevance, Ranking Position</span></h3>""", unsafe_allow_html=True)
+
+    with st.expander("See Analysis Details and Interpretations"):
+        col1, col2 = st.columns(2)
+
+        st.write('details')
+
+    if 'qmed_selected_runs' in st.session_state:
+        st.write()
+
+st.divider()
+

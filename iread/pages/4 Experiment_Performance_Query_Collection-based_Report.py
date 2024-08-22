@@ -4,8 +4,8 @@ import numpy as np
 st.set_page_config(layout="wide", initial_sidebar_state="collapsed", )
 from utils.data_handler import load_run_data, load_qrel_data, load_query_data
 from utils.ui import load_css
-from utils.eval_query_collection import analyze_query_judgements, find_multi_query_docs
-from utils.plots import plot_query_relevance_judgements, plot_multi_query_docs, display_further_details_multi_query_docs
+from utils.eval_query_collection import analyze_query_judgements, find_multi_query_docs, find_ranked_pos_of_multi_query_docs, display_further_details_multi_query_docs
+from utils.plots import plot_query_relevance_judgements, plot_multi_query_docs
 
 
 # Load custom CSS
@@ -69,7 +69,7 @@ st.divider()
 
 # Functionality that allows to randomly select queries for analysis, size and queries.
 if 'qmed_selected_queries' in st.session_state and not st.session_state.qmed_selected_queries.empty:
-    if len(st.session_state.qmed_selected_queries) > 100:
+    if len(st.session_state.qmed_selected_queries) > 251:
         with st.container():
             st.write("""<h3>Query Sampling - <span style="color:red;">Sampling Queries to Facilitate Experiment Analysis</span></h3>""", unsafe_allow_html=True)
 
@@ -77,7 +77,7 @@ if 'qmed_selected_queries' in st.session_state and not st.session_state.qmed_sel
             if 'qmed_random_state' not in st.session_state:
                 st.session_state.qmed_random_state = 42
             if 'qmed_random_size' not in st.session_state:
-                st.session_state.qmed_random_size = 100
+                st.session_state.qmed_random_size = 250
 
             st.write(f"""<div style="text-align: center;">  ⚠️ Note: Too many available queries (<span style="color:red;">{len(st.session_state.qmed_selected_queries)}</span>).
             To enhance the following analysis, a random set will be used. Please select the following:</div>""", unsafe_allow_html=True)
@@ -121,7 +121,7 @@ if 'qmed_selected_queries' in st.session_state and not st.session_state.qmed_sel
             st.write(f"""<div style="text-align: center;"> All <span style="color:red;">{len(st.session_state.qmed_selected_queries_random)}</span> provided queries will be used for the 
             following analyses.</div>""", unsafe_allow_html=True)
 
-        st.divider()
+            st.divider()
 
 
 # Per query Relevance Judgements
@@ -129,7 +129,7 @@ with st.container():
     st.markdown("""<h3>Document Collection - <span style="color:red;">Relevance Judgments per Query</span></h3>""", unsafe_allow_html=True)
 
     with st.expander("See Analysis Details and Interpretations"):
-        st.write("<center><b>The analysis leverages only the provided Qrels file!</b></center>", unsafe_allow_html=True)
+        st.write("<center><b>The analysis leverages only the provided Qrels file and a subset of queries in case the available queries are more than 250. </b></center>", unsafe_allow_html=True)
 
     if 'qmed_selected_runs' not in st.session_state:
         st.warning("Please select a set of queries to begin your evaluation.", icon="⚠")
@@ -211,7 +211,8 @@ with st.container():
             - **Query Overlap and Distinction:** Analyzing shared documents between queries helps understand the overlap or distinction in query intent and potential retrieval performance.
             """)
 
-        st.write("<center><b>The analysis leverages only the provided Qrels file!</b></center>", unsafe_allow_html=True)
+        st.write("<center><b>The analysis leverages only the provided Qrels file and is based on all of the available Queries in the collection!</b></center>", unsafe_allow_html=True)
+
     if 'qmed_selected_qrels' in st.session_state:
         multi_query_docs = find_multi_query_docs(st.session_state.qmed_selected_qrels)
 
@@ -232,11 +233,11 @@ with st.container():
                 else:
                     st.write("No matching documents found.")
 
-            with st.expander("Further Analysis"):
+            with st.expander("Further Details"):
                 display_further_details_multi_query_docs(multi_query_docs, st.session_state.qmed_num_docs)
 
-            with st.expander("See Raw Data"):
-                st.dataframe(multi_query_docs, hide_index=True)
+            with st.expander("What was the ranking position and relevance judgment of these documents across experiments and queries?"):
+                find_ranked_pos_of_multi_query_docs(multi_query_docs, st.session_state.qmed_num_docs, st.session_state.qmed_selected_runs, st.session_state.qmed_selected_qrels)
 
         else:
             st.write("No documents found with relevance assessments for multiple queries.")

@@ -1,6 +1,8 @@
 import streamlit as st
 import numpy as np
 import pandas as pd
+import ast
+from utils.eval_single_exp import get_experiment_name
 
 
 # Helper function to get judgements for a specific label
@@ -194,6 +196,116 @@ def find_multi_query_docs(qrels):
 
     # Add relevance information
     relevance_info = qrels.groupby('doc_id').apply(lambda x: x.groupby('query_id')['relevance'].first().to_dict())
-    result['relevance_info'] = result['doc_id'].map(relevance_info)
+    result['relevance_judgments'] = result['doc_id'].map(relevance_info)
 
     return result
+
+
+@st.cache_data
+def display_further_details_multi_query_docs(multi_query_docs, num_docs):
+    # Dynamically get unique relevance labels from the data
+    all_relevance = [rel for doc_rel in multi_query_docs['relevance_judgments'] for rel in doc_rel.values()]
+    unique_relevance = sorted(set(all_relevance))
+
+    avg_queries = multi_query_docs['query_count'].mean()
+    max_queries = multi_query_docs['query_count'].max()
+    top_docs = multi_query_docs.head(num_docs)
+
+    st.write(f"Average number of relevance judgements across queries per document: <span style='color:red;'>{avg_queries:.2f}</span>", unsafe_allow_html=True)
+    st.write(f"Maximum number of relevance judgements for a single document: <span style='color:red;'>{max_queries}</span>", unsafe_allow_html=True)
+
+    st.write(f"Note that if a document has relevance judgements equal to the total number of queries in the collection it means that the document is somehow related to all the queries in the "
+             f"collection. For example, if the selected collection has 75 queries, then if a document with id XYZ has Rel.Judgments across queries=75, it means that the document's relevance has been "
+             f"assessed w.r.t. "
+             "to all queries.", unsafe_allow_html=True)
+
+    # Display a table for the top 5 documents
+    st.markdown(f"##### Top {num_docs} Documents ranked by their relevance assessments across queries")
+
+    top_docs_info = []
+
+    for _, row in top_docs.iterrows():
+        doc_id = row['doc_id']
+        query_counts = row['query_count']
+        relevance_counts = pd.Series(row['relevance_judgments'].values()).value_counts().to_dict()
+
+        doc_info = {
+            'Document ID': doc_id,
+            'Rel.Judgments across queries': query_counts
+        }
+
+        for rel_label in unique_relevance:
+            doc_info[f'Relevance {rel_label}'] = relevance_counts.get(rel_label, 0)
+
+        top_docs_info.append(doc_info)
+
+    top_docs_df = pd.DataFrame(top_docs_info)
+    st.dataframe(top_docs_df, hide_index=True)
+
+
+@st.cache_data
+def find_ranked_pos_of_multi_query_docs(multi_query_docs, num_docs, experiments, qrels):
+    # Limit to the top `num_docs` documents from the multi-query document dataframe
+    docs_multi_asments = multi_query_docs.head(num_docs)
+
+    # Ensure all identifiers are treated as strings
+    docs_multi_asments['doc_id'] = docs_multi_asments['doc_id'].astype(str)
+
+    # Extract doc_ids from docs_multi_asments and limit to 20
+    doc_ids = docs_multi_asments['doc_id'].unique()[:50]  # Limit to a maximum of 20 documents
+
+    # Notify the user that only the top 20 documents are shown
+    st.write(f"**Note:** Only the top 50 document IDs are presented in this analysis.")
+
+    # Track missing doc_ids
+    missing_docs = set(doc_ids)
+
+    # Iterate through each experiment's data
+    for run, run_data in experiments.items():
+        experiment = get_experiment_name(run, None)
+        st.write(f"""<center><h5>Analysis of the <span style="color:red;">{experiment}</span> Experiment</h5></center>""", unsafe_allow_html=True)
+
+        run_data['doc_id'] = run_data['doc_id'].astype(str)
+        run_data['query_id'] = run_data['query_id'].astype(str)
+
+        # Filter run_data for the relevant doc_ids
+        filtered_run_data = run_data[run_data['doc_id'].isin(doc_ids)]
+
+        # Merge filtered_run_data with qrels to get relevance labels
+        merged_data = pd.merge(filtered_run_data, qrels, on=['query_id', 'doc_id'], how='left')
+        merged_data.rename(columns={'relevance': 'relevance_label'}, inplace=True)
+
+        # Ensure relevance_label is always an integer and replace NaN with 'Unjudged'
+        merged_data['relevance_label'] = merged_data['relevance_label'].fillna(-1).astype(int).replace(-1, 'Unjudged')
+
+        # Start a new column layout with 3 columns
+        columns = st.columns(3)
+
+        # Track the current column index
+        column_index = 0
+
+        # For each document, prepare and display tables
+        for doc_id in doc_ids:
+            # Filter merged_data for the current doc_id
+            doc_data = merged_data[merged_data['doc_id'] == doc_id]
+
+            if not doc_data.empty:
+                # Prepare a DataFrame for the current doc_id
+                combined_data = doc_data[['query_id', 'rank', 'score', 'relevance_label']]
+
+                # Display the table in the current column
+                with columns[column_index]:
+                    st.write(f"""<center>Per query ranking details of Document: <span style="color:red;">{doc_id}</span></center>""", unsafe_allow_html=True)
+                    st.dataframe(combined_data, hide_index=True)
+
+                # Update column_index and reset if it reaches 3
+                column_index = (column_index + 1) % 3
+
+                # Remove from missing_docs if found
+                missing_docs.discard(doc_id)
+
+        # Show missing doc_ids
+        if missing_docs:
+            st.write(f"**The following documents have not been retrieved by the evaluated experiment:** {', '.join(missing_docs)}")
+        else:
+            st.write(f"**All examined documents have been retrieved by the evaluated experiment.**")

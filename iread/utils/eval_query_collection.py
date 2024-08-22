@@ -1,5 +1,6 @@
 import streamlit as st
 import numpy as np
+import pandas as pd
 
 
 # Helper function to get judgements for a specific label
@@ -172,3 +173,27 @@ def analyze_query_judgements(data):
     analysis_results['label_comparison'] = compare_relevance_labels(data, queries, relevance_labels)
 
     return analysis_results
+
+
+@st.cache_data
+def find_multi_query_docs(qrels):
+    # Count the number of unique queries per document
+    doc_query_count = qrels.groupby('doc_id')['query_id'].nunique()
+
+    # Filter for documents with more than one query
+    multi_query_docs = doc_query_count[doc_query_count > 1]
+
+    # Sort by number of queries, descending
+    multi_query_docs = multi_query_docs.sort_values(ascending=False)
+
+    # Create a DataFrame with document IDs and their query counts
+    result = pd.DataFrame({
+        'doc_id': multi_query_docs.index,
+        'query_count': multi_query_docs.values
+    })
+
+    # Add relevance information
+    relevance_info = qrels.groupby('doc_id').apply(lambda x: x.groupby('query_id')['relevance'].first().to_dict())
+    result['relevance_info'] = result['doc_id'].map(relevance_info)
+
+    return result

@@ -127,6 +127,9 @@ if 'qmet_selected_queries' in st.session_state and not st.session_state.qmet_sel
 with st.container():
     st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Relevance Judgments per Query</span></h3>""", unsafe_allow_html=True)
 
+    with st.expander("See Analysis Details and Interpretations"):
+        st.write("<center><b>The analysis leverages only the provided Qrels file!</b></center>", unsafe_allow_html=True)
+
     if 'qmet_selected_runs' not in st.session_state:
         st.warning("Please select a set of queries to begin your evaluation.", icon="⚠")
     else:
@@ -266,7 +269,7 @@ with st.container():
     if 'qmet_selected_runs' not in st.session_state:
         st.warning("Please select a set of queries to begin your evaluation.", icon="⚠")
     else:
-        with st.expander("See Details and Interpretations"):
+        with st.expander("See Analysis Details and Interpretations"):
             col1, col2 = st.columns(2)
 
             with col1:

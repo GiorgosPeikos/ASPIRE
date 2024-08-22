@@ -129,6 +129,9 @@ st.divider()
 with st.container():
     st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Relevance Judgments per Query</span></h3>""", unsafe_allow_html=True)
 
+    with st.expander("See Analysis Details and Interpretations"):
+        st.write("<center><b>The analysis leverages only the provided Qrels file!</b></center>", unsafe_allow_html=True)
+
     if 'qme_selected_runs' not in st.session_state:
         st.warning("Please select a set of queries to begin your evaluation.", icon="⚠")
     else:

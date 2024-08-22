@@ -1,5 +1,6 @@
 from collections import defaultdict
 import plotly.graph_objects as go
+import plotly.express as px
 import streamlit as st
 from plotly.subplots import make_subplots
 import matplotlib.colors as mcolors
@@ -1010,3 +1011,86 @@ def plot_performance_similarity(queries, qrel, runs, metric_list, selected_cutof
 
         with st.expander("Manually Examine Sampled Queries"):
             st.dataframe(queries[['query_id', 'query_text']], use_container_width=True, hide_index=True)
+
+
+@st.cache_resource
+def plot_multi_query_docs(multi_query_docs):
+    fig = go.Figure()
+
+    # Get unique relevance labels
+    all_relevance = [rel for doc_rel in multi_query_docs['relevance_info'] for rel in doc_rel.values()]
+    unique_relevance = sorted(set(all_relevance))
+
+    # Generate a color scale
+    color_scale = px.colors.qualitative.Plotly
+    relevance_colors = {rel: color_scale[i % len(color_scale)] for i, rel in enumerate(unique_relevance)}
+
+    for rel_label in unique_relevance:
+        counts = [sum(1 for rel in doc_rel.values() if rel == rel_label)
+                  for doc_rel in multi_query_docs['relevance_info']]
+
+        fig.add_trace(go.Bar(
+            x=multi_query_docs['doc_id'],
+            y=counts,
+            name=f'Relevance {rel_label}',
+            marker_color=relevance_colors[rel_label],
+            hovertext=[f"Queries: {', '.join([q for q, r in doc_rel.items() if r == rel_label])}"
+                       for doc_rel in multi_query_docs['relevance_info']],
+            hoverinfo='text+y'
+        ))
+
+    fig.update_layout(
+        title="Documents Assessed for Multiple Queries",
+        xaxis_title="Document ID",
+        yaxis_title="Number of Queries",
+        barmode='stack',
+        height=600,
+        hoverlabel=dict(bgcolor="white", font_size=12),
+        legend_title="Relevance Label",
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        )
+    )
+    return fig
+
+
+@st.cache_data
+def display_further_details_multi_query_docs(multi_query_docs, num_docs):
+    # Dynamically get unique relevance labels from the data
+    all_relevance = [rel for doc_rel in multi_query_docs['relevance_info'] for rel in doc_rel.values()]
+    unique_relevance = sorted(set(all_relevance))
+
+    avg_queries = multi_query_docs['query_count'].mean()
+    max_queries = multi_query_docs['query_count'].max()
+    top_docs = multi_query_docs.head(num_docs)
+
+    st.write(f"Average number of queries per document: <span style='color:red;'>{avg_queries:.2f}</span>", unsafe_allow_html=True)
+    st.write(f"Maximum number of queries for a single document: <span style='color:red;'>{max_queries}</span>", unsafe_allow_html=True)
+
+    # Display a table for the top 5 documents
+    st.markdown(f"### Top {num_docs} Documents with the Most Queries")
+
+    top_docs_info = []
+
+    for _, row in top_docs.iterrows():
+        doc_id = row['doc_id']
+        query_counts = row['query_count']
+        relevance_counts = pd.Series(row['relevance_info'].values()).value_counts().to_dict()
+
+        doc_info = {
+            'Document ID': doc_id,
+            'Total Queries': query_counts
+        }
+
+        for rel_label in unique_relevance:
+            doc_info[f'Relevance {rel_label}'] = relevance_counts.get(rel_label, 0)
+
+        top_docs_info.append(doc_info)
+
+    top_docs_df = pd.DataFrame(top_docs_info)
+    st.dataframe(top_docs_df, hide_index=True)
+

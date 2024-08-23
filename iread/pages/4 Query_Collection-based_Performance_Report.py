@@ -18,6 +18,18 @@ st.markdown("""<div style="text-align: center;"><h1>Retrieval Evaluation Report 
 # Container for loading data
 with st.container():
     st.markdown("<h3>Loading Queries, Qrels, Runs for Analysis</h3>", unsafe_allow_html=True)
+
+    with st.expander("See Details"):
+        st.subheader("Overview")
+        st.write("This section allows you to load and select the necessary data files for your retrieval evaluation.")
+        cola, colb = st.columns(2)
+        with cola:
+            st.subheader("How it works")
+            st.write("The system loads query files, qrel (relevance judgment) files, and retrieval run files from predefined directories. You can select multiple run files for comparison.")
+        with colb:
+            st.subheader("How to use")
+            st.write("Use this section to set up your evaluation environment. Ensure you have the correct files selected to get accurate and meaningful results in the subsequent analyses.")
+
     columns = st.columns([1, 1, 3])
 
     # Select Queries
@@ -130,7 +142,15 @@ with st.container():
     st.markdown("""<h3>Document Collection - <span style="color:red;">Relevance Judgments per Query</span></h3>""", unsafe_allow_html=True)
 
     with st.expander("See Analysis Details and Interpretations"):
-        st.write("<center><b>The analysis leverages only the provided Qrels file and a subset of queries in case the available queries are more than 250. </b></center>", unsafe_allow_html=True)
+        st.subheader("Overview")
+        st.write("This analysis showcases for each query its number of relevance judgments.")
+        cola, colb = st.columns(2)
+        with cola:
+            st.subheader("How it works")
+            st.write("<b>The analysis leverages only the provided Qrels file!</b>", unsafe_allow_html=True)
+        with colb:
+            st.subheader("How to use")
+            st.write("Use this section in combination with the following to understand how a query's relevance judgments might impact its performance.")
 
     if 'qmed_selected_runs' not in st.session_state:
         st.warning("Please select a set of queries to begin your evaluation.", icon="⚠")
@@ -198,21 +218,21 @@ with st.container():
     with st.expander("See Analysis Details and Interpretations"):
         col1, col2 = st.columns(2)
 
-        with col1:
-            st.markdown("##### Overview")
-            st.write("""
+        st.subheader("Overview")
+        st.write("""
             This analysis identifies and examines documents that have received relevance assessments for more than one query. These documents are particularly important because they help reveal 
             patterns in how different documents are assessed w.r.t to different queries.
             """)
-
-        with col2:
-            st.markdown("##### Potential Usages")
+        cola, colb = st.columns(2)
+        with cola:
+            st.subheader("How it works")
+            st.write("<center><b>The analysis leverages only the provided Qrels file and is based on all of the available Queries in the collection!</b></center>", unsafe_allow_html=True)
+        with colb:
+            st.subheader("How to use")
             st.write("""
             - **Document Relevance Across Queries:** It highlights how the same document might be relevant to multiple queries, indicating the versatility or generality of the document's content.
             - **Query Overlap and Distinction:** Analyzing shared documents between queries helps understand the overlap or distinction in query intent and potential retrieval performance.
             """)
-
-        st.write("<center><b>The analysis leverages only the provided Qrels file and is based on all of the available Queries in the collection!</b></center>", unsafe_allow_html=True)
 
     if 'qmed_selected_qrels' in st.session_state:
         multi_query_docs = find_multi_query_docs(st.session_state.qmed_selected_qrels)
@@ -331,6 +351,7 @@ with st.container():
     st.markdown("""<h3>Document Collection - <span style="color:red;">Retrieved Documents, Relevance, Ranking Position</span></h3>""", unsafe_allow_html=True)
 
     with st.expander("See Analysis Details and Interpretations"):
+        st.subheader("Overview")
         st.write("This analysis visualizes the relevance of retrieved documents across different ranking positions for multiple experiments.")
 
         col1, col2 = st.columns(2)

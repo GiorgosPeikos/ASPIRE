@@ -21,6 +21,18 @@ st.markdown("""<div style="text-align: center;"><h1>Query-based Analysis Across 
 # Container for loading data
 with st.container():
     st.markdown("<h3>Loading Queries, Qrels, Runs for Analysis</h3>", unsafe_allow_html=True)
+
+    with st.expander("See Details"):
+        st.subheader("Overview")
+        st.write("This section allows you to load and select the necessary data files for your retrieval evaluation.")
+        cola, colb = st.columns(2)
+        with cola:
+            st.subheader("How it works")
+            st.write("The system loads query files, qrel (relevance judgment) files, and retrieval run files from predefined directories. You can select multiple run files for comparison.")
+        with colb:
+            st.subheader("How to use")
+            st.write("Use this section to set up your evaluation environment. Ensure you have the correct files selected to get accurate and meaningful results in the subsequent analyses.")
+
     columns = st.columns([1, 1, 3])
 
     # Select Queries
@@ -130,7 +142,15 @@ with st.container():
     st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Relevance Judgments per Query</span></h3>""", unsafe_allow_html=True)
 
     with st.expander("See Analysis Details and Interpretations"):
-        st.write("<center><b>The analysis leverages only the provided Qrels file!</b></center>", unsafe_allow_html=True)
+        st.subheader("Overview")
+        st.write("This analysis showcases for each query its number of relevance judgments.")
+        cola, colb = st.columns(2)
+        with cola:
+            st.subheader("How it works")
+            st.write("<b>The analysis leverages only the provided Qrels file!</b>", unsafe_allow_html=True)
+        with colb:
+            st.subheader("How to use")
+            st.write("Use this section in combination with the following to understand how a query's relevance judgments might impact its performance.")
 
     if 'qme_selected_runs' not in st.session_state:
         st.warning("Please select a set of queries to begin your evaluation.", icon="⚠")
@@ -290,6 +310,19 @@ st.divider()
 with st.container():
     st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Experimental Evaluation per Query</span></h3>""", unsafe_allow_html=True)
     _, _, custom_user, default_measures, _, _ = return_available_measures()
+
+    with st.expander("See Analysis Details and Interpretations"):
+        st.subheader("Overview")
+        st.write("This analysis presents the retrieval performance achieved by a set of selected queries.")
+        cola, colb = st.columns(2)
+        with cola:
+            st.subheader("How it works")
+            st.write("- The analysis leverages the ir_measures library to estimate the retrieval performance.")
+            st.write("- The graphs present the retrieval performance for all the selected measures across all experiments.")
+        with colb:
+            st.subheader("How to use")
+            st.write("- This analysis can be used to identify queries that have been significantly improved/downgraded across runs.")
+            st.write("- In case a initial retrieval and a re-ranking are evaluated, the graph showcases the queries that have been improved/downgraded after the re-ranking.")
 
     if 'qme_selected_qrels' not in st.session_state:
         st.warning("Please select retrieval experiment and qrels to begin your evaluation.", icon="⚠")
@@ -451,6 +484,19 @@ st.divider()
 with st.container():
     st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Experimental Evaluation</span> Vs <span style="color:red;">Baseline</span></h3>""", unsafe_allow_html=True)
     _, _, custom_user, default_measures, _, _ = return_available_measures()
+
+    with st.expander("See Analysis Details and Interpretations"):
+        st.subheader("Overview")
+        st.write("This analysis presents the retrieval performance achieved by a set of selected queries compared to a baseline experiment.")
+        cola, colb = st.columns(2)
+        with cola:
+            st.subheader("How it works")
+            st.write("- The analysis leverages the ir_measures library to estimate the retrieval performance.")
+            st.write("- The graphs present the retrieval performance for all the selected measures across all experiments.")
+        with colb:
+            st.subheader("How to use")
+            st.write("- This analysis can be used to identify queries that have been significantly improved/downgraded across runs.")
+            st.write("- In case a initial retrieval is selected as baseline, the graph showcases the queries that have been improved/downgraded after the re-ranking.")
 
     if 'qme_selected_runs' not in st.session_state or len(st.session_state.qme_selected_runs) < 2:
         st.warning("This analysis requires at least two retrieval experiments to be selected.", icon="⚠")
@@ -645,6 +691,21 @@ with st.container():
                 unsafe_allow_html=True)
     _, _, custom_user, default_measures, _, _ = return_available_measures()
 
+    with st.expander("See Analysis Details and Interpretations"):
+        st.subheader("Overview")
+        st.write("This analysis presents the retrieval performance achieved by a set of selected queries compared to a threshold value across N evaluated experiments. This value can be either the "
+                 "median query performance of calculated based on the N-1 experiments **(set threshold=0.0)**, or any other selected threshold.")
+        cola, colb = st.columns(2)
+        with cola:
+            st.subheader("How it works")
+            st.write("- The analysis leverages the ir_measures library to estimate the retrieval performance.")
+            st.write("- The graphs present the retrieval performance for all the selected measures across all experiments.")
+        with colb:
+            st.subheader("How to use")
+            st.write("- This analysis can be used to identify queries that have been significantly improved/downgraded across runs compared to the threshold.")
+            st.write("- In case the threshold is the median performance for each query, then one can observe an experiment for which a query performance significantly improves/downgrades compared "
+                     "to all other evaluated experiments.")
+
     if 'qme_selected_runs' not in st.session_state or len(st.session_state.qme_selected_runs) < 2:
         st.warning("This analysis requires at least two retrieval experiments to be selected.", icon="⚠")
 
@@ -745,13 +806,13 @@ with st.container():
                             analysis = run_analysis[measure]
                             with col:
                                 st.write(f"<h5>Result Analysis based on {measure}</h5>", unsafe_allow_html=True)
-                                st.write(f"Improved Queries: {len(analysis['improved_queries'])} ({analysis['pct_improved']:.2f}%)")
-                                st.write(f"Degraded Queries: {len(analysis['degraded_queries'])} ({analysis['pct_degraded']:.2f}%)")
-                                st.write(f"Unchanged Queries: {len(analysis['unchanged_queries'])} ({analysis['pct_unchanged']:.2f}%)")
+                                st.write(f"""Improved Queries: <span style="color:red;">{len(analysis['improved_queries'])} ({analysis['pct_improved']:.2f}%)</span>""", unsafe_allow_html=True)
+                                st.write(f"""Degraded Queries: <span style="color:red;">{len(analysis['degraded_queries'])} ({analysis['pct_degraded']:.2f}%)</span>""", unsafe_allow_html=True)
+                                st.write(f"""Unchanged Queries: <span style="color:red;">{len(analysis['unchanged_queries'])} ({analysis['pct_unchanged']:.2f}%)</span>""", unsafe_allow_html=True)
                                 with st.expander("See detailed analysis"):
-                                    st.write(f"Average Difference: {analysis['avg_diff']:.3f}")
-                                    st.write(f"Median Difference: {analysis['median_diff']:.3f}")
-                                    st.write(f"Standard Deviation of Difference: {analysis['std_diff']:.3f}")
+                                    st.write(f"""Average Difference: <span style="color:red;">{analysis['avg_diff']:.3f}</span>""", unsafe_allow_html=True)
+                                    st.write(f"""Median Difference: <span style="color:red;">{analysis['median_diff']:.3f}</span>""", unsafe_allow_html=True)
+                                    st.write(f"""Standard Deviation of Difference: <span style="color:red;">{analysis['std_diff']:.3f}</span>""", unsafe_allow_html=True)
                                     st.write('----')
                                     # Additional insights
                                     insights = []

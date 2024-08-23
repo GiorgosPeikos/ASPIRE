@@ -19,6 +19,18 @@ st.markdown("""<div style="text-align: center;"><h1>Retrieval Evaluation Report 
 # Container for loading data
 with st.container():
     st.markdown("<h3>Loading Queries, Qrels, Runs for Analysis</h3>", unsafe_allow_html=True)
+
+    with st.expander("See Details"):
+        st.subheader("Overview")
+        st.write("This section allows you to load and select the necessary data files for your retrieval evaluation.")
+        cola, colb = st.columns(2)
+        with cola:
+            st.subheader("How it works")
+            st.write("The system loads query files, qrel (relevance judgment) files, and retrieval run files from predefined directories. You can select multiple run files for comparison.")
+        with colb:
+            st.subheader("How to use")
+            st.write("Use this section to set up your evaluation environment. Ensure you have the correct files selected to get accurate and meaningful results in the subsequent analyses.")
+
     columns = st.columns([1, 1, 3])
 
     # Select Queries
@@ -72,6 +84,19 @@ st.divider()
 # Overall Retrieval Characteristics
 with st.container():
     st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Overall Retrieval Characteristics</span></h3>""", unsafe_allow_html=True)
+
+    with st.expander("See Analysis Details and Interpretations"):
+        st.subheader("Overview")
+        st.write("This section provides an overview of the retrieval performance for each selected run.")
+        cola, colb = st.columns(2)
+        with cola:
+            st.subheader("How it works")
+            st.write(
+                "The results are calculated using standard information retrieval metrics such as the number of queries, retrieved documents, relevant documents, and relevant retrieved documents.")
+        with colb:
+            st.subheader("How to use")
+            st.write(
+                "Use these overall metrics to get a quick comparison between different retrieval runs. They can help identify which runs are performing better in terms of retrieving relevant documents.")
 
     if 'me_selected_runs' not in st.session_state:
         st.warning("Please select retrieval experiment and qrels to begin your evaluation.", icon="⚠")
@@ -178,6 +203,18 @@ st.divider()
 with st.container():
     st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Experimental Evaluation</span></h3>""", unsafe_allow_html=True)
     _, _, custom_user, default_measures, _, _ = return_available_measures()
+
+    with st.expander("See Analysis Details and Interpretations"):
+
+        st.subheader("Overview")
+        st.write("This section provides a detailed evaluation of retrieval performance using various commonly used IR metrics.")
+        cola, colb = st.columns(2)
+        with cola:
+            st.subheader("How it works")
+            st.write("The evaluation is performed using selected IR measures (e.g., MAP, nDCG) and includes statistical significance testing against a chosen baseline.")
+        with colb:
+            st.subheader("How to use")
+            st.write("Use these results to compare different retrieval runs in depth. Pay attention to statistically significant differences to identify meaningful improvements or degradations in performance.")
 
     if 'me_selected_qrels' not in st.session_state:
         st.warning("Please select retrieval experiment and qrels to begin your evaluation.", icon="⚠")
@@ -325,6 +362,17 @@ st.divider()
 with st.container():
     st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Positional Distribution of Relevant and Unjudged Retrieved Documents</span></h3>""", unsafe_allow_html=True)
 
+    with st.expander("See Analysis Details and Interpretations"):
+        st.subheader("Overview")
+        st.write("This analysis shows how relevant and unjudged documents are distributed across different ranking positions.")
+        cola, colb = st.columns(2)
+        with cola:
+            st.subheader("How it works")
+            st.write("The graphs display the number of relevant, non-relevant, and unjudged documents at each ranking position for each retrieval run.")
+        with colb:
+            st.subheader("How to use")
+            st.write("Use these distributions to understand how well each system ranks relevant documents. A good system should have more relevant documents at higher ranking positions.")
+
     if 'me_selected_qrels' not in st.session_state:
         st.warning("Please select retrieval experiment and qrels to begin your evaluation.", icon="⚠")
 
@@ -350,6 +398,17 @@ st.divider()
 # Precision/Recall Curve
 with st.container():
     st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Precision/Recall Curve</span></h3>""", unsafe_allow_html=True)
+
+    with st.expander("See Analysis Details and Interpretations"):
+        st.subheader("Overview")
+        st.write("This section presents precision-recall curves for each retrieval run.")
+        cola, colb = st.columns(2)
+        with cola:
+            st.subheader("How it works")
+            st.write("The curves show the trade-off between precision and recall at different cutoff points in the ranked list of retrieved documents.")
+        with colb:
+            st.subheader("How to use")
+            st.write("Use these curves to compare the overall performance of different runs. A curve that is higher and to the right indicates better performance, as it maintains higher precision at higher recall levels.")
 
     if 'me_selected_qrels' not in st.session_state:
         st.warning("Please select retrieval experiment and qrels to begin your evaluation.", icon="⚠")
@@ -396,6 +455,17 @@ st.divider()
 # Retrieved Document Intersection
 with st.container():
     st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Retrieved Document Intersection</span></h3>""", unsafe_allow_html=True)
+
+    with st.expander("See Analysis Details and Interpretations"):
+        st.subheader("Overview")
+        st.write("This analysis examines the overlap in retrieved documents between different retrieval runs.")
+        cola, colb = st.columns(2)
+        with cola:
+            st.subheader("How it works")
+            st.write("The intersection is calculated by comparing the top-ranked documents from each run against a selected baseline run.")
+        with colb:
+            st.subheader("How to use")
+            st.write("Use this analysis to understand how similar or different the retrieval results are across runs. High overlap might indicate similar approaches, while low overlap could suggest diversity in retrieval strategies.")
 
     if 'me_selected_runs' not in st.session_state or len(st.session_state.me_selected_runs) < 2:
         st.warning("This analysis requires at least two retrieval experiments to be selected.", icon="⚠")
@@ -456,6 +526,18 @@ st.divider()
 # Frequently Retrieved Documents
 with st.container():
     st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Documents Retrieved by All Systems</span></h3>""", unsafe_allow_html=True)
+
+    with st.expander("See Analysis Details and Interpretations"):
+        st.subheader("Overview")
+        st.write("This analysis identifies documents that are consistently retrieved across all selected retrieval runs.")
+        cola, colb = st.columns(2)
+        with cola:
+            st.subheader("How it works")
+            st.write("The system finds documents that appear in the top-N results of all runs for each query, where N is a user-specified cutoff.")
+        with colb:
+            st.subheader("How to use")
+            st.write("Use this information to identify documents that are likely to be highly relevant or central to the queries. These documents might warrant closer examination or could be used to understand what makes a document universally retrievable.")
+        st.write("**Note!** Additional Analysis regarding the documents retrieved by several experiments and queries, can be conducted in **Query Collection-based Performance Report** page.")
 
     if 'me_selected_runs' not in st.session_state or len(st.session_state.me_selected_runs) < 2:
         st.warning("This analysis requires at least two retrieval experiments to be selected.", icon="⚠")

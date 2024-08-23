@@ -19,6 +19,18 @@ st.markdown("""<div style="text-align: center;"><h1>Query Text-based Analysis Ac
 # Container for loading data
 with st.container():
     st.markdown("<h3>Loading Queries, Qrels, Runs for Analysis</h3>", unsafe_allow_html=True)
+
+    with st.expander("See Details"):
+        st.subheader("Overview")
+        st.write("This section allows you to load and select the necessary data files for your retrieval evaluation.")
+        cola, colb = st.columns(2)
+        with cola:
+            st.subheader("How it works")
+            st.write("The system loads query files, qrel (relevance judgment) files, and retrieval run files from predefined directories. You can select multiple run files for comparison.")
+        with colb:
+            st.subheader("How to use")
+            st.write("Use this section to set up your evaluation environment. Ensure you have the correct files selected to get accurate and meaningful results in the subsequent analyses.")
+
     columns = st.columns([1, 1, 3])
 
     # Select Queries
@@ -128,7 +140,15 @@ with st.container():
     st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Relevance Judgments per Query</span></h3>""", unsafe_allow_html=True)
 
     with st.expander("See Analysis Details and Interpretations"):
-        st.write("<center><b>The analysis leverages only the provided Qrels file!</b></center>", unsafe_allow_html=True)
+        st.subheader("Overview")
+        st.write("This analysis showcases for each query its number of relevance judgments.")
+        cola, colb = st.columns(2)
+        with cola:
+            st.subheader("How it works")
+            st.write("<b>The analysis leverages only the provided Qrels file!</b>", unsafe_allow_html=True)
+        with colb:
+            st.subheader("How to use")
+            st.write("Use this section in combination with the following to understand how a query's relevance judgments might impact its performance.")
 
     if 'qmet_selected_runs' not in st.session_state:
         st.warning("Please select a set of queries to begin your evaluation.", icon="⚠")
@@ -192,6 +212,17 @@ st.divider()
 with st.container():
     st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Query Text Analysis based on their Relevance Judgements</span></h3>""", unsafe_allow_html=True)
     _, _, custom_user, default_measures, _, _ = return_available_measures()
+
+    with st.expander("See Analysis Details and Interpretations"):
+        st.subheader("Overview")
+        st.write("This section creates word-clouds based on the queries and their relevance judgements.")
+        cola, colb = st.columns(2)
+        with cola:
+            st.subheader("How it works")
+            st.write("The analysis leverages several techniques to classify the queries based on their relevance judgments and then creates word-clouds. (See below)")
+        with colb:
+            st.subheader("How to use")
+            st.write("The analysis can be useful in understanding topics in the queries, for which a few or many relevant documents exist in the collection.")
 
     if 'qmet_selected_runs' not in st.session_state:
         st.warning("Please select a set of queries to begin your evaluation.", icon="⚠")
@@ -379,17 +410,26 @@ st.divider()
 with st.container():
     st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Query Performance vs Query Text Similarity</span></h3>""", unsafe_allow_html=True)
 
-    if 'qmet_selected_runs' not in st.session_state:
-        st.warning("Please select a set of queries to begin your evaluation.", icon="⚠")
-    else:
-        with st.expander('See Details and Interpretations'):
+    with st.expander("See Analysis Details and Interpretations"):
+        st.subheader("Overview")
+        st.write("This section creates word-clouds based on the queries and their relevance judgements.")
+        cola, colb = st.columns(2)
+        with cola:
+            st.subheader("How it works")
             st.write("""
-            This visualization shows queries in a 3D space based on their semantic similarity.
+            This visualization shows queries in a 2D and a 3D space based on their semantic similarity.
             - Each point represents a query.
             - The position of the point is determined by the query's embedding, reduced to 3 dimensions using t-SNE.
             - The color of the point represents the performance measure for that query.
             - Use the dropdown to select different performance measures and runs for coloring the points.
             """)
+        with colb:
+            st.subheader("How to use")
+            st.write("The analysis can be used to answer questions like: Do similar queries have similar performance?")
+
+    if 'qmet_selected_runs' not in st.session_state:
+        st.warning("Please select a set of queries to begin your evaluation.", icon="⚠")
+    else:
 
         # Get the list of selected run files
         selected_runs_files = list(st.session_state.qmet_selected_runs.keys())

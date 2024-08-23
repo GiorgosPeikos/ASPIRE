@@ -16,7 +16,7 @@ def main():
             </h3>
             <hr style="width: 50%; margin: 20px auto; border: none; border-top: 2px solid #3498db;">
             <h4 style="color: #1f77b4; font-style: italic; margin-bottom: 0;">
-                🚀 Empowering researchers to see beyond the numbers! 🚀
+                🚀 Empowering researchers to see beyond just numbers! 🚀
             </h4>
         </div>
         """, unsafe_allow_html=True)

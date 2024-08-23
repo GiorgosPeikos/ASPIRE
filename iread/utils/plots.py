@@ -1282,9 +1282,7 @@ def plot_rankings_docs_rel_ids(qrel, runs, ranking_depth):
 
     # Determine unique relevance values and generate color scale
     unique_relevance = sorted(qrel['relevance'].unique())
-    print(f"Unique relevance values: {unique_relevance}")  # Debugging print
     color_scale = generate_color_scale(len(unique_relevance))
-    print(f"Generated color scale: {color_scale}")  # Debugging print
 
     # Create normalized colorscale for Plotly
     min_val, max_val = -100, max(unique_relevance)
@@ -1292,7 +1290,6 @@ def plot_rankings_docs_rel_ids(qrel, runs, ranking_depth):
     colorscale = [
         [(val - min_val) / range_val, color] for val, color in zip([-100] + unique_relevance, color_scale)
     ]
-    print(f"Colorscale: {colorscale}")  # Debugging print
 
     # Determine grid layout
     num_runs = len(runs)
@@ -1327,8 +1324,6 @@ def plot_rankings_docs_rel_ids(qrel, runs, ranking_depth):
                          for query_id, doc_id, rel in zip(rank_data['query_id'], rank_data['doc_id'], rank_data['relevance'])]
             hover_row += [None] * (len(merged_df['query_id'].unique()) - len(hover_row))
             hover_text.append(hover_row)
-
-        print(f"Sample heatmap data for {run_name}: {heatmap_data[:2]}")  # Debugging print
 
         row = (i - 1) // num_cols + 1
         col = (i - 1) % num_cols + 1

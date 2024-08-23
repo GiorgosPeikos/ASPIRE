@@ -379,10 +379,10 @@ with st.container():
             - Use the depth slider to focus on specific ranking ranges.
             """)
 
-    # Slider for selecting ranking depth
-    st.session_state.ranking_depth = st.slider("Select Ranking Depth", min_value=5, max_value=100, value=25, step=5)
-
     if 'qmed_selected_runs' in st.session_state:
+        # Slider for selecting ranking depth
+        st.session_state.ranking_depth = st.slider("Select Ranking Depth", min_value=5, max_value=100, value=25, step=5)
+
         plot_rankings_docs_rel_ids(st.session_state.qmed_selected_qrels, st.session_state.qmed_selected_runs, st.session_state.ranking_depth)
     else:
         st.warning("No runs selected. Please select runs to visualize the rankings.")

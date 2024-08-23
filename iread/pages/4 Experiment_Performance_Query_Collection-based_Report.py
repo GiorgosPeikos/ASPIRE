@@ -6,7 +6,7 @@ from utils.data_handler import load_run_data, load_qrel_data, load_query_data
 from utils.ui import load_css
 from utils.eval_query_collection import analyze_query_judgements, find_multi_query_docs, find_ranked_pos_of_multi_query_docs, display_further_details_multi_query_docs, \
     documents_retrieved_by_experiments
-from utils.plots import plot_query_relevance_judgements, plot_multi_query_docs, plot_documents_retrieved_by_experiments
+from utils.plots import plot_query_relevance_judgements, plot_multi_query_docs, plot_documents_retrieved_by_experiments, plot_rankings_docs_rel_ids
 
 
 # Load custom CSS
@@ -252,51 +252,52 @@ st.divider()
 with st.container():
     st.markdown("""<h3>Document Collection - <span style="color:red;">Documents retrieved per query by 1, 2, 3, 5, and by all Experiments</span></h3>""", unsafe_allow_html=True)
 
+    with st.expander("See Analysis Details and Interpretations"):
+        st.write("**Overview**")
+
+        st.write("""
+        This analysis measures how documents are retrieved across multiple systems for each query. 
+        We identify which documents have been retrieved by only 1, 2, 3, 5 (where applicable), at least half+1, 
+        and all systems for each query. This helps us understand the consistency and uniqueness of document retrieval 
+        across different systems and assess query difficulty.
+        """)
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.write("**How Calculations Are Made**")
+            st.write("- We combine all query-document pairs from all experiments.")
+            st.write("- We count how many experiments retrieved each unique pair.")
+            st.write("- We calculate the number of pairs retrieved by exactly 1, 2, 3, 5 experiments (where applicable).")
+            st.write("- We identify pairs retrieved by at least half+1 of the experiments.")
+            st.write("- We count pairs retrieved by all experiments.")
+            st.write("- Percentages are calculated relative to the total number of unique pairs.")
+            st.write("- For query difficulty, we calculate the proportion of documents retrieved by only one experiment for each query.")
+
+            st.write("**Additional Analysis Features**")
+            st.write("- Query Difficulty Ranking: All queries are ranked from most difficult to easiest based on unique retrievals.")
+            st.write("- Per-Query Document Analysis: For each query, you can view documents retrieved by all systems vs. those retrieved by only one or two systems.")
+            st.write("- Example Pairs: For each retrieval threshold, example document-query pairs are provided for closer examination.")
+
+        with col2:
+            st.write("**Interpretation and Use of Results**")
+            st.write("- Pairs retrieved by 1 experiment: Unique to specific approaches, might represent noise or novel findings.")
+            st.write("- Pairs retrieved by multiple experiments: Higher agreement suggests more reliable results.")
+            st.write("- Pairs retrieved by half+1 experiments: Represent a 'majority vote', considered more robust findings.")
+            st.write("- Pairs retrieved by all experiments: Most consistent results across all approaches.")
+            st.write("- Distribution across thresholds: Helps assess overall agreement between different experimental approaches.")
+            st.write("- Query difficulty: Higher percentages indicate more difficult queries with more unique retrievals.")
+            st.write("- These metrics guide further investigation, help in ensemble methods, and identify areas of disagreement.")
+
+            st.write("**Practical Applications**")
+            st.write("- Identify challenging queries that might need refinement or further investigation.")
+            st.write("- Recognize patterns in query difficulty related to query characteristics or retrieval method strengths/weaknesses.")
+            st.write("- Assess the overall performance and agreement of retrieval systems across different types of queries.")
+            st.write("- Guide the development of ensemble methods by understanding where systems agree or disagree.")
+            st.write("- Inform decisions on which documents to include in a final result set based on retrieval consistency.")
+
     if 'qmed_selected_runs' in st.session_state:
         if len(st.session_state.qmed_selected_runs) >1:
-            with st.expander("See Analysis Details and Interpretations"):
-                st.write("**Overview**")
-
-                st.write("""
-                This analysis measures how documents are retrieved across multiple systems for each query. 
-                We identify which documents have been retrieved by only 1, 2, 3, 5 (where applicable), at least half+1, 
-                and all systems for each query. This helps us understand the consistency and uniqueness of document retrieval 
-                across different systems and assess query difficulty.
-                """)
-
-                col1, col2 = st.columns(2)
-
-                with col1:
-                    st.write("**How Calculations Are Made**")
-                    st.write("- We combine all query-document pairs from all experiments.")
-                    st.write("- We count how many experiments retrieved each unique pair.")
-                    st.write("- We calculate the number of pairs retrieved by exactly 1, 2, 3, 5 experiments (where applicable).")
-                    st.write("- We identify pairs retrieved by at least half+1 of the experiments.")
-                    st.write("- We count pairs retrieved by all experiments.")
-                    st.write("- Percentages are calculated relative to the total number of unique pairs.")
-                    st.write("- For query difficulty, we calculate the proportion of documents retrieved by only one experiment for each query.")
-
-                with col2:
-                    st.write("**Interpretation and Use of Results**")
-                    st.write("- Pairs retrieved by 1 experiment: Unique to specific approaches, might represent noise or novel findings.")
-                    st.write("- Pairs retrieved by multiple experiments: Higher agreement suggests more reliable results.")
-                    st.write("- Pairs retrieved by half+1 experiments: Represent a 'majority vote', considered more robust findings.")
-                    st.write("- Pairs retrieved by all experiments: Most consistent results across all approaches.")
-                    st.write("- Distribution across thresholds: Helps assess overall agreement between different experimental approaches.")
-                    st.write("- Query difficulty: Higher percentages indicate more difficult queries with more unique retrievals.")
-                    st.write("- These metrics guide further investigation, help in ensemble methods, and identify areas of disagreement.")
-
-                st.write("**Additional Analysis Features**")
-                st.write("- Query Difficulty Ranking: All queries are ranked from most difficult to easiest based on unique retrievals.")
-                st.write("- Per-Query Document Analysis: For each query, you can view documents retrieved by all systems vs. those retrieved by only one or two systems.")
-                st.write("- Example Pairs: For each retrieval threshold, example document-query pairs are provided for closer examination.")
-
-                st.write("**Practical Applications**")
-                st.write("- Identify challenging queries that might need refinement or further investigation.")
-                st.write("- Recognize patterns in query difficulty related to query characteristics or retrieval method strengths/weaknesses.")
-                st.write("- Assess the overall performance and agreement of retrieval systems across different types of queries.")
-                st.write("- Guide the development of ensemble methods by understanding where systems agree or disagree.")
-                st.write("- Inform decisions on which documents to include in a final result set based on retrieval consistency.")
             initial_result_df = documents_retrieved_by_experiments(st.session_state.qmed_selected_runs)
 
             # Create a multiselect for excluding runs with a safeguard
@@ -320,22 +321,62 @@ with st.container():
 
             plot_documents_retrieved_by_experiments(initial_result_df, excluded_runs)
     else:
-        st.write("Not sufficient experiments have been selected. Please select at least 2 experiments first.")
+        st.warning("Not sufficient experiments have been selected. Please select at least 2 experiments first.", icon="⚠")
 
 st.divider()
 
 
-# The box like plot for the top 10 positions showing how the documents are ranked.
+# The box like plot for the top positions showing how the documents are ranked.
 with st.container():
     st.markdown("""<h3>Document Collection - <span style="color:red;">Retrieved Documents, Relevance, Ranking Position</span></h3>""", unsafe_allow_html=True)
 
     with st.expander("See Analysis Details and Interpretations"):
+        st.write("This analysis visualizes the relevance of retrieved documents across different ranking positions for multiple experiments.")
+
         col1, col2 = st.columns(2)
 
-        st.write('details')
+        with col1:
+            st.subheader("How it works")
+            st.write("""
+            - Each row represents a ranking position (1 to selected depth).
+            - Each column represents a unique query.
+            - Colors indicate the relevance of documents:
+              - Red: Low relevance
+              - Orange: Medium relevance
+              - Green: High relevance
+              - Gray: Unjudged relevance
+            - Multiple experiments are shown side by side for comparison.
+            """)
+
+        with col2:
+            st.subheader("How to use")
+            st.write("""
+            - Hover over cells to see detailed information.
+            - Compare patterns across different experiments.
+            - Look for concentrations of high-relevance documents (green) at top ranks.
+            - Identify queries with many unjudged documents (gray).
+            - Use the depth slider to focus on specific ranking ranges.
+            """)
+
+    # Slider for selecting ranking depth
+    st.session_state.ranking_depth = st.slider("Select Ranking Depth", min_value=5, max_value=100, value=25, step=5)
 
     if 'qmed_selected_runs' in st.session_state:
-        st.write()
+        plot_rankings_docs_rel_ids(st.session_state.qmed_selected_qrels, st.session_state.qmed_selected_runs, st.session_state.ranking_depth)
+    else:
+        st.warning("No runs selected. Please select runs to visualize the rankings.")
 
 st.divider()
 
+# Additional Analysis
+with st.container():
+    st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Personal Notes</span></h3>""", unsafe_allow_html=True)
+
+    st.text_area(
+        "Please add additional comments regarding this experiment.",
+        "",
+        key="placeholder",
+    )
+st.divider()
+
+st.markdown("""<h4 style="text-align:center;"><span style="color:red;">To export the report as PDF press (⌘+P or Ctrl+P)</span></h4>""", unsafe_allow_html=True)

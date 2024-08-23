@@ -8,13 +8,15 @@ import random
 import pandas as pd
 from utils.eval_query_collection import get_query_rel_judgements
 from utils.eval_query_text_based import query_clf_relevance_assessments, remove_stopwords_from_queries, query_similarity_performance
+from utils.eval_single_exp import get_experiment_name
 from scipy import stats
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
+import math
 
 
 # Function that displays the distribution of ranking position of all retrieved documents based on their relevance label.
-@st.cache_resource
+@st.cache_data
 def plot_dist_of_retrieved_docs(relevance_ret_pos: dict) -> None:
     # Define constants for bucket ranges
     bucket_ranges = {
@@ -97,7 +99,7 @@ def plot_dist_of_retrieved_docs(relevance_ret_pos: dict) -> None:
     st.plotly_chart(fig)
 
 
-@st.cache_resource
+@st.cache_data
 def plot_precision_recall_curve(prec_recall_graphs, relevance_thres):
     """
     This function takes a dictionary containing precision-recall data and plots a precision-recall curve using Plotly.
@@ -924,6 +926,7 @@ def create_relevance_wordclouds(query_relevance, queries, method, threshold) -> 
                         st.write("No matching queries found in the dataset.")
 
 
+@st.cache_data
 def plot_performance_similarity(queries, qrel, runs, metric_list, selected_cutoff, relevance_threshold, embedding_model_name) -> None:
     pca_df, results_per_run = query_similarity_performance(queries, qrel, runs, metric_list, selected_cutoff, relevance_threshold, embedding_model_name)
 
@@ -1013,7 +1016,7 @@ def plot_performance_similarity(queries, qrel, runs, metric_list, selected_cutof
             st.dataframe(queries[['query_id', 'query_text']], use_container_width=True, hide_index=True)
 
 
-@st.cache_resource
+@st.cache_data
 def plot_multi_query_docs(multi_query_docs):
     fig = go.Figure()
 
@@ -1058,7 +1061,6 @@ def plot_multi_query_docs(multi_query_docs):
     return fig
 
 
-@st.cache_resource
 def plot_documents_retrieved_by_experiments(result_df, excluded_runs=None) -> None:
     """
     Analyze and display results of documents retrieved by different numbers of experiments.
@@ -1266,3 +1268,118 @@ def plot_documents_retrieved_by_experiments(result_df, excluded_runs=None) -> No
                 """)
 
 
+@st.cache_data
+def plot_rankings_docs_rel_ids(qrel, runs, ranking_depth):
+    def generate_color_scale(num_colors):
+        colors = ['lightgray']  # For unjudged (-100)
+        if num_colors > 1:
+            # Create a custom colormap from red to green
+            cmap = mcolors.LinearSegmentedColormap.from_list("custom", ["red", "orange", "green"])
+            colors.extend([mcolors.rgb2hex(cmap(i / (num_colors - 1))) for i in range(num_colors)])
+        else:
+            colors.append('red')  # If there's only one relevance level
+        return colors
+
+    # Determine unique relevance values and generate color scale
+    unique_relevance = sorted(qrel['relevance'].unique())
+    print(f"Unique relevance values: {unique_relevance}")  # Debugging print
+    color_scale = generate_color_scale(len(unique_relevance))
+    print(f"Generated color scale: {color_scale}")  # Debugging print
+
+    # Create normalized colorscale for Plotly
+    min_val, max_val = -100, max(unique_relevance)
+    range_val = max_val - min_val
+    colorscale = [
+        [(val - min_val) / range_val, color] for val, color in zip([-100] + unique_relevance, color_scale)
+    ]
+    print(f"Colorscale: {colorscale}")  # Debugging print
+
+    # Determine grid layout
+    num_runs = len(runs)
+    num_cols = 2
+    num_rows = math.ceil(num_runs / num_cols)
+
+    # Create subplots
+    fig = make_subplots(rows=num_rows, cols=num_cols,
+                        subplot_titles=[get_experiment_name(run_name, None) for run_name in runs.keys()],
+                        vertical_spacing=0.1,
+                        horizontal_spacing=0.05)
+
+    for i, (run_name, run_df) in enumerate(runs.items(), start=1):
+        # Merge run data with qrel data to get relevance information
+        merged_df = pd.merge(run_df, qrel, on=['query_id', 'doc_id'], how='left')
+        merged_df['relevance'] = merged_df['relevance'].fillna(-100)  # Mark unjudged as -100
+
+        # Filter for the specified ranking depth
+        merged_df = merged_df[merged_df['rank'] <= ranking_depth]
+
+        # Create heatmap data and hover text
+        heatmap_data = []
+        hover_text = []
+
+        for rank in range(1, ranking_depth + 1):
+            rank_data = merged_df[merged_df['rank'] == rank]
+            row_data = rank_data['relevance'].tolist()
+            row_data += [None] * (len(merged_df['query_id'].unique()) - len(row_data))  # Pad with None
+            heatmap_data.append(row_data)
+
+            hover_row = [f"Query: {query_id}<br>Rank: {rank}<br>Doc ID: {doc_id}<br>Relevance: {'Unjudged' if rel == -100 else rel}"
+                         for query_id, doc_id, rel in zip(rank_data['query_id'], rank_data['doc_id'], rank_data['relevance'])]
+            hover_row += [None] * (len(merged_df['query_id'].unique()) - len(hover_row))
+            hover_text.append(hover_row)
+
+        print(f"Sample heatmap data for {run_name}: {heatmap_data[:2]}")  # Debugging print
+
+        row = (i - 1) // num_cols + 1
+        col = (i - 1) % num_cols + 1
+
+        fig.add_trace(
+            go.Heatmap(
+                z=heatmap_data,
+                y=list(range(1, ranking_depth + 1)),
+                x=merged_df['query_id'].unique(),
+                colorscale=colorscale,
+                showscale=False,
+                hoverinfo='text',
+                text=hover_text,
+                xgap=1,
+                ygap=1,
+                zmin=min_val,
+                zmax=max_val,
+            ),
+            row=row, col=col
+        )
+
+        fig.update_xaxes(title_text="Query ID", row=row, col=col, tickangle=45)
+        fig.update_yaxes(title_text="Ranking Position" if col == 1 else "", row=row, col=col)
+
+        # Add legend only once
+        if i == 1:
+            for val, color in zip([-100] + unique_relevance, color_scale):
+                label = 'Unjudged Relevance' if val == -100 else f'Relevance_Label_{val}'
+                fig.add_trace(
+                    go.Scatter(
+                        x=[None], y=[None], mode='markers',
+                        marker=dict(size=10, color=color),
+                        name=label,
+                        legendgroup=f'relevance {val}',
+                        showlegend=True
+                    ),
+                    row=row, col=col
+                )
+
+    fig.update_layout(
+        height=700 * num_rows,
+        width=1400,
+        title_text=f"Document Ranking and Relevance for the Top {ranking_depth} Rank Positions per Experiment",
+        font=dict(size=14),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        )
+    )
+
+    st.plotly_chart(fig, use_container_width=True)

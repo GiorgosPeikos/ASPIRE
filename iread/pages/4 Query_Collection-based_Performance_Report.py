@@ -226,7 +226,7 @@ with st.container():
         cola, colb = st.columns(2)
         with cola:
             st.subheader("How it works")
-            st.write("<center><b>The analysis leverages only the provided Qrels file and is based on all of the available Queries in the collection!</b></center>", unsafe_allow_html=True)
+            st.write("<b>The analysis leverages only the provided Qrels file and is based on all of the available Queries in the collection!</b>", unsafe_allow_html=True)
         with colb:
             st.subheader("How to use")
             st.write("""

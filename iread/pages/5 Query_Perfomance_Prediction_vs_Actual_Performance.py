@@ -1,6 +1,7 @@
 import streamlit as st
 import time
 
+
 # Page config
 st.set_page_config(page_title="Coming Soon!", page_icon="🚧", layout="centered")
 

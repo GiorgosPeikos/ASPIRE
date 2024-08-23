@@ -24,7 +24,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Header
-st.markdown("<p class='big-font'>🚧 UNDER CONSTRUCTION 🚧</p>", unsafe_allow_html=True)
+st.markdown("<p class='big-font'>🚧 UNDER Development 🚧</p>", unsafe_allow_html=True)
 
 # Progress bar
 progress_bar = st.progress(0)

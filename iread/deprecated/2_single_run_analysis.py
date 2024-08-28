@@ -3,25 +3,16 @@ import os
 import numpy as np
 import pandas as pd
 import streamlit as st
-
-from utils.data_handler import load_run_data, load_qrel_data
-from utils.data_handler import print_session_data, load_query_data
-from utils.eval_core import (
-    return_available_measures,
-    evaluate_single_run,
-    evaluate_single_run_custom,
-    per_query_evaluation,
-    good_bad_queries,
-    initialize_results,
-)
-from utils.plots import create_evaluation_plot, plot_queries, plot_pca
+from utils.data_handler import (load_qrel_data, load_query_data, load_run_data,
+                                print_session_data)
+from utils.eval_core import (evaluate_single_run, evaluate_single_run_custom,
+                             good_bad_queries, initialize_results,
+                             per_query_evaluation, return_available_measures)
+from utils.eval_query_text_based import (get_embeddings, get_huggingface_model,
+                                         perform_pca)
 from utils.eval_single_exp import find_unjudged
-from utils.eval_query_text_based import (
-    get_huggingface_model,
-    get_embeddings,
-    perform_pca,
-)
-from utils.ui import single_run_selector, query_selector
+from utils.plots import create_evaluation_plot, plot_pca, plot_queries
+from utils.ui import query_selector, single_run_selector
 
 print_session_data()
 
@@ -29,9 +20,7 @@ query_selector()
 single_run_selector()
 
 
-if not any(
-    item in st.session_state for item in ["selected_run", "selected_qrels"]
-):
+if not any(item in st.session_state for item in ["selected_run", "selected_qrels"]):
     st.error("Errors in Calculations. No run selected.")
     st.stop()
 

@@ -1,10 +1,11 @@
+import csv
 import os
 import xml.etree.ElementTree as ET
-import csv
+from pathlib import Path
+from typing import List, Union
+
 import pandas as pd
 import streamlit as st
-from typing import Union, List
-from pathlib import Path
 
 
 # Function to get all files present in folders and sub folders
@@ -44,7 +45,7 @@ def load_run_data(file_path: Union[str, Path]) -> pd.DataFrame:
     expected_columns = ["query_id", "iteration", "doc_id", "rank", "score", "tag"]
 
     # Detect delimiter and check for header
-    with open(file_path, 'r') as file:
+    with open(file_path, "r") as file:
         sample = file.read(1024)
         dialect = csv.Sniffer().sniff(sample)
         delimiter = dialect.delimiter
@@ -84,30 +85,30 @@ def load_run_data(file_path: Union[str, Path]) -> pd.DataFrame:
 
         # Map variations of column names
         column_mapping = {
-            'qid': 'query_id',
-            'q_id': 'query_id',
-            'queryid': 'query_id',
-            'queryID': 'query_id',
-            'docno': 'doc_id',
-            'doc_no': 'doc_id',
-            'document_no': 'doc_id',
-            'doc_rank': 'rank',
-            'ranking': 'rank',
-            'rank_pos': 'rank',
-            'relevance_score': 'score',
-            'rel_score': 'score',
-            'document_identifier': 'doc_id',
-            'docid': 'doc_id_to_drop',  # We'll drop this column later
-            'doc_id': 'doc_id_to_drop',  # We'll drop this column later
-            'document_id': 'doc_id_to_drop',  # We'll drop this column later
-            'label': 'tag'
+            "qid": "query_id",
+            "q_id": "query_id",
+            "queryid": "query_id",
+            "queryID": "query_id",
+            "docno": "doc_id",
+            "doc_no": "doc_id",
+            "document_no": "doc_id",
+            "doc_rank": "rank",
+            "ranking": "rank",
+            "rank_pos": "rank",
+            "relevance_score": "score",
+            "rel_score": "score",
+            "document_identifier": "doc_id",
+            "docid": "doc_id_to_drop",  # We'll drop this column later
+            "doc_id": "doc_id_to_drop",  # We'll drop this column later
+            "document_id": "doc_id_to_drop",  # We'll drop this column later
+            "label": "tag",
         }
 
         # Rename columns based on mapping
         df = df.rename(columns=column_mapping)
 
         # Drop unnecessary columns
-        columns_to_drop = ['query', 'doc_id_to_drop']
+        columns_to_drop = ["query", "doc_id_to_drop"]
         df = df.drop(columns=[col for col in columns_to_drop if col in df.columns])
 
         # Ensure all required columns are present
@@ -122,15 +123,15 @@ def load_run_data(file_path: Union[str, Path]) -> pd.DataFrame:
         df = df.reindex(columns=expected_columns, fill_value="MISSING")
 
     # Convert data types
-    df['query_id'] = df['query_id'].astype(str)
-    df['iteration'] = df['iteration'].astype(str)
-    df['doc_id'] = df['doc_id'].astype(str)
-    df['rank'] = pd.to_numeric(df['rank'], errors='coerce')
-    df['score'] = pd.to_numeric(df['score'], errors='coerce')
+    df["query_id"] = df["query_id"].astype(str)
+    df["iteration"] = df["iteration"].astype(str)
+    df["doc_id"] = df["doc_id"].astype(str)
+    df["rank"] = pd.to_numeric(df["rank"], errors="coerce")
+    df["score"] = pd.to_numeric(df["score"], errors="coerce")
 
     # If 'tag' column is empty or all values are 'MISSING', fill it with the file name
-    if df['tag'].isna().all() or (df['tag'] == '').all() or (df['tag'] == 'Q0').all():
-        df['tag'] = file_name
+    if df["tag"].isna().all() or (df["tag"] == "").all() or (df["tag"] == "Q0").all():
+        df["tag"] = file_name
 
     return df
 

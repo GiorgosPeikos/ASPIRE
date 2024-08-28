@@ -1,5 +1,6 @@
-import numpy as np
 import os
+
+import numpy as np
 import streamlit as st
 from utils.eval_core import *
 
@@ -74,26 +75,48 @@ def get_experiment_name(run_name, baseline):
 @st.cache_resource
 def to_super(text):
     superscript_map = {
-        '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹',
-        '.': '·', '-': '⁻'
+        "0": "⁰",
+        "1": "¹",
+        "2": "²",
+        "3": "³",
+        "4": "⁴",
+        "5": "⁵",
+        "6": "⁶",
+        "7": "⁷",
+        "8": "⁸",
+        "9": "⁹",
+        ".": "·",
+        "-": "⁻",
     }
-    return ''.join(superscript_map.get(char, char) for char in str(text))
+    return "".join(superscript_map.get(char, char) for char in str(text))
 
 
 @st.cache_resource
 def to_sub(text):
     subscript_map = {
-        '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄', '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉',
-        '.': '.', '-': '₋'
+        "0": "₀",
+        "1": "₁",
+        "2": "₂",
+        "3": "₃",
+        "4": "₄",
+        "5": "₅",
+        "6": "₆",
+        "7": "₇",
+        "8": "₈",
+        "9": "₉",
+        ".": ".",
+        "-": "₋",
     }
-    return ''.join(subscript_map.get(char, char) for char in str(text))
+    return "".join(subscript_map.get(char, char) for char in str(text))
 
 
 @st.cache_data
 def create_results_table(statistical_results):
     # Extract baseline and other system names
     baseline_system = next(iter(statistical_results.keys()))
-    other_systems = [key for key in statistical_results.keys() if key != baseline_system]
+    other_systems = [
+        key for key in statistical_results.keys() if key != baseline_system
+    ]
 
     # Get metrics
     metrics = list(statistical_results[baseline_system].keys())
@@ -102,33 +125,46 @@ def create_results_table(statistical_results):
     df = pd.DataFrame(columns=metrics, index=[baseline_system] + other_systems)
 
     # Create a DataFrame to store the styles
-    style_df = pd.DataFrame('', columns=metrics, index=[baseline_system] + other_systems)
+    style_df = pd.DataFrame(
+        "", columns=metrics, index=[baseline_system] + other_systems
+    )
 
     # Fill the DataFrame
     for metric in metrics:
-        max_mean = max(statistical_results[system][metric]['mean'] for system in [baseline_system] + other_systems)
+        max_mean = max(
+            statistical_results[system][metric]["mean"]
+            for system in [baseline_system] + other_systems
+        )
 
         for system in [baseline_system] + other_systems:
-            mean = statistical_results[system][metric]['mean']
+            mean = statistical_results[system][metric]["mean"]
 
             if system == baseline_system:
                 # Baseline: just show the mean
                 mean_str = f"{mean:.3f}"
                 if mean == max_mean:
-                    mean_str = '\u0332'.join(mean_str) + '\u0332'  # Add underlining
+                    mean_str = "\u0332".join(mean_str) + "\u0332"  # Add underlining
                 df.loc[system, metric] = mean_str
             else:
                 # Other system: show mean with p-values
-                p_value = statistical_results[system][metric].get('p_value', np.nan)
-                corrected_p_value = statistical_results[system][metric].get('corrected_p_value', np.nan)
-                reject = statistical_results[system][metric].get('reject', False)
+                p_value = statistical_results[system][metric].get("p_value", np.nan)
+                corrected_p_value = statistical_results[system][metric].get(
+                    "corrected_p_value", np.nan
+                )
+                reject = statistical_results[system][metric].get("reject", False)
 
                 formatted_p = format_p_value(p_value) if not np.isnan(p_value) else ""
-                formatted_corrected_p = format_p_value(corrected_p_value) if not np.isnan(corrected_p_value) else ""
+                formatted_corrected_p = (
+                    format_p_value(corrected_p_value)
+                    if not np.isnan(corrected_p_value)
+                    else ""
+                )
 
                 mean_str = f"{mean:.3f}"
                 if mean == max_mean:
-                    mean_str = '\u0332' + '\u0332'.join(mean_str) + '\u0332'  # Add underlining
+                    mean_str = (
+                        "\u0332" + "\u0332".join(mean_str) + "\u0332"
+                    )  # Add underlining
 
                 # Create a stacked layout using box-drawing characters
                 cell_value = f"{mean_str}  | \n{to_super(formatted_p)}\n\n{to_sub(formatted_corrected_p)}"
@@ -138,12 +174,12 @@ def create_results_table(statistical_results):
                 # Determine cell style
                 style = []
                 if reject and system != baseline_system:
-                    style.append('background-color: lightgreen')
-                style.append('color: black')
+                    style.append("background-color: lightgreen")
+                style.append("color: black")
                 if mean == max_mean:
-                    style.append('font-weight: bold')
+                    style.append("font-weight: bold")
                     # Removed text-decoration: underline !important as we're now underlining in the string itself
 
-                style_df.loc[system, metric] = '; '.join(style)
+                style_df.loc[system, metric] = "; ".join(style)
 
     return df, style_df

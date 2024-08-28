@@ -1,16 +1,13 @@
 import os
 
+import matplotlib.pyplot as plt
 import pandas as pd
 import streamlit as st
-import matplotlib.pyplot as plt
-
 from deprecated.analysis_styling import color_max_min_column, color_max_min_row
-from utils.data_handler import print_session_data, load_run_data, load_qrel_data
-from utils.eval_core import (
-    return_available_measures,
-    initialize_results,
-    evaluate_single_run,
-)
+from utils.data_handler import (load_qrel_data, load_run_data,
+                                print_session_data)
+from utils.eval_core import (evaluate_single_run, initialize_results,
+                             return_available_measures)
 from utils.eval_single_exp import find_unjudged
 from utils.ui import query_selector, single_run_selector
 

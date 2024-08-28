@@ -1,13 +1,20 @@
-import numpy as np
-import streamlit as st
 import statistics
 from typing import Dict, List
-from utils.eval_multiple_exp import metric_parser, get_experiment_name, calculate_evaluation
-from utils.plots import plot_performance_measures_per_q, plot_performance_difference, plot_performance_difference_threshold, plot_performance_and_median_per_experiment
+
+import numpy as np
+import streamlit as st
+from utils.eval_multiple_exp import (calculate_evaluation, get_experiment_name,
+                                     metric_parser)
+from utils.plots import (plot_performance_and_median_per_experiment,
+                         plot_performance_difference,
+                         plot_performance_difference_threshold,
+                         plot_performance_measures_per_q)
 
 
 @st.cache_data
-def calculate_median_metrics(results_per_run: Dict[str, Dict[str, Dict[str, List[float]]]]) -> Dict[str, Dict[str, List[float]]]:
+def calculate_median_metrics(
+    results_per_run: Dict[str, Dict[str, Dict[str, List[float]]]]
+) -> Dict[str, Dict[str, List[float]]]:
     """
     Calculate median metric values across N-1 experiments for each query.
 
@@ -33,7 +40,10 @@ def calculate_median_metrics(results_per_run: Dict[str, Dict[str, Dict[str, List
             median_values = []
 
             for query_idx in range(num_queries):
-                other_values = [results_per_run[exp][metric][metric][query_idx] for exp in other_exps]
+                other_values = [
+                    results_per_run[exp][metric][metric][query_idx]
+                    for exp in other_exps
+                ]
                 median_values.append(statistics.median(other_values))
 
             median_results[current_exp][f"median_{metric}"] = median_values
@@ -42,7 +52,15 @@ def calculate_median_metrics(results_per_run: Dict[str, Dict[str, Dict[str, List
 
 
 @st.cache_data
-def per_query_evaluation(qrel, runs, metric_list, relevance_threshold, selected_cutoff, baseline_run, threshold_value):
+def per_query_evaluation(
+    qrel,
+    runs,
+    metric_list,
+    relevance_threshold,
+    selected_cutoff,
+    baseline_run,
+    threshold_value,
+):
     results_per_run = {}
     parsed_metrics = []
 
@@ -57,7 +75,9 @@ def per_query_evaluation(qrel, runs, metric_list, relevance_threshold, selected_
             experiment = get_experiment_name(run_name, baseline_run)
             results_per_run[experiment] = {}
             for parsed_metric in parsed_metrics:
-                results_per_run[experiment][str(parsed_metric)] = calculate_evaluation(parsed_metric, qrel, run_data)
+                results_per_run[experiment][str(parsed_metric)] = calculate_evaluation(
+                    parsed_metric, qrel, run_data
+                )
 
         # Call the plot function per measure scores
         plot_performance_measures_per_q(results_per_run)
@@ -69,7 +89,9 @@ def per_query_evaluation(qrel, runs, metric_list, relevance_threshold, selected_
             experiment = get_experiment_name(run_name, baseline_run)
             results_per_run[experiment] = {}
             for parsed_metric in parsed_metrics:
-                results_per_run[experiment][str(parsed_metric)] = calculate_evaluation(parsed_metric, qrel, run_data)
+                results_per_run[experiment][str(parsed_metric)] = calculate_evaluation(
+                    parsed_metric, qrel, run_data
+                )
 
         # Call the plot function for differences to the baseline
         plot_performance_difference(results_per_run)
@@ -81,7 +103,9 @@ def per_query_evaluation(qrel, runs, metric_list, relevance_threshold, selected_
             experiment = get_experiment_name(run_name, baseline_run)
             results_per_run[experiment] = {}
             for parsed_metric in parsed_metrics:
-                results_per_run[experiment][str(parsed_metric)] = calculate_evaluation(parsed_metric, qrel, run_data)
+                results_per_run[experiment][str(parsed_metric)] = calculate_evaluation(
+                    parsed_metric, qrel, run_data
+                )
 
         # Calculate median metrics
         median_results = calculate_median_metrics(results_per_run)
@@ -99,7 +123,9 @@ def per_query_evaluation(qrel, runs, metric_list, relevance_threshold, selected_
             experiment = get_experiment_name(run_name, baseline_run)
             results_per_run[experiment] = {}
             for parsed_metric in parsed_metrics:
-                results_per_run[experiment][str(parsed_metric)] = calculate_evaluation(parsed_metric, qrel, run_data)
+                results_per_run[experiment][str(parsed_metric)] = calculate_evaluation(
+                    parsed_metric, qrel, run_data
+                )
 
         plot_performance_difference_threshold(results_per_run, threshold_value)
 
@@ -114,8 +140,17 @@ def per_query_evaluation(qrel, runs, metric_list, relevance_threshold, selected_
 def find_same_performance_queries(data, runs, measure, max_queries):
     same_performance = []
     for query_id in range(max_queries):
-        values = [data[run][measure][measure][query_id] if query_id < len(data[run][measure][measure]) else None for run in runs]
-        if all(v is not None and abs(v - values[0]) < 1e-6 for v in values):  # Using small epsilon for float comparison
+        values = [
+            (
+                data[run][measure][measure][query_id]
+                if query_id < len(data[run][measure][measure])
+                else None
+            )
+            for run in runs
+        ]
+        if all(
+            v is not None and abs(v - values[0]) < 1e-6 for v in values
+        ):  # Using small epsilon for float comparison
             same_performance.append(query_id + 1)  # +1 to make it 1-indexed
     return same_performance
 
@@ -138,7 +173,14 @@ def find_large_gap_queries(data, runs, measure, max_queries):
     threshold = 1.5 * iqr
 
     for query_id in range(max_queries):
-        values = [data[run][measure][measure][query_id] if query_id < len(data[run][measure][measure]) else None for run in runs]
+        values = [
+            (
+                data[run][measure][measure][query_id]
+                if query_id < len(data[run][measure][measure])
+                else None
+            )
+            for run in runs
+        ]
         values = [v for v in values if v is not None]
         if values and max(values) - min(values) > threshold:
             large_gaps.append((query_id + 1, min(values), max(values), threshold))
@@ -153,17 +195,21 @@ def analyze_performance_perq(data):
     runs = list(data.keys())
 
     # Determine the maximum number of queries
-    max_queries = max(len(data[run][measure][measure]) for run in runs for measure in eval_measures)
+    max_queries = max(
+        len(data[run][measure][measure]) for run in runs for measure in eval_measures
+    )
 
     results = {}
     for measure in eval_measures:
-        same_performance = find_same_performance_queries(data, runs, measure, max_queries)
+        same_performance = find_same_performance_queries(
+            data, runs, measure, max_queries
+        )
         large_gaps, threshold = find_large_gap_queries(data, runs, measure, max_queries)
 
         results[measure] = {
             "same_performance": same_performance,
             "large_gaps": large_gaps,
-            "threshold": threshold
+            "threshold": threshold,
         }
 
     return results
@@ -172,7 +218,11 @@ def analyze_performance_perq(data):
 @st.cache_data
 def analyze_performance_difference_median(data):
     analysis_results = {}
-    eval_measures = [measure for measure in data[list(data.keys())[0]].keys() if not measure.startswith("median_")]
+    eval_measures = [
+        measure
+        for measure in data[list(data.keys())[0]].keys()
+        if not measure.startswith("median_")
+    ]
     runs = list(data.keys())
 
     for measure in eval_measures:
@@ -190,7 +240,9 @@ def analyze_performance_difference_median(data):
             diff_values = actual_values - median_values
             improved_queries = [i + 1 for i, diff in enumerate(diff_values) if diff > 0]
             degraded_queries = [i + 1 for i, diff in enumerate(diff_values) if diff < 0]
-            unchanged_queries = [i + 1 for i, diff in enumerate(diff_values) if diff == 0]
+            unchanged_queries = [
+                i + 1 for i, diff in enumerate(diff_values) if diff == 0
+            ]
 
             # Calculate statistics
             total_queries = len(diff_values)
@@ -203,10 +255,16 @@ def analyze_performance_difference_median(data):
             std_diff = np.std(diff_values)
 
             # Calculate relative improvement
-            relative_improvement = (np.sum(actual_values) - np.sum(median_values)) / np.sum(median_values) * 100
+            relative_improvement = (
+                (np.sum(actual_values) - np.sum(median_values))
+                / np.sum(median_values)
+                * 100
+            )
 
             # Calculate effect size (Cohen's d)
-            effect_size = (np.mean(actual_values) - np.mean(median_values)) / np.std(diff_values)
+            effect_size = (np.mean(actual_values) - np.mean(median_values)) / np.std(
+                diff_values
+            )
 
             analysis_results[run][measure] = {
                 "improved_queries": improved_queries,
@@ -220,7 +278,7 @@ def analyze_performance_difference_median(data):
                 "median_diff": median_diff,
                 "std_diff": std_diff,
                 "relative_improvement": relative_improvement,
-                "effect_size": effect_size
+                "effect_size": effect_size,
             }
 
     return analysis_results
@@ -245,10 +303,15 @@ def analyze_performance_difference(results):
             run_values = results[run][measure][measure]
 
             # Compare each query's performance
-            diff_values = [run_val - baseline_val for run_val, baseline_val in zip(run_values, baseline_values)]
+            diff_values = [
+                run_val - baseline_val
+                for run_val, baseline_val in zip(run_values, baseline_values)
+            ]
             improved_queries = [i + 1 for i, diff in enumerate(diff_values) if diff > 0]
             degraded_queries = [i + 1 for i, diff in enumerate(diff_values) if diff < 0]
-            unchanged_queries = [i + 1 for i, diff in enumerate(diff_values) if diff == 0]
+            unchanged_queries = [
+                i + 1 for i, diff in enumerate(diff_values) if diff == 0
+            ]
 
             # Calculate statistics
             avg_diff = np.mean(diff_values)
@@ -271,7 +334,7 @@ def analyze_performance_difference(results):
                 "pct_unchanged": pct_unchanged,
                 "avg_diff": avg_diff,
                 "median_diff": median_diff,
-                "std_diff": std_diff
+                "std_diff": std_diff,
             }
 
     return analysis_results, baseline_run
@@ -280,7 +343,11 @@ def analyze_performance_difference(results):
 @st.cache_data
 def analyze_performance_difference_threshold(data, threshold):
     analysis_results = {}
-    eval_measures = [measure for measure in data[list(data.keys())[0]].keys() if not measure.startswith("median_")]
+    eval_measures = [
+        measure
+        for measure in data[list(data.keys())[0]].keys()
+        if not measure.startswith("median_")
+    ]
     runs = list(data.keys())
 
     for run in runs:
@@ -292,7 +359,9 @@ def analyze_performance_difference_threshold(data, threshold):
             diff_values = actual_values - threshold
             improved_queries = [i + 1 for i, diff in enumerate(diff_values) if diff > 0]
             degraded_queries = [i + 1 for i, diff in enumerate(diff_values) if diff < 0]
-            unchanged_queries = [i + 1 for i, diff in enumerate(diff_values) if diff == 0]
+            unchanged_queries = [
+                i + 1 for i, diff in enumerate(diff_values) if diff == 0
+            ]
 
             # Calculate statistics
             total_queries = len(diff_values)
@@ -305,7 +374,11 @@ def analyze_performance_difference_threshold(data, threshold):
             std_diff = np.std(diff_values)
 
             # Calculate relative improvement
-            relative_improvement = (np.sum(actual_values) - threshold * total_queries) / (threshold * total_queries) * 100
+            relative_improvement = (
+                (np.sum(actual_values) - threshold * total_queries)
+                / (threshold * total_queries)
+                * 100
+            )
 
             # Calculate effect size (Cohen's d)
             effect_size = (np.mean(actual_values) - threshold) / np.std(actual_values)
@@ -322,7 +395,7 @@ def analyze_performance_difference_threshold(data, threshold):
                 "median_diff": median_diff,
                 "std_diff": std_diff,
                 "relative_improvement": relative_improvement,
-                "effect_size": effect_size
+                "effect_size": effect_size,
             }
 
     return analysis_results
@@ -334,8 +407,8 @@ def get_frequently_retrieved_docs(runs, selected_cutoff):
     all_queries = set()
     all_docs = set()
     for run_data in runs.values():
-        all_queries.update(run_data['query_id'])
-        all_docs.update(run_data['doc_id'])
+        all_queries.update(run_data["query_id"])
+        all_docs.update(run_data["doc_id"])
 
     query_map = {q: i for i, q in enumerate(all_queries)}
     doc_map = {d: i for i, d in enumerate(all_docs)}
@@ -350,9 +423,9 @@ def get_frequently_retrieved_docs(runs, selected_cutoff):
     # Fill the array
     for i, (run_name, run_data) in enumerate(runs.items()):
         for _, row in run_data.iterrows():
-            if row['rank'] <= selected_cutoff:
-                q_idx = query_map[row['query_id']]
-                d_idx = doc_map[row['doc_id']]
+            if row["rank"] <= selected_cutoff:
+                q_idx = query_map[row["query_id"]]
+                d_idx = doc_map[row["doc_id"]]
                 data[i, q_idx, d_idx] = True
 
     # Find documents retrieved by all systems

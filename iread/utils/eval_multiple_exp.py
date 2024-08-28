@@ -1,9 +1,11 @@
-from scipy import stats
+from collections import Counter, defaultdict
+
 import numpy as np
 import statsmodels.stats.multitest
-from utils.eval_single_exp import metric_parser, get_experiment_name, create_results_table
-from collections import defaultdict, Counter
+from scipy import stats
 from utils.eval_core import *
+from utils.eval_single_exp import (create_results_table, get_experiment_name,
+                                   metric_parser)
 
 
 def calculate_evaluation(parsed_metric, qrel, run_data):
@@ -35,7 +37,16 @@ def calculate_evaluation(parsed_metric, qrel, run_data):
 
 
 @st.cache_data
-def evaluate_multiple_runs_custom(qrel, runs, metric_list, relevance_threshold, baseline, selected_cutoff, correction_method='bonferroni', correction_alpha=0.05):
+def evaluate_multiple_runs_custom(
+    qrel,
+    runs,
+    metric_list,
+    relevance_threshold,
+    baseline,
+    selected_cutoff,
+    correction_method="bonferroni",
+    correction_alpha=0.05,
+):
     results_per_run = {}
     parsed_metrics = []
     statistical_results = {}
@@ -52,7 +63,9 @@ def evaluate_multiple_runs_custom(qrel, runs, metric_list, relevance_threshold, 
             experiment = get_experiment_name(run_name, baseline)
             statistical_results[experiment] = {}
             for parsed_metric in parsed_metrics:
-                baseline_experiment[str(parsed_metric)] = calculate_evaluation(parsed_metric, qrel, run_data)
+                baseline_experiment[str(parsed_metric)] = calculate_evaluation(
+                    parsed_metric, qrel, run_data
+                )
                 metric_values = list(baseline_experiment[str(parsed_metric)].values())
                 statistical_results[experiment][str(parsed_metric)] = {
                     "mean": np.mean(metric_values)
@@ -70,17 +83,23 @@ def evaluate_multiple_runs_custom(qrel, runs, metric_list, relevance_threshold, 
                 if experiment not in statistical_results:
                     statistical_results[experiment] = {}
 
-                results_per_run[str(parsed_metric)] = calculate_evaluation(parsed_metric, qrel, run_data)
+                results_per_run[str(parsed_metric)] = calculate_evaluation(
+                    parsed_metric, qrel, run_data
+                )
                 metric_values = list(results_per_run[str(parsed_metric)].values())
                 mean_value = np.mean(metric_values)
 
                 baseline_values = list(baseline_experiment[str(parsed_metric)].values())
 
                 if len(baseline_values[0]) > 1 and len(metric_values[0]) > 1:
-                    t_statistic, p_value = stats.ttest_rel(baseline_values[0], metric_values[0])
+                    t_statistic, p_value = stats.ttest_rel(
+                        baseline_values[0], metric_values[0]
+                    )
 
                     if np.isnan(t_statistic) or np.isnan(p_value):
-                        print(f"NaN detected for metric {str(parsed_metric)} in run {experiment}")
+                        print(
+                            f"NaN detected for metric {str(parsed_metric)} in run {experiment}"
+                        )
 
                     metric_p_values.append(p_value)
 
@@ -89,38 +108,54 @@ def evaluate_multiple_runs_custom(qrel, runs, metric_list, relevance_threshold, 
                         "p_value": p_value,
                         "corrected_p_value": None,  # Placeholder
                         "reject": None,  # Placeholder
-                        "t_statistic": t_statistic
+                        "t_statistic": t_statistic,
                     }
                 else:
-                    print(f"Insufficient data for t-test on metric {str(parsed_metric)} in run {experiment}")
+                    print(
+                        f"Insufficient data for t-test on metric {str(parsed_metric)} in run {experiment}"
+                    )
                     statistical_results[experiment][str(parsed_metric)] = {
                         "mean": mean_value,
-                        "p_value": float('nan'),
-                        "corrected_p_value": float('nan'),
+                        "p_value": float("nan"),
+                        "corrected_p_value": float("nan"),
                         "reject": False,
-                        "t_statistic": float('nan')
+                        "t_statistic": float("nan"),
                     }
 
         # Apply per-measure correction if needed
         if need_correction and metric_p_values:
-            corrected_p_values = statsmodels.stats.multitest.multipletests(metric_p_values, alpha=correction_alpha, method=correction_method)[1]
+            corrected_p_values = statsmodels.stats.multitest.multipletests(
+                metric_p_values, alpha=correction_alpha, method=correction_method
+            )[1]
 
             # Update statistical results with corrected p-values
             p_index = 0
             for run_name, run_data in runs.items():
                 if run_name != baseline:
                     experiment = get_experiment_name(run_name, baseline)
-                    if statistical_results[experiment][str(parsed_metric)]["p_value"] is not None:
-                        statistical_results[experiment][str(parsed_metric)]["corrected_p_value"] = corrected_p_values[p_index]
-                        statistical_results[experiment][str(parsed_metric)]["reject"] = corrected_p_values[p_index] < correction_alpha
+                    if (
+                        statistical_results[experiment][str(parsed_metric)]["p_value"]
+                        is not None
+                    ):
+                        statistical_results[experiment][str(parsed_metric)][
+                            "corrected_p_value"
+                        ] = corrected_p_values[p_index]
+                        statistical_results[experiment][str(parsed_metric)][
+                            "reject"
+                        ] = (corrected_p_values[p_index] < correction_alpha)
                         p_index += 1
         elif not need_correction:
             # If no correction needed, set corrected p-value same as original
             for run_name, run_data in runs.items():
                 if run_name != baseline:
                     experiment = get_experiment_name(run_name, baseline)
-                    statistical_results[experiment][str(parsed_metric)]["corrected_p_value"] = statistical_results[experiment][str(parsed_metric)]["p_value"]
-                    statistical_results[experiment][str(parsed_metric)]["reject"] = statistical_results[experiment][str(parsed_metric)]["p_value"] < correction_alpha
+                    statistical_results[experiment][str(parsed_metric)][
+                        "corrected_p_value"
+                    ] = statistical_results[experiment][str(parsed_metric)]["p_value"]
+                    statistical_results[experiment][str(parsed_metric)]["reject"] = (
+                        statistical_results[experiment][str(parsed_metric)]["p_value"]
+                        < correction_alpha
+                    )
 
     df, style_df = create_results_table(statistical_results)
 
@@ -133,8 +168,8 @@ def get_doc_intersection(runs, baseline, selected_cutoff):
     all_queries = set()
     all_docs = set()
     for run_data in runs.values():
-        all_queries.update(run_data['query_id'])
-        all_docs.update(run_data['doc_id'])
+        all_queries.update(run_data["query_id"])
+        all_docs.update(run_data["doc_id"])
 
     query_map = {q: i for i, q in enumerate(all_queries)}
     doc_map = {d: i for i, d in enumerate(all_docs)}
@@ -149,9 +184,9 @@ def get_doc_intersection(runs, baseline, selected_cutoff):
     # Fill the array
     for i, (run_name, run_data) in enumerate(runs.items()):
         for _, row in run_data.iterrows():
-            if row['rank'] <= selected_cutoff:
-                q_idx = query_map[row['query_id']]
-                d_idx = doc_map[row['doc_id']]
+            if row["rank"] <= selected_cutoff:
+                q_idx = query_map[row["query_id"]]
+                d_idx = doc_map[row["doc_id"]]
                 data[i, q_idx, d_idx] = True
 
     # Compute intersections
@@ -163,13 +198,18 @@ def get_doc_intersection(runs, baseline, selected_cutoff):
     totals = np.minimum(data.sum(axis=2), selected_cutoff).sum(axis=1)
 
     # Create DataFrame
-    df = pd.DataFrame({
-        'Intersected Documents': intersections,
-        'Total Documents': totals,
-    }, index=list(runs.keys()))
+    df = pd.DataFrame(
+        {
+            "Intersected Documents": intersections,
+            "Total Documents": totals,
+        },
+        index=list(runs.keys()),
+    )
 
     df = df.drop(baseline)  # Remove baseline from results
-    df['Intersection Percentage'] = (df['Intersected Documents'] / df['Total Documents'] * 100).round(2)
+    df["Intersection Percentage"] = (
+        df["Intersected Documents"] / df["Total Documents"] * 100
+    ).round(2)
 
     return df
 
@@ -180,8 +220,8 @@ def get_docs_retrieved_by_all_systems(runs, selected_cutoff, sample_size):
     all_queries = set()
     all_docs = set()
     for run_data in runs.values():
-        all_queries.update(run_data['query_id'])
-        all_docs.update(run_data['doc_id'])
+        all_queries.update(run_data["query_id"])
+        all_docs.update(run_data["doc_id"])
 
     query_map = {q: i for i, q in enumerate(all_queries)}
     doc_map = {d: i for i, d in enumerate(all_docs)}
@@ -196,9 +236,9 @@ def get_docs_retrieved_by_all_systems(runs, selected_cutoff, sample_size):
     # Fill the array
     for i, (run_name, run_data) in enumerate(runs.items()):
         for _, row in run_data.iterrows():
-            if row['rank'] <= selected_cutoff:
-                q_idx = query_map[row['query_id']]
-                d_idx = doc_map[row['doc_id']]
+            if row["rank"] <= selected_cutoff:
+                q_idx = query_map[row["query_id"]]
+                d_idx = doc_map[row["doc_id"]]
                 data[i, q_idx, d_idx] = True
 
     # Find documents retrieved by all systems
@@ -219,4 +259,8 @@ def get_docs_retrieved_by_all_systems(runs, selected_cutoff, sample_size):
     # Get the most frequent documents, up to sample_size
     most_frequent_docs = [doc for doc, _ in doc_counts.most_common(sample_size)]
 
-    return most_frequent_docs, len(queries_with_retrieved_docs), sorted(queries_with_retrieved_docs)
+    return (
+        most_frequent_docs,
+        len(queries_with_retrieved_docs),
+        sorted(queries_with_retrieved_docs),
+    )

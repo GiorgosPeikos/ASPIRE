@@ -1,8 +1,12 @@
 import os
+
 import streamlit as st
 from utils.data_handler import get_all_files
 
-st.markdown("""<div style="text-align: center;"><h1>Data Management<h1></div>""", unsafe_allow_html=True)
+st.markdown(
+    """<div style="text-align: center;"><h1>Data Management<h1></div>""",
+    unsafe_allow_html=True,
+)
 
 # Uploading the retrieval experiments for evaluation
 st.header("Upload Retrieval Experiments")
@@ -35,7 +39,8 @@ st.divider()
 # Uploading the queries associated with the previous files
 st.header("Upload Queries")
 queries = st.file_uploader(
-    "Upload Queries File. The file's name will be its identifier. ", type=["txt", "csv", "xml"]
+    "Upload Queries File. The file's name will be its identifier. ",
+    type=["txt", "csv", "xml"],
 )
 st.markdown(
     """

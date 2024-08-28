@@ -1,11 +1,11 @@
-import streamlit as st
 import pandas as pd
-
-
+import streamlit as st
 from deprecated.analysis_styling import color_max_min_column, color_max_min_row
-from utils.data_handler import print_session_data, load_qrel_data, load_run_data
-from utils.eval_core import initialize_results, return_available_measures, evaluate_single_run
-from utils.ui import query_selector, multi_run_selector
+from utils.data_handler import (load_qrel_data, load_run_data,
+                                print_session_data)
+from utils.eval_core import (evaluate_single_run, initialize_results,
+                             return_available_measures)
+from utils.ui import multi_run_selector, query_selector
 
 print_session_data()
 query_selector()
@@ -14,7 +14,7 @@ multi_run_selector()
 st.title("This page contains tha content of comparing two different retrieval runs.")
 
 run_paths = [st.session_state[x] for x in st.session_state if x.startswith("run__")]
-run_names = [run.split('/')[-1] for run in run_paths]
+run_names = [run.split("/")[-1] for run in run_paths]
 
 if "selected_qrels" not in st.session_state and not run_paths:
     st.error("Errors in Calculations. No run selected.")
@@ -62,8 +62,9 @@ freq_measures_results = {}
 baseline_measures_results = {}
 for measure_name in freq_measures:
     for run_name, run in zip(run_names, runs):
-        measures_results[run_name][measure_name] = evaluate_single_run(qrels, run, measure_name, relevance_threshold
-                                                                  )
+        measures_results[run_name][measure_name] = evaluate_single_run(
+            qrels, run, measure_name, relevance_threshold
+        )
 df = pd.DataFrame.from_dict(measures_results).T
 
 if st.button("transpose?"):

@@ -1,21 +1,22 @@
+import re
+from typing import Dict, List
+
+import nltk
+import numpy as np
+import pandas as pd
+import streamlit as st
 import torch
 import torch.nn.functional as F
-import streamlit as st
-import pandas as pd
-import numpy as np
+from nltk.corpus import stopwords
 from sklearn.manifold import TSNE
 from transformers import AutoModel, AutoTokenizer
-from utils.eval_single_exp import metric_parser, get_experiment_name
 from utils.eval_multiple_exp import calculate_evaluation
-from typing import Dict, List
-import nltk
-from nltk.corpus import stopwords
-import re
+from utils.eval_single_exp import get_experiment_name, metric_parser
 
 # Initialize the tokenizer
 tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
-nltk.download('stopwords', quiet=True)
-nltk.download('punkt', quiet=True)
+nltk.download("stopwords", quiet=True)
+nltk.download("punkt", quiet=True)
 
 
 @st.cache_resource
@@ -26,11 +27,13 @@ def tokenize_text(text):
 @st.cache_data
 def get_query_len(selected_queries):
     # Tokenize each query_text and calculate the length of tokens
-    selected_queries['tokens'] = selected_queries['query_text'].apply(tokenize_text)
-    selected_queries['token_len'] = selected_queries['tokens'].apply(len)
+    selected_queries["tokens"] = selected_queries["query_text"].apply(tokenize_text)
+    selected_queries["token_len"] = selected_queries["tokens"].apply(len)
 
     # Create the dictionary with query_id as key and len of tokens as value
-    token_len_dict = {row['query_id']: row['token_len'] for index, row in selected_queries.iterrows()}
+    token_len_dict = {
+        row["query_id"]: row["token_len"] for index, row in selected_queries.iterrows()
+    }
     return token_len_dict
 
 
@@ -38,36 +41,49 @@ def get_query_len(selected_queries):
 def add_token_lengths(results, token_lengths):
     for experiment in results:
         # Find the first measure that's not 'token_length'
-        first_measure = next(measure for measure in results[experiment] if measure != 'token_length')
+        first_measure = next(
+            measure for measure in results[experiment] if measure != "token_length"
+        )
 
         # Use this measure to determine the number of queries
         num_queries = len(results[experiment][first_measure][first_measure])
 
-        results[experiment]['token_length'] = {'token_length': []}
+        results[experiment]["token_length"] = {"token_length": []}
         for i in range(num_queries):
             query_id = str(i + 1)  # Assuming query IDs start from 1
             if query_id in token_lengths:
-                results[experiment]['token_length']['token_length'].append(token_lengths[query_id])
+                results[experiment]["token_length"]["token_length"].append(
+                    token_lengths[query_id]
+                )
             else:
                 # If token length is not available, use a placeholder value (e.g., -1)
-                results[experiment]['token_length']['token_length'].append(-1)
+                results[experiment]["token_length"]["token_length"].append(-1)
     return results
 
 
 @st.cache_data
 def preprocess_text(text):
     # Convert to lowercase and remove punctuation
-    text = re.sub(r'[^\w\s]', '', text.lower())
+    text = re.sub(r"[^\w\s]", "", text.lower())
     # Tokenize
     tokens = nltk.word_tokenize(text)
     # Remove stopwords
-    stop_words = set(stopwords.words('english'))
+    stop_words = set(stopwords.words("english"))
     tokens = [token for token in tokens if token not in stop_words]
     return tokens
 
 
 @st.cache_data
-def per_query_length_evaluation(qrel, runs, selected_queries, metric_list, relevance_threshold, selected_cutoff, baseline_run, threshold_value):
+def per_query_length_evaluation(
+    qrel,
+    runs,
+    selected_queries,
+    metric_list,
+    relevance_threshold,
+    selected_cutoff,
+    baseline_run,
+    threshold_value,
+):
     results_per_run = {}
     parsed_metrics = []
 
@@ -82,7 +98,9 @@ def per_query_length_evaluation(qrel, runs, selected_queries, metric_list, relev
             experiment = get_experiment_name(run_name, baseline_run)
             results_per_run[experiment] = {}
             for parsed_metric in parsed_metrics:
-                results_per_run[experiment][str(parsed_metric)] = calculate_evaluation(parsed_metric, qrel, run_data)
+                results_per_run[experiment][str(parsed_metric)] = calculate_evaluation(
+                    parsed_metric, qrel, run_data
+                )
 
         query_length = get_query_len(selected_queries)
         results = add_token_lengths(results_per_run, query_length)
@@ -91,7 +109,11 @@ def per_query_length_evaluation(qrel, runs, selected_queries, metric_list, relev
 
 
 @st.cache_data
-def query_clf_relevance_assessments(data: Dict[str, Dict], method: str = 'Median Absolute Deviation', threshold: float = 3.5) -> Dict[str, Dict[str, List[str]]]:
+def query_clf_relevance_assessments(
+    data: Dict[str, Dict],
+    method: str = "Median Absolute Deviation",
+    threshold: float = 3.5,
+) -> Dict[str, Dict[str, List[str]]]:
     query_ids = list(data.keys())
     metrics = ["irrelevant"] + list(next(iter(data.values()))["relevant"].keys())
 
@@ -109,20 +131,20 @@ def query_clf_relevance_assessments(data: Dict[str, Dict], method: str = 'Median
     for j, metric in enumerate(metrics):
         metric_values = values[:, j]
 
-        if method == 'Median Absolute Deviation':
+        if method == "Median Absolute Deviation":
             median = np.median(metric_values)
             mad = np.median(np.abs(metric_values - median))
             lower_bound = median - threshold * mad
             upper_bound = median + threshold * mad
-        elif method == 'Percentile-based method':
+        elif method == "Percentile-based method":
             lower_bound, upper_bound = np.percentile(metric_values, [5, 95])
-        elif method == 'Modified Z-score':
+        elif method == "Modified Z-score":
             median = np.median(metric_values)
             mad = np.median(np.abs(metric_values - median))
             # modified_z_scores = 0.6745 * (metric_values - median) / mad
             lower_bound = median - threshold * mad
             upper_bound = median + threshold * mad
-        elif method == 'Max-Min-Median':
+        elif method == "Max-Min-Median":
             sorted_indices = np.argsort(metric_values)
             high = sorted_indices[-5:]
             low = sorted_indices[:5]
@@ -131,35 +153,41 @@ def query_clf_relevance_assessments(data: Dict[str, Dict], method: str = 'Median
             results[metric] = {
                 "5_queries_most_assessments": [query_ids[i] for i in high],
                 "5_queries_around_median_assessments": [query_ids[i] for i in middle],
-                "5_queries_least_assessments": [query_ids[i] for i in low]
+                "5_queries_least_assessments": [query_ids[i] for i in low],
             }
             continue
         else:
             raise ValueError("Invalid method specified")
 
-        if method != 'Max-Min-Median':
+        if method != "Max-Min-Median":
             high = np.where(metric_values > upper_bound)[0]
             low = np.where(metric_values < lower_bound)[0]
-            normal = np.where((metric_values >= lower_bound) & (metric_values <= upper_bound))[0]
+            normal = np.where(
+                (metric_values >= lower_bound) & (metric_values <= upper_bound)
+            )[0]
 
             if method == "Percentile-based method":
                 results[metric] = {
                     "queries_above_95th_percentile": [query_ids[i] for i in high],
-                    "queries_between_5th_95th_percentiles": [query_ids[i] for i in normal],
-                    "queries_below_5th_percentile": [query_ids[i] for i in low]
+                    "queries_between_5th_95th_percentiles": [
+                        query_ids[i] for i in normal
+                    ],
+                    "queries_below_5th_percentile": [query_ids[i] for i in low],
                 }
             else:
                 results[metric] = {
                     "queries_above_threshold": [query_ids[i] for i in high],
                     "queries_within_normal_range": [query_ids[i] for i in normal],
-                    "queries_below_threshold": [query_ids[i] for i in low]
+                    "queries_below_threshold": [query_ids[i] for i in low],
                 }
 
     return results
 
 
 @st.cache_data
-def remove_stopwords_from_queries(queries_df, text_column='query_text', id_column='query_id'):
+def remove_stopwords_from_queries(
+    queries_df, text_column="query_text", id_column="query_id"
+):
     """
     Remove stopwords, numbers, and punctuation from queries in a DataFrame using a faster method.
 
@@ -173,17 +201,25 @@ def remove_stopwords_from_queries(queries_df, text_column='query_text', id_colum
     """
     # Ensure the required columns exist
     if text_column not in queries_df.columns or id_column not in queries_df.columns:
-        raise ValueError(f"Required columns {text_column} and/or {id_column} not found in DataFrame")
+        raise ValueError(
+            f"Required columns {text_column} and/or {id_column} not found in DataFrame"
+        )
 
     # Get English stopwords
-    stop_words = set(stopwords.words('english'))
+    stop_words = set(stopwords.words("english"))
 
     # Compile regex pattern for word boundary, excluding numbers and punctuation
-    word_pattern = re.compile(r'\b[a-zA-Z]+\b')
+    word_pattern = re.compile(r"\b[a-zA-Z]+\b")
 
     # Create a vectorized function to remove stopwords, numbers, and punctuation
     def clean_text_vectorized(text):
-        return ' '.join([word for word in word_pattern.findall(text.lower()) if word not in stop_words])
+        return " ".join(
+            [
+                word
+                for word in word_pattern.findall(text.lower())
+                if word not in stop_words
+            ]
+        )
 
     # Create a new DataFrame to avoid modifying the original
     result_df = queries_df.copy()
@@ -203,7 +239,9 @@ def downloading_huggingface_model(model_name):
 
 def mean_pooling(model_output, attention_mask):
     token_embeddings = model_output[0]
-    input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
+    input_mask_expanded = (
+        attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
+    )
     sum_embeddings = torch.sum(token_embeddings * input_mask_expanded, 1)
     sum_mask = torch.clamp(input_mask_expanded.sum(1), min=1e-9)
     return sum_embeddings / sum_mask
@@ -251,19 +289,31 @@ def perform_pca(query_data):
     # Perform PCA
     pca = TSNE(n_components=3)
     pca_result = pca.fit_transform(embeddings_array)
-    pca_df = pd.DataFrame(pca_result, columns=["Prin. Comp. 1", "Prin. Comp. 2", "Prin. Comp. 3"])
+    pca_df = pd.DataFrame(
+        pca_result, columns=["Prin. Comp. 1", "Prin. Comp. 2", "Prin. Comp. 3"]
+    )
     pca_df["query_id"] = query_data["query_id"]
     return pca_df
 
 
 @st.cache_data
-def query_similarity_performance(queries, qrel, runs, metric_list, selected_cutoff, relevance_threshold, embedding_model_name):
+def query_similarity_performance(
+    queries,
+    qrel,
+    runs,
+    metric_list,
+    selected_cutoff,
+    relevance_threshold,
+    embedding_model_name,
+):
     parsed_metrics = []
     results_per_run = {}
 
-    embedding_model, model_tokenizer = downloading_huggingface_model(embedding_model_name)
+    embedding_model, model_tokenizer = downloading_huggingface_model(
+        embedding_model_name
+    )
 
-    queries = get_embeddings(queries, embedding_model,model_tokenizer)
+    queries = get_embeddings(queries, embedding_model, model_tokenizer)
     pca_df = perform_pca(queries)
 
     # Parse each metric in metric_list
@@ -276,6 +326,8 @@ def query_similarity_performance(queries, qrel, runs, metric_list, selected_cuto
         experiment = get_experiment_name(run_name, None)
         results_per_run[experiment] = {}
         for parsed_metric in parsed_metrics:
-            results_per_run[experiment][str(parsed_metric)] = calculate_evaluation(parsed_metric, qrel, run_data)
+            results_per_run[experiment][str(parsed_metric)] = calculate_evaluation(
+                parsed_metric, qrel, run_data
+            )
 
     return pca_df, results_per_run

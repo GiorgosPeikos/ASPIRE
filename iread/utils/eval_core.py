@@ -1,7 +1,7 @@
-import pandas as pd
 import ir_measures
-from ir_measures import *
+import pandas as pd
 import streamlit as st
+from ir_measures import *
 
 
 @st.cache_data
@@ -27,7 +27,7 @@ def return_available_measures():
         "P@25",
         "P@50",
         "P@100",
-        "Rprec"
+        "Rprec",
     ]
 
     freq_measures = [
@@ -99,7 +99,14 @@ def return_available_measures():
         # "α_DCG",
         # "α_nDCG"
     ]
-    return freq_measures, rest_measures, custom_user, default_measures, overall_measures, precision_measures
+    return (
+        freq_measures,
+        rest_measures,
+        custom_user,
+        default_measures,
+        overall_measures,
+        precision_measures,
+    )
 
 
 # The function gets the qrels and the run from the session and a selected metric from the user and returns the
@@ -242,18 +249,18 @@ def get_relevant_and_unjudged(qrel, res) -> dict:
     """
 
     # Merge res and qrel on query_id and doc_id
-    merged_df = pd.merge(res, qrel, on=['query_id', 'doc_id'], how='left')
+    merged_df = pd.merge(res, qrel, on=["query_id", "doc_id"], how="left")
 
     # Initialize result dictionary
     ranking_per_relevance = {}
 
     # Extract all available relevance thresholds
-    relevance_thresholds = qrel['relevance'].unique()
+    relevance_thresholds = qrel["relevance"].unique()
 
     # Iterate over each unique query_id in the DataFrame
-    for query_id, group in merged_df.groupby('query_id'):
+    for query_id, group in merged_df.groupby("query_id"):
         # Sort group by score in descending order
-        group_sorted = group.sort_values(by='score', ascending=False)
+        group_sorted = group.sort_values(by="score", ascending=False)
 
         # Initialize a dictionary for the current query_id
         query_result = {}
@@ -261,21 +268,29 @@ def get_relevant_and_unjudged(qrel, res) -> dict:
         # Find the first rank positions for relevance thresholds (0, 1, 2)
         for relevance_val in relevance_thresholds:
             # Find the first rank position for the current relevance value
-            relevant_rows = group_sorted[group_sorted['relevance'] == relevance_val]
-            first_rank = relevant_rows['rank'].iloc[0] if not relevant_rows.empty else f'{len(group_sorted)}'
+            relevant_rows = group_sorted[group_sorted["relevance"] == relevance_val]
+            first_rank = (
+                relevant_rows["rank"].iloc[0]
+                if not relevant_rows.empty
+                else f"{len(group_sorted)}"
+            )
 
             # Store the first rank position in the dictionary
             if not relevance_val == 0:
-                query_result[f'Relevance_Label_{relevance_val}'] = first_rank
+                query_result[f"Relevance_Label_{relevance_val}"] = first_rank
             else:
-                query_result[f'Irrelevant_Document'] = first_rank
+                query_result[f"Irrelevant_Document"] = first_rank
 
         # Find the rank position where 'relevance' is NaN (first_unjudged)
-        nan_relevance_rows = group_sorted[group_sorted['relevance'].isna()]
-        first_rank_nan_relevance = nan_relevance_rows['rank'].iloc[0] if not nan_relevance_rows.empty else f'{len(group_sorted)}'
+        nan_relevance_rows = group_sorted[group_sorted["relevance"].isna()]
+        first_rank_nan_relevance = (
+            nan_relevance_rows["rank"].iloc[0]
+            if not nan_relevance_rows.empty
+            else f"{len(group_sorted)}"
+        )
 
         # Store the first rank position in the dictionary
-        query_result['Unjudged_Document'] = first_rank_nan_relevance
+        query_result["Unjudged_Document"] = first_rank_nan_relevance
 
         # Store the dictionary for the current query_id in the result dictionary
         ranking_per_relevance[query_id] = query_result
@@ -311,5 +326,3 @@ def generate_prec_recall_graphs(relevance_threshold, selected_qrel, selected_run
         )
 
     return prec_recall_graphs
-
-

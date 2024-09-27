@@ -296,60 +296,60 @@ st.divider()
 with st.container():
     st.markdown("""<h3>Retrieval Performance - <span style="color:red;">Query Performance based on  Query Length</span></h3>""", unsafe_allow_html=True)
     _, _, custom_user, default_measures, _, _ = return_available_measures()
+    with st.expander("See Analysis Details and Interpretations"):
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.write("""
+            ### Visualization Explanation
+            1. **Scatter Plot with Moving Average**:
+               - Each point represents a single query.
+               - X-axis: Token length of the query.
+               - Y-axis: Performance measure (e.g., AP@10, nDCG@10).
+               - Color gradient: Indicates performance.
+               - Red line: Moving average of performance.
+
+            2. **Moving Average**:
+               - Smooths out short-term fluctuations and highlights longer-term trends.
+               - Calculated using a window of 20 queries.
+               - Helps visualize how performance generally changes with token length.
+               - Upward trend: Performance tends to improve with token length.
+               - Downward trend: Performance tends to decrease with token length.
+               - Flat line: No strong relationship between token length and performance.
+
+            ### Bucketing Methods
+            This analysis compares two methods of grouping queries based on their token lengths:
+            1. **Equal-width buckets**: Each bucket represents an equal range of token lengths.
+            2. **Equal-frequency buckets**: Each bucket contains approximately the same number of queries.
+            """)
+
+        with col2:
+            st.write("""
+            ### Key Considerations
+            - **Scatter Plot Interpretation**:
+              - Look for clusters or patterns in the distribution of points.
+              - Identify any outliers.
+              - Compare individual query performance to the moving average trend.
+
+            - **Equal-width buckets**:
+              - Show the distribution of performance across the full range of token lengths.
+              - May have varying numbers of queries per bucket!
+              - Useful for identifying performance trends in specific token length ranges.
+
+            - **Equal-frequency buckets**:
+              - Ensure a consistent sample size per bucket.
+              - May obscure the actual distribution of token lengths.
+              - Useful for comparing performance across equal-sized query groups.
+
+            - Compare both bucketing methods to get a comprehensive understanding of the relationship between token length and performance.
+            - Pay attention to the number of queries in each bucket (written in each bar), especially for equal-width buckets.
+            - Consider how the bucket analysis results compare to the trends observed in the scatter plot and moving average.
+            """)
+
 
     if 'qmet_selected_runs' not in st.session_state:
         st.warning("Please select a set of queries to begin your evaluation.", icon="⚠")
     else:
-        with st.expander("See Analysis Details and Interpretations"):
-            col1, col2 = st.columns(2)
-
-            with col1:
-                st.write("""
-                ### Visualization Explanation
-                1. **Scatter Plot with Moving Average**:
-                   - Each point represents a single query.
-                   - X-axis: Token length of the query.
-                   - Y-axis: Performance measure (e.g., AP@10, nDCG@10).
-                   - Color gradient: Indicates performance.
-                   - Red line: Moving average of performance.
-
-                2. **Moving Average**:
-                   - Smooths out short-term fluctuations and highlights longer-term trends.
-                   - Calculated using a window of 20 queries.
-                   - Helps visualize how performance generally changes with token length.
-                   - Upward trend: Performance tends to improve with token length.
-                   - Downward trend: Performance tends to decrease with token length.
-                   - Flat line: No strong relationship between token length and performance.
-
-                ### Bucketing Methods
-                This analysis compares two methods of grouping queries based on their token lengths:
-                1. **Equal-width buckets**: Each bucket represents an equal range of token lengths.
-                2. **Equal-frequency buckets**: Each bucket contains approximately the same number of queries.
-                """)
-
-            with col2:
-                st.write("""
-                ### Key Considerations
-                - **Scatter Plot Interpretation**:
-                  - Look for clusters or patterns in the distribution of points.
-                  - Identify any outliers.
-                  - Compare individual query performance to the moving average trend.
-
-                - **Equal-width buckets**:
-                  - Show the distribution of performance across the full range of token lengths.
-                  - May have varying numbers of queries per bucket!
-                  - Useful for identifying performance trends in specific token length ranges.
-
-                - **Equal-frequency buckets**:
-                  - Ensure a consistent sample size per bucket.
-                  - May obscure the actual distribution of token lengths.
-                  - Useful for comparing performance across equal-sized query groups.
-
-                - Compare both bucketing methods to get a comprehensive understanding of the relationship between token length and performance.
-                - Pay attention to the number of queries in each bucket (written in each bar), especially for equal-width buckets.
-                - Consider how the bucket analysis results compare to the trends observed in the scatter plot and moving average.
-                """)
-
         # Get the list of selected run files
         selected_runs_files = list(st.session_state.qmet_selected_runs.keys())
 

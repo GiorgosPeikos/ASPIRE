@@ -158,17 +158,29 @@ def load_query_data(query_path):
     # Determine the file extension
     file_extension = os.path.splitext(query_path)[1].lower()
 
-    # Process based on file type
-    if file_extension in [".csv", ".txt"]:
-        return pd.read_csv(
-            query_path,
-            names=["query_id", "query_text"],
-            delimiter="[ \t]",
-            dtype={"query_id": str, "iteration": str, "doc_id": str, "relevance": int},
-            index_col=None,
-            engine="python",
-            header=0,
-        )
+    if file_extension in [".csv", ".txt", ".xlsx", ".tsv"]:
+        try:
+            # Read a sample of the file
+            with open(query_path, 'r') as csvfile:
+                sample = csvfile.read(1024)
+                sniffer = csv.Sniffer()
+                has_header = sniffer.has_header(sample)
+                dialect = sniffer.sniff(sample)
+
+            # Use the sniffed information to read the CSV
+            return pd.read_csv(
+                query_path,
+                dialect=dialect,
+                header=0 if has_header else None,
+                dtype={"query_id": str, "iteration": str, "doc_id": str, "relevance": int},
+                index_col=None,
+                on_bad_lines='skip',  # This will skip problematic rows
+            )
+        except (pd.errors.ParserError, csv.Error) as e:
+            st.error(f"Error reading file: {e}")
+            st.error("Please check your CSV file for inconsistencies.")
+            return pd.DataFrame()  # Return an empty DataFrame if there's an error
+
     elif file_extension == ".xml":
         # Parse XML and extract the required data
         tree = ET.parse(query_path)

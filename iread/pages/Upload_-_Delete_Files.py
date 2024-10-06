@@ -40,7 +40,7 @@ st.divider()
 st.header("Upload Queries")
 queries = st.file_uploader(
     "Upload Queries File. The file's name will be its identifier. ",
-    type=["txt", "csv", "xml"],
+    type=["txt", "csv", "xml", "xlsx", "tsv"],
 )
 st.markdown(
     """

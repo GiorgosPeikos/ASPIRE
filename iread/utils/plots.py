@@ -1288,7 +1288,13 @@ def plot_documents_retrieved_by_experiments(result_df, excluded_runs=None) -> No
             )
 
             # Display example pairs for all thresholds
-            example_pairs = result_df[result_df[f"by_{threshold}_exps"]].sample(10)
+            filtered_df = result_df[result_df[f"by_{threshold}_exps"]]
+            if len(filtered_df) >= 10:
+                example_pairs = filtered_df.sample(10)
+            else:
+                # Handle the case where fewer than 10 rows are present
+                example_pairs = filtered_df
+
             with st.expander(
                 f"Example pairs retrieved by exactly {threshold} experiment{'s' if threshold > 1 else ''}"
             ):

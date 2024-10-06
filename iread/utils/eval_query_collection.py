@@ -37,6 +37,10 @@ def get_query_rel_judgements(qrels):
         qrels.groupby(["query_id", "relevance"]).size().unstack(fill_value=0)
     )
 
+    # Ensure 'Irrelevant' column exists
+    if 0 not in relevance_counts.columns:
+        relevance_counts[0] = 0
+
     # Rename columns
     relevance_counts.columns = [
         "Irrelevant" if col == 0 else f"Relevance_Label_{col}"
@@ -45,10 +49,8 @@ def get_query_rel_judgements(qrels):
 
     # Prepare results dictionary
     results = {}
-    for i, query_id in enumerate(
-        relevance_counts.index, start=1
-    ):  # Start enumeration from 1
-        results[i] = {  # Use i (1-based) as the key instead of query_id
+    for i, query_id in enumerate(relevance_counts.index, start=1):
+        results[i] = {
             "irrelevant": int(relevance_counts.loc[query_id, "Irrelevant"]),
             "relevant": {},
         }

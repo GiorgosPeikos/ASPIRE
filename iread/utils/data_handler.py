@@ -172,10 +172,11 @@ def load_query_data(query_path):
                 query_path,
                 dialect=dialect,
                 header=0 if has_header else None,
-                dtype={"query_id": str, "iteration": str, "doc_id": str, "relevance": int},
+                dtype={"query_id": str, "query_text": str},
                 index_col=None,
-                on_bad_lines='skip',  # This will skip problematic rows
+                # on_bad_lines='skip',  # This will skip problematic rows
             )
+
         except (pd.errors.ParserError, csv.Error) as e:
             st.error(f"Error reading file: {e}")
             st.error("Please check your CSV file for inconsistencies.")

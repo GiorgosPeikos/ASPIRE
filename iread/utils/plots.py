@@ -899,7 +899,6 @@ def plot_query_performance_vs_query_length(data):
                 )
 
 
-@st.cache_data
 def create_relevance_wordclouds(query_relevance, queries, method, threshold) -> None:
     # Ensure query_ids in the DataFrame are strings
     queries["query_id"] = queries["query_id"].astype(str)

@@ -77,6 +77,7 @@ def get_query_rel_judgements(qrels):
 
     return relevance_counts, results
 
+
 def compare_relevance_labels(data, queries, relevance_labels):
     results = {}
     irrelevant_label = "Relevance_Label_0"

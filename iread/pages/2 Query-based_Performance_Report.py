@@ -281,56 +281,34 @@ with st.container():
                                 """
                             The queries are sorted based on the number of document judgements for each relevance label, in descending order. 
                             This means that for each label the first query listed has the highest number of judgements for that label.
-                            
+
                             The number in parentheses after each query ID represents the count of judgements for that query.
                             Only the counts for the first two queries are shown to give you an idea of the range.
                             """
                             )
 
                             for label in analysis_results["sorted_queries"]:
-                                color = (
-                                    "red" if label == "Relevance_Label_0" else "blue"
-                                )
-                                label_name = (
-                                    "Irrelevant (Relevance_Label_0)"
-                                    if label == "Relevance_Label_0"
-                                    else label
-                                )
-                                sorted_queries = analysis_results["sorted_queries"][
-                                    label
-                                ]
+                                color = "red" if label == "Relevance_Label_0" else "blue"
+                                label_name = "Irrelevant (Relevance_Label_0)" if label == "Relevance_Label_0" else label
+                                sorted_queries = analysis_results["sorted_queries"][label]
 
                                 # Get the first two queries with their judgement counts
                                 top_queries = sorted_queries[:2]
-                                top_queries_str = ", ".join(
-                                    [f"{q} (**{count}**)" for q, count in top_queries]
-                                )
+                                top_queries_str = ", ".join([f"{q} (**{count}**)" for q, count in top_queries])
 
                                 # Get the last two queries with their judgement counts
                                 bottom_queries = sorted_queries[-2:]
-                                bottom_queries_str = ", ".join(
-                                    [
-                                        f"{q} (**{count}**)"
-                                        for q, count in bottom_queries
-                                    ]
-                                )
+                                bottom_queries_str = ", ".join([f"{q} (**{count}**)" for q, count in bottom_queries])
 
                                 # Get the middle queries without counts
-                                middle_queries = [
-                                    str(q) for q, _ in sorted_queries[2:-2]
-                                ]
+                                middle_queries = [str(q) for q, _ in sorted_queries[2:-2]]
 
                                 # Combine all queries
                                 if len(sorted_queries) > 4:
                                     all_queries_str = f"{top_queries_str}, {', '.join(middle_queries)}, {bottom_queries_str}"
                                 else:
                                     # If there are 4 or fewer queries, just show all with counts
-                                    all_queries_str = ", ".join(
-                                        [
-                                            f"{q} (**{count}**)"
-                                            for q, count in sorted_queries
-                                        ]
-                                    )
+                                    all_queries_str = ", ".join([f"{q} (**{count}**)" for q, count in sorted_queries])
 
                                 st.markdown(
                                     f"<span style='color:{color};'>{label_name}</span>: {all_queries_str}",
@@ -348,14 +326,8 @@ with st.container():
                             )
 
                             for label in analysis_results["query_difficulty"]:
-                                color = (
-                                    "red" if label == "Relevance_Label_0" else "blue"
-                                )
-                                label_name = (
-                                    "Irrelevant"
-                                    if label == "Relevance_Label_0"
-                                    else label
-                                )
+                                color = "red" if label == "Relevance_Label_0" else "blue"
+                                label_name = "Irrelevant" if label == "Relevance_Label_0" else label
                                 st.markdown(
                                     f"""<center><h5><span style='color:{color};'>{label_name}</span></h5></center>""",
                                     unsafe_allow_html=True,
@@ -369,24 +341,16 @@ with st.container():
                                     if label == "Relevance_Label_0":
                                         # Need to inverse the presentation, because queries with many irrelevant are hard
                                         st.write("**Hard queries:**")
-                                        st.write(
-                                            ", ".join(map(str, difficulty["easy"]))
-                                        )
+                                        st.write(", ".join(map(str, difficulty["easy"])))
 
                                         st.write("**Easy queries:**")
-                                        st.write(
-                                            ", ".join(map(str, difficulty["hard"]))
-                                        )
+                                        st.write(", ".join(map(str, difficulty["hard"])))
                                     else:
                                         st.write("**Hard queries:**")
-                                        st.write(
-                                            ", ".join(map(str, difficulty["hard"]))
-                                        )
+                                        st.write(", ".join(map(str, difficulty["hard"])))
 
                                         st.write("**Easy queries:**")
-                                        st.write(
-                                            ", ".join(map(str, difficulty["easy"]))
-                                        )
+                                        st.write(", ".join(map(str, difficulty["easy"])))
 
                                 with col2in:
                                     st.write(
@@ -470,11 +434,8 @@ with st.container():
                             )
 
         with st.expander("Manually Examine Sampled Queries"):
-
             st.dataframe(
-                st.session_state.qme_selected_queries_random[
-                    ["query_id", "query_text"]
-                ],
+                st.session_state.qme_selected_queries_random[["query_id", "query_text"]],
                 use_container_width=True,
                 hide_index=True,
             )

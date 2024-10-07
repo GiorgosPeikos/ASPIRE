@@ -3,7 +3,22 @@ import ast
 import numpy as np
 import pandas as pd
 import streamlit as st
+import re
 from utils.eval_single_exp import get_experiment_name
+
+
+def sort_query_ids(query_ids):
+    def extract_number(query_id):
+        try:
+            # Convert query_id to string
+            query_id_str = str(query_id)
+            match = re.search(r'\d+', query_id_str)
+            return int(match.group()) if match else float('inf')
+        except:
+            # If any error occurs, return infinity to sort it to the end
+            return float('inf')
+
+    return sorted(query_ids, key=extract_number)
 
 
 # Helper function to get judgements for a specific label
@@ -49,19 +64,18 @@ def get_query_rel_judgements(qrels):
 
     # Prepare results dictionary
     results = {}
-    for i, query_id in enumerate(relevance_counts.index, start=1):
-        results[i] = {
+    for query_id in relevance_counts.index:
+        results[query_id] = {
             "irrelevant": int(relevance_counts.loc[query_id, "Irrelevant"]),
             "relevant": {},
         }
         for column in relevance_counts.columns:
             if column != "Irrelevant":
-                results[i]["relevant"][column] = int(
+                results[query_id]["relevant"][column] = int(
                     relevance_counts.loc[query_id, column]
                 )
 
     return relevance_counts, results
-
 
 def compare_relevance_labels(data, queries, relevance_labels):
     results = {}
@@ -149,7 +163,7 @@ def compare_relevance_labels(data, queries, relevance_labels):
 @st.cache_data
 def analyze_query_judgements(data):
     analysis_results = {}
-    queries = list(data.keys())
+    queries = sort_query_ids(list(data.keys()))  # Sort the query IDs
     # Get all relevance labels, including 'Relevance_Label_0' for irrelevant judgements
     relevance_labels = ["Relevance_Label_0"] + list(data[queries[0]]["relevant"].keys())
 
@@ -157,15 +171,16 @@ def analyze_query_judgements(data):
     sorted_queries = {}
     for label in relevance_labels:
         label_judgements = get_label_judgements(data, queries, label)
-        # Sort queries by judgement count in descending order
+        # Sort queries by judgement count in descending order, but maintain the original query order for equal counts
         sorted_queries[label] = sorted(
-            label_judgements.items(), key=lambda x: x[1], reverse=True
+            label_judgements.items(),
+            key=lambda x: (-x[1], queries.index(x[0]))
         )
     analysis_results["sorted_queries"] = sorted_queries
 
     # 2. Calculate statistics for each relevance label
     for label in relevance_labels:
-        values = list(get_label_judgements(data, queries, label).values())
+        values = [get_label_judgements(data, queries, label)[q] for q in queries]
         analysis_results[f"{label}_stats"] = {
             "mean": np.mean(values),
             "median": np.median(values),
@@ -177,7 +192,7 @@ def analyze_query_judgements(data):
     # 3. Identify hard, normal, and very easy queries for each label and overall
     analysis_results["query_difficulty"] = {}
     for label in relevance_labels:
-        values = get_label_judgements(data, queries, label)
+        values = {q: get_label_judgements(data, queries, label)[q] for q in queries}
         difficulty_classification = classify_queries(values)
         analysis_results["query_difficulty"][label] = difficulty_classification
 

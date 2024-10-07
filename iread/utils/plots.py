@@ -1,7 +1,7 @@
 import math
 import random
 from collections import defaultdict
-
+import re
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -16,6 +16,14 @@ from utils.eval_query_text_based import (query_clf_relevance_assessments,
                                          remove_stopwords_from_queries)
 from utils.eval_single_exp import get_experiment_name
 from wordcloud import WordCloud
+
+
+def sort_query_ids(query_ids):
+    def extract_number(query_id):
+        match = re.search(r'\d+', query_id)
+        return int(match.group()) if match else float('inf')
+
+    return sorted(query_ids, key=extract_number)
 
 
 # Function that displays the distribution of ranking position of all retrieved documents based on their relevance label.
@@ -204,11 +212,6 @@ def plot_performance_measures_per_q(data):
     eval_measures = list(data[list(data.keys())[0]].keys())
     runs = list(data.keys())
 
-    # Determine the maximum number of queries
-    max_queries = max(
-        len(data[run][measure][measure]) for run in runs for measure in eval_measures
-    )
-
     # Create a subplot for each measure
     fig = make_subplots(rows=len(eval_measures), cols=1, subplot_titles=eval_measures)
 
@@ -218,13 +221,25 @@ def plot_performance_measures_per_q(data):
     base_patterns = ["", "/", "x", "-", "|", "+", "."]
     patterns = [base_patterns[i % len(base_patterns)] for i in range(len(runs))]
 
-    # Check if any query ID is longer than 5 characters
-    long_labels = any(len(str(x)) > 5 for x in range(1, max_queries + 1))
+    # Get all unique query IDs across all runs and measures, and sort them
+    all_query_ids = set()
+    for run in runs:
+        for measure in eval_measures:
+            all_query_ids.update(data[run][measure]['query_id'])
+    sorted_query_ids = sort_query_ids(list(all_query_ids))
 
     for i, measure in enumerate(eval_measures, start=1):
         for j, run in enumerate(runs):
-            y_values = data[run][measure][measure]
-            x_values = list(range(1, len(y_values) + 1))  # Start from 1 instead of 0
+            y_values = []
+            x_values = []
+            for query_id in sorted_query_ids:
+                if query_id in data[run][measure]['query_id']:
+                    index = data[run][measure]['query_id'].index(query_id)
+                    y_values.append(data[run][measure][measure][index])
+                    x_values.append(query_id)
+                else:
+                    y_values.append(None)
+                    x_values.append(query_id)
 
             fig.add_trace(
                 go.Bar(
@@ -235,9 +250,7 @@ def plot_performance_measures_per_q(data):
                     marker_pattern_shape=patterns[j],
                     opacity=0.8,
                     showlegend=(i == 1),  # Only show legend for the first subplot
-                    hovertemplate="Query: %{x}<br>Difference: %{y:.3f}<br>Run: "
-                    + run
-                    + "<extra></extra>",  # Show query number and y-value with 3 decimal places
+                    hovertemplate="Query: %{x}<br>" + f"{measure}: " + "%{y:.3f}<br>Run: " + run + "<extra></extra>",
                 ),
                 row=i,
                 col=1,
@@ -245,28 +258,15 @@ def plot_performance_measures_per_q(data):
 
         # Update y-axis title and x-axis settings
         fig.update_yaxes(title_text=f"{measure} Value", row=i, col=1)
-
-        if long_labels:
-            fig.update_xaxes(
-                title_text="Query ID",
-                tickmode="array",
-                tickvals=list(range(1, max_queries + 1, 5)),  # Show every 5th tick
-                ticktext=[str(x) for x in range(1, max_queries + 1, 5)],
-                tickangle=90,  # Rotate labels 90 degrees
-                range=[0.5, max_queries + 0.5],  # Ensure all bars are visible
-                row=i,
-                col=1,
-            )
-        else:
-            fig.update_xaxes(
-                title_text="Query ID",
-                tickmode="linear",
-                tick0=1,
-                dtick=1,
-                range=[0.5, max_queries + 0.5],  # Ensure all bars are visible
-                row=i,
-                col=1,
-            )
+        fig.update_xaxes(
+            title_text="Query ID",
+            tickmode="array",
+            tickvals=sorted_query_ids,
+            ticktext=sorted_query_ids,
+            tickangle=90,
+            row=i,
+            col=1,
+        )
 
     # Update layout
     fig.update_layout(
@@ -600,6 +600,10 @@ def plot_performance_difference_threshold(data, threshold):
 def plot_query_relevance_judgements(selected_qrel):
     relevance_counts, results = get_query_rel_judgements(selected_qrel)
 
+    # Sort the query IDs
+    sorted_query_ids = sort_query_ids(relevance_counts.index)
+    relevance_counts = relevance_counts.loc[sorted_query_ids]
+
     # Create subplots
     fig = make_subplots(
         rows=1, cols=1, subplot_titles=["Relevance Judgements per Query"]
@@ -632,9 +636,7 @@ def plot_query_relevance_judgements(selected_qrel):
         fig.add_trace(
             go.Bar(
                 name=column,
-                x=[
-                    i + 1 for i in range(len(relevance_counts.index))
-                ],  # Adjust x-axis to start from 1
+                x=relevance_counts.index,
                 y=relevance_counts[column],
                 text=relevance_counts[column],
                 textposition="auto",
@@ -662,24 +664,12 @@ def plot_query_relevance_judgements(selected_qrel):
     )
 
     # Update x-axis settings
-    max_queries = len(relevance_counts.index)
-    long_labels = any(len(str(x)) > 5 for x in relevance_counts.index)
-
-    if long_labels:
-        fig.update_xaxes(
-            tickmode="array",
-            tickvals=list(range(1, max_queries + 1)),  # Start from 1
-            ticktext=[str(x) for x in range(1, max_queries + 1)],  # Start from 1
-            tickangle=90,
-            range=[0.5, max_queries + 0.5],  # Adjust range
-        )
-    else:
-        fig.update_xaxes(
-            tickmode="linear",
-            tick0=1,  # Start from 1
-            dtick=1,
-            range=[0.5, max_queries + 0.5],  # Adjust range
-        )
+    fig.update_xaxes(
+        tickmode="array",
+        tickvals=relevance_counts.index,
+        ticktext=relevance_counts.index,
+        tickangle=90,
+    )
 
     # Display the plot in Streamlit
     st.plotly_chart(fig, use_container_width=True)

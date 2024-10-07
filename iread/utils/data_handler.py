@@ -3,13 +3,11 @@ import os
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import List, Union
-
 import pandas as pd
 import streamlit as st
 
 
 # Function to get all files present in folders and sub folders
-@st.cache_data
 def get_all_files(directory):
     """
     Recursively get all files in the directory and subdirectories with the given extensions.
@@ -202,3 +200,7 @@ def load_query_data(query_path):
         return pd.DataFrame({"query_id": query_ids, "query_text": query_texts})
     else:
         raise ValueError("Unsupported file format")
+
+
+def refresh_file_list():
+    return get_all_files("../retrieval_experiments/")

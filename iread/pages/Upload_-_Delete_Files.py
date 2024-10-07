@@ -1,7 +1,6 @@
 import os
-
 import streamlit as st
-from utils.data_handler import get_all_files
+from utils.data_handler import get_all_files, refresh_file_list
 
 st.markdown(
     """<div style="text-align: center;"><h1>Data Management<h1></div>""",
@@ -104,14 +103,16 @@ if st.button("Upload Files"):
 st.divider()
 st.markdown("<h2 style=color:red;>Delete Files</h2>", unsafe_allow_html=True)
 
-all_files = get_all_files("../retrieval_experiments/")
+# Refresh the file list
+all_files = refresh_file_list()
+
 # Create a dictionary to map file names to their relative paths
 file_dict = {os.path.basename(file): file for file in all_files}
 
 if all_files:
     selected_files = st.multiselect("Select files to delete", list(file_dict.keys()))
 
-    # 3. Delete Selected Files
+    # Delete Selected Files
     if st.button("Delete selected files"):
         for file_name in selected_files:
             relative_path = file_dict[file_name]
@@ -119,10 +120,10 @@ if all_files:
             os.remove(file_path)
             st.write(f"Deleted {relative_path}")
 
-        # Clear the cache after deletion
-        all_files.clear()
-
         # Refresh the file list after deletion
+        all_files = refresh_file_list()
+        file_dict = {os.path.basename(file): file for file in all_files}
+        st.success("File list updated after deletion.")
         st.rerun()
 else:
     st.write("No files to display.")

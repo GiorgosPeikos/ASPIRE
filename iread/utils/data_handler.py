@@ -250,7 +250,7 @@ def read_xml_file(file_path):
         query_texts = []
 
         for topic in root.findall(".//topic"):
-            query_id = topic.get("number")
+            query_id = str(topic.get("number"))
             query_text = "".join(topic.itertext()).strip()
             query_ids.append(query_id)
             query_texts.append(query_text)

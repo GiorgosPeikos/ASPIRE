@@ -42,83 +42,25 @@ def load_run_data(file_path: Union[str, Path]) -> pd.DataFrame:
     # Define expected columns
     expected_columns = ["query_id", "iteration", "doc_id", "rank", "score", "tag"]
 
-    # Detect delimiter and check for header
+    # Read the file content
     with open(file_path, "r") as file:
-        sample = file.read(1024)
-        dialect = csv.Sniffer().sniff(sample)
-        delimiter = dialect.delimiter
-        try:
-            has_header = csv.Sniffer().has_header(sample)
-        except csv.Error:
-            has_header = False
+        lines = file.readlines()
 
-    # Read the first few lines to check the number of columns
-    df_sample = pd.read_csv(file_path, nrows=5, delimiter=delimiter, header=None)
+    # Check if the file has a header
+    first_line = lines[0].strip().split()
+    has_header = len(first_line) == len(expected_columns) and not first_line[0].startswith('query_')
 
-    if df_sample.shape[1] == len(expected_columns) and not has_header:
-        # Case: No header, correct number of columns
-        df = pd.read_csv(
-            file_path,
-            delimiter=delimiter,
-            header=None,
-            names=expected_columns,
-            engine="python",
-        )
-    else:
-        # Case: Has header or incorrect number of columns
-        df = pd.read_csv(
-            file_path,
-            delimiter=delimiter,
-            header=0 if has_header else None,
-            engine="python",
-        )
+    # Parse the lines
+    data = []
+    for line in lines[1:] if has_header else lines:
+        parts = line.strip().split()
+        if len(parts) >= 6:
+            query_id, iteration, doc_id, rank, score, *tag = parts
+            tag = ' '.join(tag)  # Join the remaining parts as the tag
+            data.append([query_id, iteration, doc_id, rank, score, tag])
 
-        # If no header, use the first row as header
-        if not has_header:
-            df.columns = df.iloc[0]
-            df = df.drop(df.index[0]).reset_index(drop=True)
-
-        # Lowercase column names for consistency
-        df.columns = df.columns.str.lower()
-
-        # Map variations of column names
-        column_mapping = {
-            "qid": "query_id",
-            "q_id": "query_id",
-            "queryid": "query_id",
-            "queryID": "query_id",
-            "docno": "doc_id",
-            "doc_no": "doc_id",
-            "document_no": "doc_id",
-            "doc_rank": "rank",
-            "ranking": "rank",
-            "rank_pos": "rank",
-            "relevance_score": "score",
-            "rel_score": "score",
-            "document_identifier": "doc_id",
-            "docid": "doc_id_to_drop",  # We'll drop this column later
-            "doc_id": "doc_id_to_drop",  # We'll drop this column later
-            "document_id": "doc_id_to_drop",  # We'll drop this column later
-            "label": "tag",
-        }
-
-        # Rename columns based on mapping
-        df = df.rename(columns=column_mapping)
-
-        # Drop unnecessary columns
-        columns_to_drop = ["query", "doc_id_to_drop"]
-        df = df.drop(columns=[col for col in columns_to_drop if col in df.columns])
-
-        # Ensure all required columns are present
-        for col in expected_columns:
-            if col not in df.columns:
-                df[col] = "Q0"
-
-        # Ensure unique column names
-        df.columns = make_unique_column_names(list(df.columns))
-
-        # Ensure columns are in the correct order
-        df = df.reindex(columns=expected_columns, fill_value="MISSING")
+    # Create DataFrame
+    df = pd.DataFrame(data, columns=expected_columns)
 
     # Convert data types
     df["query_id"] = df["query_id"].astype(str)
@@ -127,8 +69,8 @@ def load_run_data(file_path: Union[str, Path]) -> pd.DataFrame:
     df["rank"] = pd.to_numeric(df["rank"], errors="coerce")
     df["score"] = pd.to_numeric(df["score"], errors="coerce")
 
-    # If 'tag' column is empty or all values are 'MISSING', fill it with the file name
-    if df["tag"].isna().all() or (df["tag"] == "").all() or (df["tag"] == "Q0").all():
+    # If 'tag' column is empty, fill it with the file name
+    if df["tag"].isna().all() or (df["tag"] == "").all():
         df["tag"] = file_name
 
     return df
@@ -138,7 +80,7 @@ def load_run_data(file_path: Union[str, Path]) -> pd.DataFrame:
 @st.cache_data
 def load_qrel_data(qrel_path):
     # Define expected columns
-    expected_columns = ["query_id", "iteration", "doc_id", "relevance"]
+    expected_columns = ["query_id", "doc_id", "relevance"]
 
     # Determine the file extension
     file_extension = os.path.splitext(qrel_path)[1].lower()
@@ -157,7 +99,7 @@ def load_qrel_data(qrel_path):
                 dialect=dialect,
                 header=None,
                 names=expected_columns,
-                dtype={"query_id": str, "iteration": str, "doc_id": str, "relevance": str},
+                dtype={"query_id": str, "doc_id": str, "relevance": str},
                 engine="python",
             )
 

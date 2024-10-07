@@ -137,69 +137,128 @@ def load_run_data(file_path: Union[str, Path]) -> pd.DataFrame:
 # Function to load qrels data with caching
 @st.cache_data
 def load_qrel_data(qrel_path):
-    # Reads a CSV file into a DataFrame for qrel data
-    return pd.read_csv(
-        qrel_path,
-        names=["query_id", "iteration", "doc_id", "relevance"],
-        delimiter="[ \t]",
-        dtype={"query_id": str, "iteration": str, "doc_id": str, "relevance": int},
-        index_col=None,
-        engine="python",
-        header=0,
-    )
-
-
-@st.cache_data
-# Function to load queries. Supported formats: csv, txt, xml
-def load_query_data(query_path):
+    # Define expected columns
+    expected_columns = ["query_id", "iteration", "doc_id", "relevance"]
 
     # Determine the file extension
-    file_extension = os.path.splitext(query_path)[1].lower()
+    file_extension = os.path.splitext(qrel_path)[1].lower()
 
-    if file_extension in [".csv", ".txt", ".xlsx", ".tsv"]:
+    if file_extension in [".txt", ".csv", ".tsv"]:
         try:
             # Read a sample of the file
-            with open(query_path, 'r') as csvfile:
+            with open(qrel_path, 'r') as csvfile:
                 sample = csvfile.read(1024)
                 sniffer = csv.Sniffer()
-                has_header = sniffer.has_header(sample)
                 dialect = sniffer.sniff(sample)
 
             # Use the sniffed information to read the CSV
-            return pd.read_csv(
-                query_path,
+            df = pd.read_csv(
+                qrel_path,
                 dialect=dialect,
-                header=0 if has_header else None,
-                dtype={"query_id": str, "query_text": str},
-                index_col=None,
-                # on_bad_lines='skip',  # This will skip problematic rows
+                header=None,
+                names=expected_columns,
+                dtype={"query_id": str, "iteration": str, "doc_id": str, "relevance": str},
+                engine="python",
             )
+
+            # Convert relevance to numeric, replacing non-numeric values with 0
+            df["relevance"] = pd.to_numeric(df["relevance"], errors="coerce").fillna(0).astype(int)
+            return df
 
         except (pd.errors.ParserError, csv.Error) as e:
             st.error(f"Error reading file: {e}")
-            st.error("Please check your CSV file for inconsistencies.")
+            st.error("Please check your QREL file for inconsistencies.")
             return pd.DataFrame()  # Return an empty DataFrame if there's an error
 
+    else:
+        raise ValueError("Unsupported file format for QREL data")
+
+
+@st.cache_data
+def load_query_data(query_path):
+    file_extension = os.path.splitext(query_path)[1].lower()
+
+    if file_extension in [".csv", ".tsv", ".txt"]:
+        return read_delimited_file(query_path)
+    elif file_extension == ".xlsx":
+        return read_excel_file(query_path)
     elif file_extension == ".xml":
-        # Parse XML and extract the required data
-        tree = ET.parse(query_path)
+        return read_xml_file(query_path)
+    else:
+        raise ValueError("Unsupported file format")
+
+
+def read_delimited_file(file_path):
+    try:
+        with open(file_path, 'r') as file:
+            sample = file.read(1024)
+            sniffer = csv.Sniffer()
+            has_header = sniffer.has_header(sample)
+            dialect = sniffer.sniff(sample)
+
+        if file_path.endswith('.txt'):
+            # For .txt files, try common delimiters
+            delimiters = ['\t', ',']
+            for delimiter in delimiters:
+                try:
+                    df = pd.read_csv(
+                        file_path,
+                        sep=delimiter,
+                        header=0 if has_header else None,
+                        names=['query_id', 'query_text'] if not has_header else None,
+                        dtype={"query_id": str, "query_text": str},
+                        engine='python'
+                    )
+                    if len(df.columns) == 2:
+                        return df
+                except:
+                    continue
+            raise ValueError("Could not determine delimiter for .txt file")
+        else:
+            return pd.read_csv(
+                file_path,
+                dialect=dialect,
+                header=0 if has_header else None,
+                names=['query_id', 'query_text'] if not has_header else None,
+                dtype={"query_id": str, "query_text": str},
+                engine='python'
+            )
+    except Exception as e:
+        st.error(f"Error reading file: {e}")
+        st.error("Please check your file for inconsistencies.")
+        return pd.DataFrame()
+
+
+def read_excel_file(file_path):
+    try:
+        df = pd.read_excel(file_path, dtype={"query_id": str, "query_text": str})
+        if len(df.columns) != 2:
+            raise ValueError("Excel file must have exactly two columns: query_id and query_text")
+        df.columns = ['query_id', 'query_text']
+        return df
+    except Exception as e:
+        st.error(f"Error reading Excel file: {e}")
+        return pd.DataFrame()
+
+
+def read_xml_file(file_path):
+    try:
+        tree = ET.parse(file_path)
         root = tree.getroot()
 
-        # Create lists to store query_id and query_text
         query_ids = []
         query_texts = []
 
-        # Iterate through each 'topic' in the XML and extract required information
         for topic in root.findall(".//topic"):
             query_id = topic.get("number")
             query_text = "".join(topic.itertext()).strip()
             query_ids.append(query_id)
             query_texts.append(query_text)
 
-        # Create a DataFrame from the lists
         return pd.DataFrame({"query_id": query_ids, "query_text": query_texts})
-    else:
-        raise ValueError("Unsupported file format")
+    except Exception as e:
+        st.error(f"Error reading XML file: {e}")
+        return pd.DataFrame()
 
 
 def refresh_file_list():

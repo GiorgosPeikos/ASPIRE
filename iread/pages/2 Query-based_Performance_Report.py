@@ -470,6 +470,7 @@ with st.container():
                             )
 
         with st.expander("Manually Examine Sampled Queries"):
+
             st.dataframe(
                 st.session_state.qme_selected_queries_random[
                     ["query_id", "query_text"]

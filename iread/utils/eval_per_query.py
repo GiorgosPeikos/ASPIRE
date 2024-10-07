@@ -50,7 +50,6 @@ def calculate_median_metrics(
 
     return median_results
 
-
 @st.cache_data
 def per_query_evaluation(
     qrel,
@@ -75,9 +74,12 @@ def per_query_evaluation(
             experiment = get_experiment_name(run_name, baseline_run)
             results_per_run[experiment] = {}
             for parsed_metric in parsed_metrics:
-                results_per_run[experiment][str(parsed_metric)] = calculate_evaluation(
-                    parsed_metric, qrel, run_data
-                )
+                results = calculate_evaluation(parsed_metric, qrel, run_data)
+                for metric_name, metric_data in results.items():
+                    results_per_run[experiment][metric_name] = {
+                        metric_name: metric_data['values'],
+                        'query_id': metric_data['query_ids']
+                    }
 
         # Call the plot function per measure scores
         plot_performance_measures_per_q(results_per_run)
@@ -137,28 +139,24 @@ def per_query_evaluation(
 
 
 @st.cache_data
-def find_same_performance_queries(data, runs, measure, max_queries):
+def find_same_performance_queries(data, runs, measure):
     same_performance = []
-    for query_id in range(max_queries):
-        values = [
-            (
-                data[run][measure][measure][query_id]
-                if query_id < len(data[run][measure][measure])
-                else None
-            )
-            for run in runs
-        ]
-        if all(
-            v is not None and abs(v - values[0]) < 1e-6 for v in values
-        ):  # Using small epsilon for float comparison
-            same_performance.append(query_id + 1)  # +1 to make it 1-indexed
+    first_run = runs[0]
+    query_ids = data[first_run][measure]['query_id']
+
+    for idx, query_id in enumerate(query_ids):
+        values = [data[run][measure][measure][idx] for run in runs if idx < len(data[run][measure][measure])]
+        if all(v is not None and abs(v - values[0]) < 1e-6 for v in values):  # Using small epsilon for float comparison
+            same_performance.append(query_id)
     return same_performance
 
 
 @st.cache_data
-def find_large_gap_queries(data, runs, measure, max_queries):
+def find_large_gap_queries(data, runs, measure):
     large_gaps = []
     all_values = []
+    first_run = runs[0]
+    query_ids = data[first_run][measure]['query_id']
 
     # Collect all values for this measure across all runs and queries
     for run in runs:
@@ -172,21 +170,13 @@ def find_large_gap_queries(data, runs, measure, max_queries):
     # Define the threshold as 1.5 times the IQR
     threshold = 1.5 * iqr
 
-    for query_id in range(max_queries):
-        values = [
-            (
-                data[run][measure][measure][query_id]
-                if query_id < len(data[run][measure][measure])
-                else None
-            )
-            for run in runs
-        ]
+    for idx, query_id in enumerate(query_ids):
+        values = [data[run][measure][measure][idx] for run in runs if idx < len(data[run][measure][measure])]
         values = [v for v in values if v is not None]
         if values and max(values) - min(values) > threshold:
-            large_gaps.append((query_id + 1, min(values), max(values), threshold))
+            large_gaps.append((query_id, min(values), max(values), threshold))
 
     return large_gaps, threshold
-
 
 @st.cache_data
 def analyze_performance_perq(data):
@@ -194,17 +184,10 @@ def analyze_performance_perq(data):
     eval_measures = list(data[list(data.keys())[0]].keys())
     runs = list(data.keys())
 
-    # Determine the maximum number of queries
-    max_queries = max(
-        len(data[run][measure][measure]) for run in runs for measure in eval_measures
-    )
-
     results = {}
     for measure in eval_measures:
-        same_performance = find_same_performance_queries(
-            data, runs, measure, max_queries
-        )
-        large_gaps, threshold = find_large_gap_queries(data, runs, measure, max_queries)
+        same_performance = find_same_performance_queries(data, runs, measure)
+        large_gaps, threshold = find_large_gap_queries(data, runs, measure)
 
         results[measure] = {
             "same_performance": same_performance,
@@ -213,7 +196,6 @@ def analyze_performance_perq(data):
         }
 
     return results
-
 
 @st.cache_data
 def analyze_performance_difference_median(data):

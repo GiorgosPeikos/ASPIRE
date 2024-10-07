@@ -21,17 +21,27 @@ def calculate_evaluation(parsed_metric, qrel, run_data):
     - evaluation_results (dict): Dictionary of evaluation scores computed for the run based on parsed_metric.
     """
     metric_scores = defaultdict(list)
+    query_ids = []
     if isinstance(parsed_metric, list):
         for metric in parsed_metric:
             for metric_result in ir_measures.iter_calc([metric], qrel, run_data):
                 metric_name = str(metric_result.measure)
                 metric_value = metric_result.value
                 metric_scores[metric_name].append(metric_value)
+                query_ids.append(metric_result.query_id)
     else:
         for metric_result in ir_measures.iter_calc([parsed_metric], qrel, run_data):
             metric_name = str(metric_result.measure)
             metric_value = metric_result.value
             metric_scores[metric_name].append(metric_value)
+            query_ids.append(metric_result.query_id)
+
+    # Add query_ids to the output
+    for metric_name in metric_scores:
+        metric_scores[metric_name] = {
+            'values': metric_scores[metric_name],
+            'query_ids': query_ids
+        }
 
     return dict(metric_scores)
 
@@ -66,9 +76,11 @@ def evaluate_multiple_runs_custom(
                 baseline_experiment[str(parsed_metric)] = calculate_evaluation(
                     parsed_metric, qrel, run_data
                 )
-                metric_values = list(baseline_experiment[str(parsed_metric)].values())
+                metric_values = baseline_experiment[str(parsed_metric)][str(parsed_metric)]['values']
+                query_ids = baseline_experiment[str(parsed_metric)][str(parsed_metric)]['query_ids']
                 statistical_results[experiment][str(parsed_metric)] = {
-                    "mean": np.mean(metric_values)
+                    "mean": np.mean(metric_values),
+                    "query_ids": query_ids
                 }
 
     # Determine if correction is needed (more than 2 experiments)
@@ -86,14 +98,21 @@ def evaluate_multiple_runs_custom(
                 results_per_run[str(parsed_metric)] = calculate_evaluation(
                     parsed_metric, qrel, run_data
                 )
-                metric_values = list(results_per_run[str(parsed_metric)].values())
+                metric_values = results_per_run[str(parsed_metric)][str(parsed_metric)]['values']
+                query_ids = results_per_run[str(parsed_metric)][str(parsed_metric)]['query_ids']
                 mean_value = np.mean(metric_values)
 
-                baseline_values = list(baseline_experiment[str(parsed_metric)].values())
+                baseline_values = baseline_experiment[str(parsed_metric)][str(parsed_metric)]['values']
+                baseline_query_ids = baseline_experiment[str(parsed_metric)][str(parsed_metric)]['query_ids']
 
-                if len(baseline_values[0]) > 1 and len(metric_values[0]) > 1:
+                # Ensure we're comparing the same queries
+                common_query_ids = set(query_ids) & set(baseline_query_ids)
+                metric_values = [v for v, qid in zip(metric_values, query_ids) if qid in common_query_ids]
+                baseline_values = [v for v, qid in zip(baseline_values, baseline_query_ids) if qid in common_query_ids]
+
+                if len(baseline_values) > 1 and len(metric_values) > 1:
                     t_statistic, p_value = stats.ttest_rel(
-                        baseline_values[0], metric_values[0]
+                        baseline_values, metric_values
                     )
 
                     if np.isnan(t_statistic) or np.isnan(p_value):
@@ -109,6 +128,7 @@ def evaluate_multiple_runs_custom(
                         "corrected_p_value": None,  # Placeholder
                         "reject": None,  # Placeholder
                         "t_statistic": t_statistic,
+                        "query_ids": list(common_query_ids)  # Store the common query IDs
                     }
                 else:
                     print(
@@ -120,6 +140,7 @@ def evaluate_multiple_runs_custom(
                         "corrected_p_value": float("nan"),
                         "reject": False,
                         "t_statistic": float("nan"),
+                        "query_ids": list(common_query_ids)  # Store the common query IDs
                     }
 
         # Apply per-measure correction if needed
@@ -171,7 +192,7 @@ def get_doc_intersection(runs, baseline, selected_cutoff):
         all_queries.update(run_data["query_id"])
         all_docs.update(run_data["doc_id"])
 
-    query_map = {q: i for i, q in enumerate(all_queries)}
+    query_map = {q: q for q in all_queries}  # Preserve string query IDs
     doc_map = {d: i for i, d in enumerate(all_docs)}
 
     n_queries = len(all_queries)
@@ -185,7 +206,7 @@ def get_doc_intersection(runs, baseline, selected_cutoff):
     for i, (run_name, run_data) in enumerate(runs.items()):
         for _, row in run_data.iterrows():
             if row["rank"] <= selected_cutoff:
-                q_idx = query_map[row["query_id"]]
+                q_idx = list(query_map.keys()).index(row["query_id"])
                 d_idx = doc_map[row["doc_id"]]
                 data[i, q_idx, d_idx] = True
 
@@ -223,7 +244,7 @@ def get_docs_retrieved_by_all_systems(runs, selected_cutoff, sample_size):
         all_queries.update(run_data["query_id"])
         all_docs.update(run_data["doc_id"])
 
-    query_map = {q: i for i, q in enumerate(all_queries)}
+    query_map = {q: q for q in all_queries}  # Preserve string query IDs
     doc_map = {d: i for i, d in enumerate(all_docs)}
 
     n_queries = len(all_queries)
@@ -237,7 +258,7 @@ def get_docs_retrieved_by_all_systems(runs, selected_cutoff, sample_size):
     for i, (run_name, run_data) in enumerate(runs.items()):
         for _, row in run_data.iterrows():
             if row["rank"] <= selected_cutoff:
-                q_idx = query_map[row["query_id"]]
+                q_idx = list(query_map.keys()).index(row["query_id"])
                 d_idx = doc_map[row["doc_id"]]
                 data[i, q_idx, d_idx] = True
 
@@ -248,7 +269,7 @@ def get_docs_retrieved_by_all_systems(runs, selected_cutoff, sample_size):
     retrieved_docs = []
     queries_with_retrieved_docs = set()
     for q_idx, d_idx in zip(*np.where(docs_retrieved_by_all)):
-        query_id = list(query_map.keys())[list(query_map.values()).index(q_idx)]
+        query_id = list(query_map.keys())[q_idx]
         doc_id = list(doc_map.keys())[list(doc_map.values()).index(d_idx)]
         retrieved_docs.append(doc_id)
         queries_with_retrieved_docs.add(query_id)

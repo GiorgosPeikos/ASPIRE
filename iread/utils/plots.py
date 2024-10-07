@@ -208,6 +208,15 @@ def generate_colors(n):
 
 @st.cache_data
 def plot_performance_measures_per_q(data):
+    # Debugging: Print out the structure of the data
+    # st.write("Data structure:")
+    # for run in data:
+    #     st.write(f"Run: {run}")
+    #     for measure in data[run]:
+    #         st.write(f"  Measure: {measure}")
+    #         st.write(f"    Keys: {data[run][measure].keys()}")
+    #         st.write(f"    Data: {data[run][measure]}")
+
     # Extract measures and runs
     eval_measures = list(data[list(data.keys())[0]].keys())
     runs = list(data.keys())
@@ -225,26 +234,36 @@ def plot_performance_measures_per_q(data):
     all_query_ids = set()
     for run in runs:
         for measure in eval_measures:
-            all_query_ids.update(data[run][measure]['query_id'])
+            # Check if 'query_id' exists in the data structure
+            if 'query_id' in data[run][measure]:
+                all_query_ids.update(data[run][measure]['query_id'])
+            else:
+                st.warning(f"'query_id' not found for run '{run}' and measure '{measure}'")
+                # Assume query IDs are the indices of the measure values
+                all_query_ids.update(range(len(data[run][measure][measure])))
+
     sorted_query_ids = sort_query_ids(list(all_query_ids))
 
     for i, measure in enumerate(eval_measures, start=1):
         for j, run in enumerate(runs):
-            y_values = []
-            x_values = []
-            for query_id in sorted_query_ids:
-                if query_id in data[run][measure]['query_id']:
-                    index = data[run][measure]['query_id'].index(query_id)
-                    y_values.append(data[run][measure][measure][index])
-                    x_values.append(query_id)
-                else:
-                    y_values.append(None)
-                    x_values.append(query_id)
+            if 'query_id' in data[run][measure]:
+                query_ids = data[run][measure]['query_id']
+            else:
+                query_ids = list(range(len(data[run][measure][measure])))
+            measure_values = data[run][measure][measure]
+
+            # Create a mapping of query_id to its index in sorted_query_ids
+            query_id_to_index = {qid: idx for idx, qid in enumerate(sorted_query_ids)}
+
+            # Sort the data based on the order in sorted_query_ids
+            sorted_indices = [query_id_to_index[qid] for qid in query_ids]
+            sorted_query_ids_run = [query_ids[i] for i in sorted_indices]
+            sorted_measure_values = [measure_values[i] for i in sorted_indices]
 
             fig.add_trace(
                 go.Bar(
-                    x=x_values,
-                    y=y_values,
+                    x=sorted_query_ids_run,
+                    y=sorted_measure_values,
                     name=run,
                     marker_color=colors[j],
                     marker_pattern_shape=patterns[j],

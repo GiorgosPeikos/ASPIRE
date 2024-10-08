@@ -115,6 +115,7 @@ def per_query_length_evaluation(
 
     return results_per_run
 
+
 @st.cache_data
 def query_clf_relevance_assessments(
     data: Dict[str, Dict],

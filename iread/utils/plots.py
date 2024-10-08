@@ -831,6 +831,24 @@ def plot_query_performance_vs_query_length_buckets(df, measure):
 
 @st.cache_data
 def plot_query_performance_vs_query_length(data):
+    # Debug: Print the structure of the results
+    # st.write("Debug: Results structure")
+    # st.write(data)
+    #
+    # # Flatten the nested dictionary structure
+    # flattened_data = []
+    # for run, run_data in data.items():
+    #     for measure, measure_data in run_data.items():
+    #         if measure != 'token_length':
+    #             for query_id, score in zip(measure_data['query_id'], measure_data[measure]):
+    #                 flattened_data.append({
+    #                     'Run': run,
+    #                     'Measure': measure,
+    #                     'Query ID': query_id,
+    #                     'Score': score,
+    #                     'Token Length': run_data['token_length']['token_length'].get(str(query_id), -1)
+    #                 })
+
     experiments = list(data.keys())
     measures_eval = [
         measure for measure in data[experiments[0]].keys() if measure != "token_length"
@@ -844,16 +862,21 @@ def plot_query_performance_vs_query_length(data):
 
         for measure in measures_eval:
             # Create DataFrame with token lengths, performance, and query IDs
-            df = pd.DataFrame(
+            df = pd.DataFrame([
                 {
-                    "Token Length": data[experiment]["token_length"]["token_length"],
-                    "Performance": data[experiment][measure][measure],
-                    "Query ID": range(1, len(data[experiment][measure][measure]) + 1),
+                    "Token Length": data[experiment]['token_length']['token_length'].get(str(query_id), -1),
+                    "Performance": score,
+                    "Query ID": query_id
                 }
-            )
+                for query_id, score in zip(data[experiment][measure]['query_id'], data[experiment][measure][measure])
+            ])
 
             # Remove rows where Token Length is -1 (placeholder for missing data)
             df = df[df["Token Length"] != -1]
+
+            if df.empty:
+                st.warning(f"No valid data available for {measure} in {experiment}. All token lengths were missing.")
+                continue
 
             # Create and display the combined plot
             fig_combined = plot_query_performance_vs_query_length_moving_avg(
@@ -866,40 +889,45 @@ def plot_query_performance_vs_query_length(data):
             st.plotly_chart(fig_buckets, use_container_width=True)
 
             # ANOVA analysis
-            f_statistic_ew, p_value_ew = stats.f_oneway(
-                *[
-                    group["Performance"].values
-                    for name, group in df.groupby(
-                        pd.cut(df["Token Length"], bins=10), observed=False
-                    )
-                ]
-            )
-            f_statistic_ef, p_value_ef = stats.f_oneway(
-                *[
-                    group["Performance"].values
-                    for name, group in df.groupby(
-                        pd.qcut(df["Token Length"], q=10, duplicates="drop"),
-                        observed=False,
-                    )
-                ]
-            )
+            if len(df) >= 20:  # Ensure we have enough data points for meaningful analysis
+                f_statistic_ew, p_value_ew = stats.f_oneway(
+                    *[
+                        group["Performance"].values
+                        for name, group in df.groupby(
+                            pd.cut(df["Token Length"], bins=10), observed=False
+                        )
+                        if len(group) > 0  # Ensure each group has at least one value
+                    ]
+                )
+                f_statistic_ef, p_value_ef = stats.f_oneway(
+                    *[
+                        group["Performance"].values
+                        for name, group in df.groupby(
+                            pd.qcut(df["Token Length"], q=10, duplicates="drop"),
+                            observed=False,
+                        )
+                        if len(group) > 0  # Ensure each group has at least one value
+                    ]
+                )
 
-            if p_value_ew < 0.05 or p_value_ef < 0.05:
-                st.write(
-                    f"""At least one of the bucketing methods shows statistically significant differences between buckets (p < <span style="color: red;">0.05</span>). 
-                            ANOVA results (Equal-width buckets): F-statistic = <span style="color: red;">{f_statistic_ew:.4f}</span>, p-value = <span style="color: red;">{p_value_ew:.4f}.</span>
-                            ANOVA results (Equal-frequency buckets): F-statistic = <span style="color: red;">{f_statistic_ef:.4f}</span>, p-value = <span style="color: red;">{p_value_ef:.4f}.</span>
-                            """,
-                    unsafe_allow_html=True,
-                )
+                if p_value_ew < 0.05 or p_value_ef < 0.05:
+                    st.write(
+                        f"""At least one of the bucketing methods shows statistically significant differences between buckets (p < <span style="color: red;">0.05</span>). 
+                                ANOVA results (Equal-width buckets): F-statistic = <span style="color: red;">{f_statistic_ew:.4f}</span>, p-value = <span style="color: red;">{p_value_ew:.4f}.</span>
+                                ANOVA results (Equal-frequency buckets): F-statistic = <span style="color: red;">{f_statistic_ef:.4f}</span>, p-value = <span style="color: red;">{p_value_ef:.4f}.</span>
+                                """,
+                        unsafe_allow_html=True,
+                    )
+                else:
+                    st.write(
+                        f"""Neither bucketing method shows statistically significant differences between buckets (p >= <span style="color: red;">0.05</span>).
+                                ANOVA results (Equal-width buckets): F-statistic = <span style="color: red;">{f_statistic_ew:.4f}</span>, p-value = <span style="color: red;">{p_value_ew:.4f}.</span>
+                                ANOVA results (Equal-frequency buckets): F-statistic = <span style="color: red;">{f_statistic_ef:.4f}</span>, p-value = <span style="color: red;">
+                                {p_value_ef:.4f}.</span>""",
+                        unsafe_allow_html=True,
+                    )
             else:
-                st.write(
-                    f"""Neither bucketing method shows statistically significant differences between buckets (p >= <span style="color: red;">0.05</span>).
-                            ANOVA results (Equal-width buckets): F-statistic = <span style="color: red;">{f_statistic_ew:.4f}</span>, p-value = <span style="color: red;">{p_value_ew:.4f}.</span>
-                            ANOVA results (Equal-frequency buckets): F-statistic = <span style="color: red;">{f_statistic_ef:.4f}</span>, p-value = <span style="color: red;">
-                            {p_value_ef:.4f}.</span>""",
-                    unsafe_allow_html=True,
-                )
+                st.warning(f"Not enough data points for ANOVA analysis in {measure} for {experiment}.")
 
 
 def create_relevance_wordclouds(query_relevance, queries, method, threshold) -> None:

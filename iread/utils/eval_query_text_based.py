@@ -32,7 +32,7 @@ def get_query_len(selected_queries):
 
     # Create the dictionary with query_id as key and len of tokens as value
     token_len_dict = {
-        row["query_id"]: row["token_len"] for index, row in selected_queries.iterrows()
+        str(row["query_id"]): row["token_len"] for index, row in selected_queries.iterrows()
     }
     return token_len_dict
 
@@ -45,19 +45,20 @@ def add_token_lengths(results, token_lengths):
             measure for measure in results[experiment] if measure != "token_length"
         )
 
-        # Use this measure to determine the number of queries
-        num_queries = len(results[experiment][first_measure][first_measure])
+        # Initialize token_length dictionary for this experiment
+        results[experiment]["token_length"] = {"token_length": {}}
 
-        results[experiment]["token_length"] = {"token_length": []}
-        for i in range(num_queries):
-            query_id = str(i + 1)  # Assuming query IDs start from 1
-            if query_id in token_lengths:
-                results[experiment]["token_length"]["token_length"].append(
-                    token_lengths[query_id]
-                )
+        # Iterate through each query in the first measure
+        for query_id in results[experiment][first_measure][first_measure]:
+            # Convert query_id to string if it's not already
+            query_id_str = str(query_id)
+
+            if query_id_str in token_lengths:
+                results[experiment]["token_length"]["token_length"][query_id_str] = token_lengths[query_id_str]
             else:
                 # If token length is not available, use a placeholder value (e.g., -1)
-                results[experiment]["token_length"]["token_length"].append(-1)
+                results[experiment]["token_length"]["token_length"][query_id_str] = -1
+
     return results
 
 
@@ -75,14 +76,14 @@ def preprocess_text(text):
 
 @st.cache_data
 def per_query_length_evaluation(
-    qrel,
-    runs,
-    selected_queries,
-    metric_list,
-    relevance_threshold,
-    selected_cutoff,
-    baseline_run,
-    threshold_value,
+        qrel,
+        runs,
+        selected_queries,
+        metric_list,
+        relevance_threshold,
+        selected_cutoff,
+        baseline_run,
+        threshold_value,
 ):
     results_per_run = {}
     parsed_metrics = []
@@ -92,21 +93,27 @@ def per_query_length_evaluation(
         parsed_metric = metric_parser(metric, relevance_threshold, selected_cutoff)
         parsed_metrics.append(parsed_metric)
 
-    if baseline_run is None and threshold_value is None:
-        # Calculate evaluation results for each other experiment and collect p-values
-        for run_name, run_data in runs.items():
-            experiment = get_experiment_name(run_name, baseline_run)
-            results_per_run[experiment] = {}
-            for parsed_metric in parsed_metrics:
-                results_per_run[experiment][str(parsed_metric)] = calculate_evaluation(
-                    parsed_metric, qrel, run_data
-                )
+    # Get query lengths
+    query_length = get_query_len(selected_queries)
 
-        query_length = get_query_len(selected_queries)
-        results = add_token_lengths(results_per_run, query_length)
+    # Calculate evaluation results for each experiment
+    for run_name, run_data in runs.items():
+        experiment = get_experiment_name(run_name, baseline_run)
+        results_per_run[experiment] = {}
+        for parsed_metric in parsed_metrics:
+            results = calculate_evaluation(parsed_metric, qrel, run_data)
+            for metric_name, metric_data in results.items():
+                results_per_run[experiment][metric_name] = {
+                    metric_name: metric_data['values'],
+                    'query_id': metric_data['query_ids']
+                }
 
-        return results
+        # Add token lengths to results
+        results_per_run[experiment]['token_length'] = {
+            'token_length': {str(qid): query_length.get(str(qid), -1) for qid in metric_data['query_ids']}
+        }
 
+    return results_per_run
 
 @st.cache_data
 def query_clf_relevance_assessments(

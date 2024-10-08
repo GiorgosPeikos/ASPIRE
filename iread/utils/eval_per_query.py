@@ -204,6 +204,7 @@ def analyze_performance_perq(data):
 
     return results
 
+
 @st.cache_data
 def analyze_performance_difference_median(data):
     analysis_results = {}

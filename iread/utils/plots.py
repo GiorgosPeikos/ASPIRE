@@ -223,7 +223,7 @@ def plot_performance_measures_per_q(data):
     runs = list(data.keys())
 
     # Create a subplot for each measure
-    fig = make_subplots(rows=len(eval_measures), cols=1, subplot_titles=eval_measures, vertical_spacing=0.15)
+    fig = make_subplots(rows=len(eval_measures), cols=1, subplot_titles=eval_measures, vertical_spacing=0.3)
 
     # Generate more colors if needed
     colors = plt.cm.rainbow(np.linspace(0, 1, len(runs)))

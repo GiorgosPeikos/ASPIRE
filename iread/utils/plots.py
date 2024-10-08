@@ -1134,7 +1134,7 @@ def plot_performance_similarity(
                         outlinewidth=0,
                     ),
                 ),
-                showlegend=False,  # Add this line
+                showlegend=False,
                 text=[
                     f"Query ID: {q_id}<br>{measure}: {score:.4f}"
                     for q_id, score in zip(
@@ -1165,7 +1165,7 @@ def plot_performance_similarity(
                         outlinewidth=0,
                     ),
                 ),
-                showlegend=False,  # Add this line
+                showlegend=False,
                 text=[
                     f"Query ID: {q_id}<br>{measure}: {score:.4f}"
                     for q_id, score in zip(

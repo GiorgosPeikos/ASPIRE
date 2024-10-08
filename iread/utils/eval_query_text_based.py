@@ -333,8 +333,11 @@ def query_similarity_performance(
         experiment = get_experiment_name(run_name, None)
         results_per_run[experiment] = {}
         for parsed_metric in parsed_metrics:
-            results_per_run[experiment][str(parsed_metric)] = calculate_evaluation(
-                parsed_metric, qrel, run_data
-            )
+            results = calculate_evaluation(parsed_metric, qrel, run_data)
+            for metric_name, metric_data in results.items():
+                results_per_run[experiment][metric_name] = {
+                    metric_name: [float(value) for value in metric_data['values']],
+                    'query_id': metric_data['query_ids']
+                }
 
     return pca_df, results_per_run

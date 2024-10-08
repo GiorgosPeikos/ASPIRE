@@ -16,6 +16,7 @@ from utils.eval_query_text_based import (query_clf_relevance_assessments,
                                          remove_stopwords_from_queries)
 from utils.eval_single_exp import get_experiment_name
 from wordcloud import WordCloud
+import numpy as np
 
 
 def sort_query_ids(query_ids):
@@ -218,62 +219,62 @@ def plot_performance_measures_per_q(data):
     #         st.write(f"    Data: {data[run][measure]}")
 
     # Extract measures and runs
-    eval_measures = list(data[list(data.keys())[0]].keys())
+    eval_measures = list(set(measure for run in data for measure in data[run]))
     runs = list(data.keys())
 
     # Create a subplot for each measure
-    fig = make_subplots(rows=len(eval_measures), cols=1, subplot_titles=eval_measures)
+    fig = make_subplots(rows=len(eval_measures), cols=1, subplot_titles=eval_measures, vertical_spacing=0.15)
 
-    colors = generate_colors(len(runs))
+    # Generate more colors if needed
+    colors = plt.cm.rainbow(np.linspace(0, 1, len(runs)))
+    colors = [f'rgb({int(r*255)},{int(g*255)},{int(b*255)})' for r, g, b, _ in colors]
 
     # Generate patterns dynamically
-    base_patterns = ["", "/", "x", "-", "|", "+", "."]
+    base_patterns = ["", "/", "x", "-", "|", "+", ".", "\\"]
     patterns = [base_patterns[i % len(base_patterns)] for i in range(len(runs))]
 
     # Get all unique query IDs across all runs and measures, and sort them
     all_query_ids = set()
     for run in runs:
         for measure in eval_measures:
-            # Check if 'query_id' exists in the data structure
-            if 'query_id' in data[run][measure]:
+            if measure in data[run] and 'query_id' in data[run][measure]:
                 all_query_ids.update(data[run][measure]['query_id'])
-            else:
-                st.warning(f"'query_id' not found for run '{run}' and measure '{measure}'")
-                # Assume query IDs are the indices of the measure values
+            elif measure in data[run]:
                 all_query_ids.update(range(len(data[run][measure][measure])))
 
     sorted_query_ids = sort_query_ids(list(all_query_ids))
 
     for i, measure in enumerate(eval_measures, start=1):
         for j, run in enumerate(runs):
-            if 'query_id' in data[run][measure]:
-                query_ids = data[run][measure]['query_id']
-            else:
-                query_ids = list(range(len(data[run][measure][measure])))
-            measure_values = data[run][measure][measure]
+            if measure in data[run]:
+                if 'query_id' in data[run][measure]:
+                    query_ids = data[run][measure]['query_id']
+                else:
+                    query_ids = list(range(len(data[run][measure][measure])))
+                measure_values = data[run][measure][measure]
 
-            # Create a mapping of query_id to its index in sorted_query_ids
-            query_id_to_index = {qid: idx for idx, qid in enumerate(sorted_query_ids)}
+                # Create a mapping of query_id to its index in sorted_query_ids
+                query_id_to_index = {qid: idx for idx, qid in enumerate(sorted_query_ids)}
 
-            # Sort the data based on the order in sorted_query_ids
-            sorted_indices = [query_id_to_index[qid] for qid in query_ids]
-            sorted_query_ids_run = [query_ids[i] for i in sorted_indices]
-            sorted_measure_values = [measure_values[i] for i in sorted_indices]
+                # Sort the data based on the order in sorted_query_ids
+                sorted_indices = [query_id_to_index[qid] for qid in query_ids if qid in query_id_to_index]
+                sorted_query_ids_run = [query_ids[i] for i in range(len(query_ids)) if i in sorted_indices]
+                sorted_measure_values = [measure_values[i] for i in range(len(measure_values)) if i in sorted_indices]
 
-            fig.add_trace(
-                go.Bar(
-                    x=sorted_query_ids_run,
-                    y=sorted_measure_values,
-                    name=run,
-                    marker_color=colors[j],
-                    marker_pattern_shape=patterns[j],
-                    opacity=0.8,
-                    showlegend=(i == 1),  # Only show legend for the first subplot
-                    hovertemplate="Query: %{x}<br>" + f"{measure}: " + "%{y:.3f}<br>Run: " + run + "<extra></extra>",
-                ),
-                row=i,
-                col=1,
-            )
+                fig.add_trace(
+                    go.Bar(
+                        x=sorted_query_ids_run,
+                        y=sorted_measure_values,
+                        name=run,
+                        marker_color=colors[j],
+                        marker_pattern_shape=patterns[j],
+                        opacity=0.8,
+                        showlegend=(i == 1),  # Only show legend for the first subplot
+                        hovertemplate="Query: %{x}<br>" + f"{measure}: " + "%{y:.3f}<br>Run: " + run + "<extra></extra>",
+                    ),
+                    row=i,
+                    col=1,
+                )
 
         # Update y-axis title and x-axis settings
         fig.update_yaxes(title_text=f"{measure} Value", row=i, col=1)
@@ -282,7 +283,7 @@ def plot_performance_measures_per_q(data):
             tickmode="array",
             tickvals=sorted_query_ids,
             ticktext=sorted_query_ids,
-            tickangle=90,
+            tickangle=45,
             row=i,
             col=1,
         )
@@ -293,6 +294,7 @@ def plot_performance_measures_per_q(data):
         title_text="Performance Measures Across Queries",
         barmode="group",
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        margin=dict(l=50, r=50, b=50),
     )
 
     # Display the plot in Streamlit
@@ -311,7 +313,8 @@ def plot_performance_difference(data):
 
     # Determine the maximum number of queries
     max_queries = max(
-        len(data[run][measure][measure]) for run in runs for measure in eval_measures
+        len(data[run][measure][measure]['values'])
+        for run in runs for measure in eval_measures
     )
 
     # Generate colors and patterns
@@ -320,31 +323,36 @@ def plot_performance_difference(data):
     patterns = [base_patterns[i % len(base_patterns)] for i in range(len(other_runs))]
 
     # Check if any query ID is longer than 5 characters
-    long_labels = any(len(str(x)) > 5 for x in range(1, max_queries + 1))
+    long_labels = any(
+        len(str(qid)) > 5
+        for run in runs
+        for measure in eval_measures
+        for qid in data[run][measure][measure]['query_ids']
+    )
 
     # Create a subplot for each measure
     fig = make_subplots(
         rows=len(eval_measures),
         cols=1,
         subplot_titles=eval_measures,
-        vertical_spacing=0.1,
+        vertical_spacing=0.15,
     )
 
     for i, measure in enumerate(eval_measures, start=1):
         for j, run in enumerate(other_runs):
-            baseline_values = data[baseline_run][measure][measure]
-            run_values = data[run][measure][measure]
+            baseline_values = data[baseline_run][measure][measure]['values']
+            run_values = data[run][measure][measure]['values']
+            query_ids = data[run][measure][measure]['query_ids']
 
             # Calculate the difference
             diff_values = [
                 run_val - baseline_val
                 for run_val, baseline_val in zip(run_values, baseline_values)
             ]
-            x_values = list(range(1, len(diff_values) + 1))
 
             fig.add_trace(
                 go.Bar(
-                    x=x_values,
+                    x=query_ids,
                     y=diff_values,
                     name=run,
                     marker_color=colors[j],
@@ -362,8 +370,8 @@ def plot_performance_difference(data):
         # Add a horizontal line at y=0
         fig.add_shape(
             type="line",
-            x0=0.5,
-            x1=max_queries + 0.5,
+            x0=query_ids[0],
+            x1=query_ids[-1],
             y0=0,
             y1=0,
             line=dict(color="black", width=1, dash="dash"),
@@ -379,20 +387,18 @@ def plot_performance_difference(data):
             fig.update_xaxes(
                 title_text="Query ID",
                 tickmode="array",
-                tickvals=list(range(1, max_queries + 1, 5)),  # Show every 5th tick
-                ticktext=[str(x) for x in range(1, max_queries + 1, 5)],
-                tickangle=90,  # Rotate labels 90 degrees
-                range=[0.5, max_queries + 0.5],  # Ensure all bars are visible
+                tickvals=query_ids,  # Show all queryids
+                ticktext=query_ids,
+                tickangle=45,  # Rotate labels 90 degrees
                 row=i,
                 col=1,
             )
         else:
             fig.update_xaxes(
                 title_text="Query ID",
-                tickmode="linear",
-                tick0=1,
-                dtick=1,
-                range=[0.5, max_queries + 0.5],  # Ensure all bars are visible
+                tickmode="array",
+                tickvals=query_ids,
+                ticktext=query_ids,
                 row=i,
                 col=1,
             )
@@ -402,115 +408,111 @@ def plot_performance_difference(data):
         height=550 * len(eval_measures),  # Increase height
         title={
             "text": f"""Performance Difference Compared to the Selected Baseline: <span style="color:red;">{baseline_run.replace('(Baseline)', '')}</span>""",
-            "x": 0.01,  # Move title to the left
-            "xanchor": "left",
+            "x": 0.5,
+            "xanchor": "center",
             "yanchor": "top",
         },
         barmode="group",
-        legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="right", x=1),
-    )
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        margin=dict(l=50, r=50, b=50),
 
+    )
     # Display the plot in Streamlit
     st.plotly_chart(fig, use_container_width=True)
 
 
 @st.cache_data
-def plot_performance_and_median_per_experiment(data):
-    runs = list(data.keys())
-    eval_measures = [
-        measure for measure in data[runs[0]].keys() if not measure.startswith("median_")
-    ]
+def plot_performance_and_median_per_experiment(results_per_run):
+    # Extract measures and runs
+    all_keys = list(results_per_run[list(results_per_run.keys())[0]].keys())
+    eval_measures = [measure for measure in all_keys if not measure.startswith("median_")]
+    runs = list(results_per_run.keys())
 
-    for run in runs:
-        # Create a subplot for each measure within this run
+    # Generate colors
+    colors = generate_colors(len(runs))
+
+    # Create a plot for each experiment
+    for current_exp in runs:
+        # Create a subplot for each measure
         fig = make_subplots(
-            rows=len(eval_measures), cols=1, subplot_titles=eval_measures
+            rows=len(eval_measures),
+            cols=1,
+            subplot_titles=eval_measures,
+            vertical_spacing=0.15,
         )
 
-        max_queries = max(len(data[run][measure][measure]) for measure in eval_measures)
-
         for i, measure in enumerate(eval_measures, start=1):
-            y_values = data[run][measure][measure]  # Access the nested level
-            median_values = data[run][f"median_{measure}"]
-            x_values = list(range(1, len(y_values) + 1))
+            for j, run in enumerate(runs):
+                if measure in results_per_run[run] and measure in results_per_run[run][measure]:
+                    values = results_per_run[run][measure][measure]['values']
+                    query_ids = results_per_run[run][measure][measure]['query_ids']
 
-            # Add bar plot for performance
-            fig.add_trace(
-                go.Bar(
-                    x=x_values,
-                    y=y_values,
-                    name="Performance",
-                    marker_color="blue",
-                    opacity=0.8,
-                    showlegend=(i == 1),  # Only show legend for the first subplot
-                    hovertemplate="Query: %{x}<br>Performance: %{y:.3f}<extra></extra>",
-                ),
-                row=i,
-                col=1,
-            )
+                    fig.add_trace(
+                        go.Bar(
+                            x=query_ids,
+                            y=values,
+                            name=run,
+                            marker_color=colors[j],
+                            showlegend=(i == 1),  # Only show legend for the first subplot
+                            hovertemplate="Query: %{x}<br>Value: %{y:.3f}<br>Run: " + run + "<extra></extra>",
+                        ),
+                        row=i,
+                        col=1,
+                    )
 
-            # Add scatter plot for median scores
-            fig.add_trace(
-                go.Scatter(
-                    x=x_values,
-                    y=median_values,
-                    mode="markers",
-                    marker=dict(color="red", symbol="star", size=8),
-                    name="Median",
-                    hovertemplate="Query: %{x}<br>Median: %{y:.3f}<extra></extra>",
-                ),
-                row=i,
-                col=1,
-            )
+            # Add median scatter for the current experiment
+            median_key = f"median_{measure}"
+            if median_key in results_per_run[current_exp]:
+                median_values = results_per_run[current_exp][median_key]['values']
+                query_ids = results_per_run[current_exp][median_key]['query_ids']
+                fig.add_trace(
+                    go.Scatter(
+                        x=query_ids,
+                        y=median_values,
+                        mode='markers',
+                        name=f'Median (N-1)',
+                        marker=dict(
+                            color='red',
+                            symbol='star',
+                            size=10,
+                            line=dict(width=0.5, color='DarkSlateGrey')
+                        ),
+                        showlegend=(i == 1),
+                        hovertemplate="Query: %{x}<br>Median (N-1): %{y:.3f}<extra></extra>",
+                    ),
+                    row=i,
+                    col=1,
+                )
 
             # Update y-axis title
-            fig.update_yaxes(title_text=f"{measure} Value", row=i, col=1)
-
-            # Check if any query ID is longer than 5 characters
-            long_labels = any(len(str(x)) > 5 for x in x_values)
+            fig.update_yaxes(title_text=measure, row=i, col=1)
 
             # Update x-axis settings
-            if long_labels:
-                fig.update_xaxes(
-                    title_text="Query ID",
-                    tickmode="array",
-                    tickvals=list(range(1, max_queries + 1)),  # Show all ticks
-                    ticktext=[str(x) for x in range(1, max_queries + 1)],
-                    tickangle=90,  # Rotate labels 90 degrees
-                    range=[0.5, max_queries + 0.5],  # Ensure all bars are visible
-                    row=i,
-                    col=1,
-                )
-            else:
-                fig.update_xaxes(
-                    title_text="Query ID",
-                    tickmode="linear",
-                    tick0=1,
-                    dtick=1,
-                    range=[0.5, max_queries + 0.5],  # Ensure all bars are visible
-                    row=i,
-                    col=1,
-                )
+            fig.update_xaxes(
+                title_text="Query ID",
+                tickmode="array",
+                tickvals=query_ids,
+                ticktext=query_ids,
+                tickangle=45,
+                row=i,
+                col=1,
+            )
 
         # Update layout
         fig.update_layout(
-            height=300 * len(eval_measures),
-            title_text=f"""Performance of <span style="color:red;">{run}</span> and Comparison to median scores""",
-            showlegend=True,
-            legend=dict(
-                orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1
-            ),
+            height=550 * len(eval_measures),  # Increase height
+            title={
+                "text": f"""Performance of <span style="color:red;">{current_exp}</span> compared to the Median performance calculated based on the remaining <span style="color:red;">{len(runs)-1}</span> experiments.""",
+                "x": 0.5,
+                "xanchor": "center",
+                "yanchor": "top",
+            },
+            barmode="group",
+            legend=dict(orientation="h", yanchor="bottom", y=1.01, xanchor="right", x=1),
+            margin=dict(l=50, r=50, t=100, b=50),
         )
 
         # Display the plot in Streamlit
-        st.write(
-            f"""<center><h5>Analysis of the <span style="color:red;">{run}</span> Experiment</h5></center>""",
-            unsafe_allow_html=True,
-        )
-        st.write(
-            f"""<center>The median performance per measure, for each query, is computed based on the remaining selected experiments.</center>""",
-            unsafe_allow_html=True,
-        )
         st.plotly_chart(fig, use_container_width=True)
 
 
@@ -520,99 +522,81 @@ def plot_performance_difference_threshold(data, threshold):
     eval_measures = list(data[list(data.keys())[0]].keys())
     runs = list(data.keys())
 
-    for run in runs:
-        # Determine the maximum number of queries for this run
-        max_queries = max(len(data[run][measure][measure]) for measure in eval_measures)
+    # Generate colors
+    colors = generate_colors(len(runs))
 
-        # Create a subplot for each measure within this run
-        fig = make_subplots(
-            rows=len(eval_measures),
-            cols=1,
-            subplot_titles=eval_measures,
-            vertical_spacing=0.1,
-        )
+    # Create a subplot for each measure
+    fig = make_subplots(
+        rows=len(eval_measures),
+        cols=1,
+        subplot_titles=eval_measures,
+        vertical_spacing=0.15,
+    )
 
-        for i, measure in enumerate(eval_measures, start=1):
-            run_values = data[run][measure][measure]
+    for i, measure in enumerate(eval_measures, start=1):
+        for j, run in enumerate(runs):
+            values = data[run][measure][measure]['values']
+            query_ids = data[run][measure][measure]['query_ids']
 
             # Calculate the difference from the threshold
-            diff_values = [run_val - threshold for run_val in run_values]
-            x_values = list(range(1, len(diff_values) + 1))
+            diff_values = [val - threshold for val in values]
 
             fig.add_trace(
                 go.Bar(
-                    x=x_values,
+                    x=query_ids,
                     y=diff_values,
-                    name=measure,
-                    marker_color="blue",
-                    opacity=0.8,
+                    name=run,
+                    marker_color=colors[j],
                     showlegend=(i == 1),  # Only show legend for the first subplot
-                    hovertemplate="Query: %{x}<br>Actual Performance: %{customdata:.3f}<br>Difference: %{y:.3f}<extra></extra>",
-                    customdata=run_values,  # Add actual performance values for hover
+                    hovertemplate="Query: %{x}<br>Difference: %{y:.3f}<br>Run: "
+                    + run
+                    + "<extra></extra>",
                 ),
                 row=i,
                 col=1,
             )
 
-            # Add a horizontal line at y=0
-            fig.add_shape(
-                type="line",
-                x0=0.5,
-                x1=max_queries + 0.5,
-                y0=0,
-                y1=0,
-                line=dict(color="black", width=1, dash="dash"),
-                row=i,
-                col=1,
-            )
-
-            # Update y-axis title
-            fig.update_yaxes(title_text=f"{measure} Difference", row=i, col=1)
-
-            # Check if any query ID is longer than 5 characters
-            long_labels = any(len(str(x)) > 5 for x in x_values)
-
-            # Update x-axis settings
-            if long_labels:
-                fig.update_xaxes(
-                    title_text="Query ID",
-                    tickmode="array",
-                    tickvals=list(range(1, max_queries + 1)),  # Show all ticks
-                    ticktext=[str(x) for x in range(1, max_queries + 1)],
-                    tickangle=90,  # Rotate labels 90 degrees
-                    range=[0.5, max_queries + 0.5],  # Ensure all bars are visible
-                    row=i,
-                    col=1,
-                )
-            else:
-                fig.update_xaxes(
-                    title_text="Query ID",
-                    tickmode="linear",
-                    tick0=1,
-                    dtick=1,
-                    range=[0.5, max_queries + 0.5],  # Ensure all bars are visible
-                    row=i,
-                    col=1,
-                )
-
-            # Update layout
-        fig.update_layout(
-            height=550 * len(eval_measures),
-            title={
-                "text": f"""Performance Difference for <span style="color:red;">{run}</span> w.r.t. the selected threshold: ({threshold:.2f})""",
-                "x": 0.01,
-                "xanchor": "left",
-                "yanchor": "top",
-            },
-            showlegend=False,
+        # Add a horizontal line at y=0
+        fig.add_shape(
+            type="line",
+            x0=query_ids[0],
+            x1=query_ids[-1],
+            y0=0,
+            y1=0,
+            line=dict(color="black", width=1, dash="dash"),
+            row=i,
+            col=1,
         )
 
-        # Display the plot in Streamlit
-        st.write(
-            f"""<center><h5>Analysis of the <span style="color:red;">{run}</span> Experiment</h5></center>""",
-            unsafe_allow_html=True,
+        # Update y-axis title
+        fig.update_yaxes(title_text=f"{measure} Difference from Threshold", row=i, col=1)
+
+        # Update x-axis settings
+        fig.update_xaxes(
+            title_text="Query ID",
+            tickmode="array",
+            tickvals=query_ids,  # Show every 5th tick
+            ticktext=query_ids,
+            tickangle=45,  # Rotate labels 90 degrees
+            row=i,
+            col=1,
         )
-        st.plotly_chart(fig, use_container_width=True)
+
+    # Update layout
+    fig.update_layout(
+        height=550 * len(eval_measures),  # Increase height
+        title={
+            "text": f"""Performance Difference Compared to Threshold (<span style="color:red;">{threshold:.2f}</span>)""",
+            "x": 0.5,
+            "xanchor": "center",
+            "yanchor": "top",
+        },
+        barmode="group",
+        legend=dict(orientation="h", yanchor="bottom", y=1.01, xanchor="right", x=1),
+    )
+
+    # Display the plot in Streamlit
+    st.plotly_chart(fig, use_container_width=True)
 
 
 @st.cache_data
@@ -687,7 +671,7 @@ def plot_query_relevance_judgements(selected_qrel):
         tickmode="array",
         tickvals=relevance_counts.index,
         ticktext=relevance_counts.index,
-        tickangle=90,
+        tickangle=45,
     )
 
     # Display the plot in Streamlit
@@ -1604,7 +1588,7 @@ def plot_rankings_docs_rel_ids(qrel, runs, ranking_depth):
         subplot_titles=[
             get_experiment_name(run_name, None) for run_name in runs.keys()
         ],
-        vertical_spacing=0.1,
+        vertical_spacing=0.15,
         horizontal_spacing=0.05,
     )
 

@@ -13,8 +13,8 @@ from utils.plots import (plot_performance_and_median_per_experiment,
 
 @st.cache_data
 def calculate_median_metrics(
-    results_per_run: Dict[str, Dict[str, Dict[str, List[float]]]]
-) -> Dict[str, Dict[str, List[float]]]:
+        results_per_run: Dict[str, Dict[str, Dict[str, Dict[str, List]]]]
+) -> Dict[str, Dict[str, Dict[str, List]]]:
     """
     Calculate median metric values across N-1 experiments for each query.
 
@@ -22,33 +22,41 @@ def calculate_median_metrics(
     considering all experiments except the current one.
 
     Args:
-    results_per_run (Dict[str, Dict[str, Dict[str, List[float]]]]): A nested dictionary
+    results_per_run (Dict[str, Dict[str, Dict[str, Dict[str, List]]]]): A nested dictionary
         containing evaluation results for each experiment, metric, and query.
 
     Returns:
-    Dict[str, Dict[str, List[float]]]: A dictionary with median values for each experiment and metric.
+    Dict[str, Dict[str, Dict[str, List]]]: A dictionary with median values for each experiment and metric.
     """
     median_results = {}
     experiments = list(results_per_run.keys())
     metrics = list(results_per_run[experiments[0]].keys())
-    num_queries = len(results_per_run[experiments[0]][metrics[0]][metrics[0]])
 
     for current_exp in experiments:
         median_results[current_exp] = {}
         for metric in metrics:
             other_exps = [exp for exp in experiments if exp != current_exp]
+
+            # Get query_ids and values for the current metric
+            query_ids = results_per_run[current_exp][metric][metric]['query_ids']
+            values = results_per_run[current_exp][metric][metric]['values']
+
             median_values = []
 
-            for query_idx in range(num_queries):
+            for i in range(len(query_ids)):
                 other_values = [
-                    results_per_run[exp][metric][metric][query_idx]
+                    results_per_run[exp][metric][metric]['values'][i]
                     for exp in other_exps
                 ]
                 median_values.append(statistics.median(other_values))
 
-            median_results[current_exp][f"median_{metric}"] = median_values
+            median_results[current_exp][f"median_{metric}"] = {
+                'values': median_values,
+                'query_ids': query_ids
+            }
 
     return median_results
+
 
 @st.cache_data
 def per_query_evaluation(
@@ -111,7 +119,6 @@ def per_query_evaluation(
 
         # Calculate median metrics
         median_results = calculate_median_metrics(results_per_run)
-
         # Merge original results with median results
         for experiment in results_per_run:
             results_per_run[experiment].update(median_results[experiment])
@@ -209,22 +216,21 @@ def analyze_performance_difference_median(data):
 
     for measure in eval_measures:
         # Calculate median performance across all runs for each query
-        all_values = np.array([data[run][measure][measure] for run in runs])
+        all_values = np.array([data[run][measure][measure]['values'] for run in runs])
         median_values = np.median(all_values, axis=0)
 
         for run in runs:
             if run not in analysis_results:
                 analysis_results[run] = {}
 
-            actual_values = np.array(data[run][measure][measure])
+            actual_values = np.array(data[run][measure][measure]['values'])
+            query_ids = data[run][measure][measure]['query_ids']
 
             # Compare each query's performance to median of other runs
             diff_values = actual_values - median_values
-            improved_queries = [i + 1 for i, diff in enumerate(diff_values) if diff > 0]
-            degraded_queries = [i + 1 for i, diff in enumerate(diff_values) if diff < 0]
-            unchanged_queries = [
-                i + 1 for i, diff in enumerate(diff_values) if diff == 0
-            ]
+            improved_queries = [query_ids[i] for i, diff in enumerate(diff_values) if diff > 0]
+            degraded_queries = [query_ids[i] for i, diff in enumerate(diff_values) if diff < 0]
+            unchanged_queries = [query_ids[i] for i, diff in enumerate(diff_values) if diff == 0]
 
             # Calculate statistics
             total_queries = len(diff_values)
@@ -281,19 +287,18 @@ def analyze_performance_difference(results):
     for run in other_runs:
         analysis_results[run] = {}
         for measure in eval_measures:
-            baseline_values = results[baseline_run][measure][measure]
-            run_values = results[run][measure][measure]
+            baseline_values = results[baseline_run][measure][measure]['values']
+            run_values = results[run][measure][measure]['values']
+            query_ids = results[run][measure][measure]['query_ids']
 
             # Compare each query's performance
             diff_values = [
                 run_val - baseline_val
                 for run_val, baseline_val in zip(run_values, baseline_values)
             ]
-            improved_queries = [i + 1 for i, diff in enumerate(diff_values) if diff > 0]
-            degraded_queries = [i + 1 for i, diff in enumerate(diff_values) if diff < 0]
-            unchanged_queries = [
-                i + 1 for i, diff in enumerate(diff_values) if diff == 0
-            ]
+            improved_queries = [query_ids[i] for i, diff in enumerate(diff_values) if diff > 0]
+            degraded_queries = [query_ids[i] for i, diff in enumerate(diff_values) if diff < 0]
+            unchanged_queries = [query_ids[i] for i, diff in enumerate(diff_values) if diff == 0]
 
             # Calculate statistics
             avg_diff = np.mean(diff_values)
@@ -335,15 +340,18 @@ def analyze_performance_difference_threshold(data, threshold):
     for run in runs:
         analysis_results[run] = {}
         for measure in eval_measures:
-            actual_values = np.array(data[run][measure][measure])
+            if isinstance(data[run][measure][measure], dict):
+                actual_values = np.array(data[run][measure][measure]['values'])
+                query_ids = data[run][measure][measure]['query_ids']
+            else:
+                actual_values = np.array(data[run][measure][measure])
+                query_ids = list(range(1, len(actual_values) + 1))
 
             # Compare each query's performance to the threshold
             diff_values = actual_values - threshold
-            improved_queries = [i + 1 for i, diff in enumerate(diff_values) if diff > 0]
-            degraded_queries = [i + 1 for i, diff in enumerate(diff_values) if diff < 0]
-            unchanged_queries = [
-                i + 1 for i, diff in enumerate(diff_values) if diff == 0
-            ]
+            improved_queries = [query_ids[i] for i, diff in enumerate(diff_values) if diff > 0]
+            degraded_queries = [query_ids[i] for i, diff in enumerate(diff_values) if diff < 0]
+            unchanged_queries = [query_ids[i] for i, diff in enumerate(diff_values) if diff == 0]
 
             # Calculate statistics
             total_queries = len(diff_values)

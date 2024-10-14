@@ -1616,7 +1616,7 @@ def plot_rankings_docs_rel_ids(qrel, runs, ranking_depth):
         subplot_titles=[
             get_experiment_name(run_name, None) for run_name in runs.keys()
         ],
-        vertical_spacing=0.15,
+        # vertical_spacing=0.15,
         horizontal_spacing=0.05,
     )
 

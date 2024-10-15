@@ -119,7 +119,8 @@ Contributions to improve the dashboard or add new features are welcome. Please f
 
 [Wojciech Kusa] - [wojciech.kusa@tuwien.ac.at]
 
-Project Link: https://github.com/GiorgosPeikos/IREAD.git 
+Project Link: [https://github.com/GiorgosPeikos/IREAD.git 
+](https://github.com/GiorgosPeikos/ASPIRE)
 
 ## Acknowledgments
 

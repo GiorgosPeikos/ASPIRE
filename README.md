@@ -41,7 +41,7 @@ The Assistive System for Performance Evaluation in Information Retrieval (ASPIRE
 
 ## Installation
 
-1. Clone the repository: https://github.com/GiorgosPeikos/IREAD.git 
+1. Clone the repository: https://github.com/GiorgosPeikos/ASPIRE
 
 2. Install requirements: 
 
@@ -119,8 +119,7 @@ Contributions to improve the dashboard or add new features are welcome. Please f
 
 [Wojciech Kusa] - [wojciech.kusa@tuwien.ac.at]
 
-Project Link: [https://github.com/GiorgosPeikos/IREAD.git 
-](https://github.com/GiorgosPeikos/ASPIRE)
+Project Link: [https://github.com/GiorgosPeikos/ASPIRE](https://github.com/GiorgosPeikos/ASPIRE)
 
 ## Acknowledgments
 

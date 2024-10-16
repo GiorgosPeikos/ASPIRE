@@ -175,10 +175,16 @@ def create_results_table(statistical_results):
                 style = []
                 if reject and system != baseline_system:
                     style.append("background-color: lightgreen")
-                style.append("color: black")
+
+                # Change the color of the performance measures with the significance levels, based on the selected theme.
+                theme = st.get_option("theme.base")
+                if theme == "light":
+                    style.append("color: black")
+                elif theme == "dark":
+                    style.append("color: white")
+
                 if mean == max_mean:
                     style.append("font-weight: bold")
-                    # Removed text-decoration: underline !important as we're now underlining in the string itself
 
                 style_df.loc[system, metric] = "; ".join(style)
 

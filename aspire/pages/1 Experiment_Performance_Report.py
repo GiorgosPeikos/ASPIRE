@@ -1,6 +1,5 @@
 import math
 import os
-
 import pandas as pd
 import streamlit as st
 from utils.data_handler import load_qrel_data, load_query_data, load_run_data

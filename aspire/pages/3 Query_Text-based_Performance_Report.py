@@ -112,7 +112,7 @@ if st.button("Begin the Experimental Evaluation!", key="qmet_stButtonCenter"):
 
 # Functionality that allows to randomly select queries for analysis, size and queries.
 if ("qmet_selected_queries" in st.session_state and not st.session_state.qmet_selected_queries.empty):
-    if len(st.session_state.qmet_selected_queries) > 101:
+    if len(st.session_state.qmet_selected_queries) > 500:
         with st.container():
             st.write(
                 """<h3>Query Sampling - <span style="color:red;">Sampling Queries to Facilitate Experiment Analysis</span></h3>""",

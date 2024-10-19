@@ -119,7 +119,7 @@ if (
     "qme_selected_queries" in st.session_state
     and not st.session_state.qme_selected_queries.empty
 ):
-    if len(st.session_state.qme_selected_queries) > 100:
+    if len(st.session_state.qme_selected_queries) > 500:
         with st.container():
             st.write(
                 """<h3>Query Sampling - <span style="color:red;">Sampling Queries to Facilitate Experiment Analysis</span></h3>""",

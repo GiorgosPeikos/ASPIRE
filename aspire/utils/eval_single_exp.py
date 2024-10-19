@@ -185,6 +185,7 @@ def create_results_table(statistical_results):
 
                 if mean == max_mean:
                     style.append("font-weight: bold")
+                    # Removed text-decoration: underline !important as we're now underlining in the string itself
 
                 style_df.loc[system, metric] = "; ".join(style)
 

@@ -174,7 +174,7 @@ def create_results_table(statistical_results):
                 if reject and system != baseline_system:
                     style.append("background-color: lightgreen")
 
-                # Change the color of the performance measures with the significance levels, based on the selected theme.
+
                 theme = st.get_option("theme.base")
                 if theme == "light":
                     style.append("color: black")

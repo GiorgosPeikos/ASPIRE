@@ -185,15 +185,17 @@ if (
 
             st.divider()
     else:
-        if "qme_selected_queries_random" not in st.session_state:
-            st.session_state.qme_selected_queries_random = (
-                st.session_state.qme_selected_queries
-            )
+        st.session_state.qme_selected_queries_random = (
+            st.session_state.qme_selected_queries
+        )
+        if "qme_selected_queries_random" in st.session_state:
             st.write(
                 f"""<div style="text-align: center;"> All <span style="color:red;">{len(st.session_state.qme_selected_queries_random)}</span> provided queries will be used for the 
-            following analyses.</div>""",
+                following analyses.</div>""",
                 unsafe_allow_html=True,
             )
+
+        st.divider()
 
 st.divider()
 

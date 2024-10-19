@@ -123,7 +123,7 @@ if (
     "qmed_selected_queries" in st.session_state
     and not st.session_state.qmed_selected_queries.empty
 ):
-    if len(st.session_state.qmed_selected_queries) > 251:
+    if len(st.session_state.qmed_selected_queries) > 101:
         with st.container():
             st.write(
                 """<h3>Query Sampling - <span style="color:red;">Sampling Queries to Facilitate Experiment Analysis</span></h3>""",
@@ -189,18 +189,16 @@ if (
 
             st.divider()
     else:
-        if "qmed_selected_queries_random" not in st.session_state:
-            st.session_state.qmed_selected_queries_random = (
-                st.session_state.qmed_selected_queries
-            )
+        st.session_state.qmed_selected_queries_random = (
+            st.session_state.qmed_selected_queries
+        )
+        if "qmed_selected_queries_random" in st.session_state:
             st.write(
                 f"""<div style="text-align: center;"> All <span style="color:red;">{len(st.session_state.qmed_selected_queries_random)}</span> provided queries will be used for the 
-            following analyses.</div>""",
+                following analyses.</div>""",
                 unsafe_allow_html=True,
             )
-
-            st.divider()
-
+        st.divider()
 
 # Per query Relevance Judgements
 with st.container():

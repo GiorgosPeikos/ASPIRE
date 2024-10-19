@@ -111,10 +111,7 @@ if st.button("Begin the Experimental Evaluation!", key="qmet_stButtonCenter"):
         )
 
 # Functionality that allows to randomly select queries for analysis, size and queries.
-if (
-    "qmet_selected_queries" in st.session_state
-    and not st.session_state.qmet_selected_queries.empty
-):
+if ("qmet_selected_queries" in st.session_state and not st.session_state.qmet_selected_queries.empty):
     if len(st.session_state.qmet_selected_queries) > 101:
         with st.container():
             st.write(
@@ -181,17 +178,17 @@ if (
 
             st.divider()
     else:
-        if "qmet_selected_queries_random" not in st.session_state:
-            st.session_state.qmet_selected_queries_random = (
-                st.session_state.qmet_selected_queries
-            )
+        st.session_state.qmet_selected_queries_random = (
+            st.session_state.qmet_selected_queries
+        )
+        if "qmet_selected_queries_random" in st.session_state:
             st.write(
                 f"""<div style="text-align: center;"> All <span style="color:red;">{len(st.session_state.qmet_selected_queries_random)}</span> provided queries will be used for the 
             following analyses.</div>""",
                 unsafe_allow_html=True,
             )
 
-            st.divider()
+        st.divider()
 
 # Per query Relevance Judgements
 with st.container():
@@ -410,7 +407,6 @@ with st.container():
 
 st.divider()
 
-
 # Query Performance vs Query length
 with st.container():
     st.markdown(
@@ -493,8 +489,8 @@ with st.container():
                 st.session_state.qmet_prev_relevance_threshold = 1
 
             if (
-                st.session_state.qmet_relevance_threshold
-                != st.session_state.qmet_prev_relevance_threshold
+                    st.session_state.qmet_relevance_threshold
+                    != st.session_state.qmet_prev_relevance_threshold
             ):
                 st.session_state.qmet_prev_relevance_threshold = (
                     st.session_state.qmet_relevance_threshold
@@ -514,8 +510,8 @@ with st.container():
             # Initialize session state variables if they don't exist
             if "qmet_selected_measures" not in st.session_state:
                 st.session_state.qmet_selected_measures = custom_user[
-                    0:4
-                ]  # Default selected measures
+                                                          0:4
+                                                          ]  # Default selected measures
 
             selected_measures = st.multiselect(
                 "Select additional measures:", custom_user, default=custom_user[1:2]
@@ -555,7 +551,6 @@ with st.container():
             )
 
 st.divider()
-
 
 # Query Performance vs Query Similarity
 with st.container():
@@ -607,8 +602,8 @@ with st.container():
                 st.session_state.qmet_prev_relevance_threshold = 1
 
             if (
-                st.session_state.qmet_relevance_threshold
-                != st.session_state.qmet_prev_relevance_threshold
+                    st.session_state.qmet_relevance_threshold
+                    != st.session_state.qmet_prev_relevance_threshold
             ):
                 st.session_state.qmet_prev_relevance_threshold = (
                     st.session_state.qmet_relevance_threshold
@@ -627,8 +622,8 @@ with st.container():
             # Initialize session state variables if they don't exist
             if "qmet_selected_measures" not in st.session_state:
                 st.session_state.qmet_selected_measures = custom_user[
-                    0:4
-                ]  # Default selected measures
+                                                          0:4
+                                                          ]  # Default selected measures
 
             selected_measures = st.multiselect(
                 "Select additional measures:",

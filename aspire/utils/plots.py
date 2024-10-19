@@ -930,6 +930,7 @@ def plot_query_performance_vs_query_length(data):
                 st.warning(f"Not enough data points for ANOVA analysis in {measure} for {experiment}.")
 
 
+@st.cache_resource
 def create_relevance_wordclouds(query_relevance, queries, method, threshold) -> None:
     # Ensure query_ids in the DataFrame are strings
     queries["query_id"] = queries["query_id"].astype(str)

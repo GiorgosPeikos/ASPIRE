@@ -1237,6 +1237,10 @@ def plot_multi_query_docs(multi_query_docs):
                     for doc_rel in multi_query_docs["relevance_judgments"]
                 ],
                 hoverinfo="text+y",
+                hoverlabel=dict(
+                    bgcolor='white',
+                    font=dict(color='gray')
+                ),
             )
         )
 

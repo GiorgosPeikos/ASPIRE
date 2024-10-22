@@ -45,14 +45,15 @@ The Assistive System for Performance Evaluation in Information Retrieval (ASPIRE
 
 2. Install requirements: 
 
-	```
-	pip install -r requirements.txt
-	```
+```zsh
+pip install -r requirements.txt
+```
 3. Start the Streamlit Application:
 
-	```
-	streamlit run iread/_🏠_Homepage.py
-	```
+```zsh
+cd aspire
+streamlit run _🏠_Homepage.py
+```
 	
 4. The dashboard will open in your default web browser. Use the sidebar to navigate between different tools:
 - Upload - Delete Files

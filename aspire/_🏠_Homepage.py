@@ -148,7 +148,8 @@ def main():
         <div>
             <p><strong>For more information, contributions, or support, please contact:</strong></p>
             <p>Georgios Peikos: <span style="color: #1f77b4;">georgios.peikos@unimib.it</span></p>
-            <p>Wojciech Kusa: <span style="color: #1f77b4;">wojciech.kusa@tuwien.ac.at</span></p>
+            <p>Wojciech Kusa: <span style="color: #1f77b4;">wojciech.kusa@allegro.com</span></p>
+            <p>Symeon Symeonidis: <span style="color: #1f77b4;">symesyme@pme.duth.gr</span></p>
             <a href="https://github.com/GiorgosPeikos/ASPIRE" target="_blank" style="text-decoration: none;">
                 <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" width="30" height="30" style="vertical-align: middle;">
                 <span style="vertical-align: middle; margin-left: 10px; margin-top: 40px;">Visit our GitHub repository</span>

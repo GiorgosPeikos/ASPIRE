@@ -277,7 +277,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-queries_dir = "../retrieval_experiments/queries"
+queries_dir = "retrieval_experiments/queries"
 
 if st.button("Upload File"):
     if saved_queries is not None:

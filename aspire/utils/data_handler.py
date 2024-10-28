@@ -283,4 +283,4 @@ def read_xml_file(file_path):
 
 
 def refresh_file_list():
-    return get_all_files("../retrieval_experiments/")
+    return get_all_files("retrieval_experiments/")

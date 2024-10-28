@@ -54,7 +54,7 @@ with st.container():
 
     # Select Queries
     with columns[0]:
-        queries_dir = "../retrieval_experiments/queries"
+        queries_dir = "retrieval_experiments/queries"
         queries_file = st.selectbox(
             "Select Queries",
             os.listdir(queries_dir) if os.path.exists(queries_dir) else [],
@@ -62,14 +62,14 @@ with st.container():
 
     # Select Qrels
     with columns[1]:
-        qrels_dir = "../retrieval_experiments/qrels"
+        qrels_dir = "retrieval_experiments/qrels"
         qrels_file = st.selectbox(
             "Select Qrels", os.listdir(qrels_dir) if os.path.exists(qrels_dir) else []
         )
 
     # Select Retrieval Runs (multiselect)
     with columns[2]:
-        runs_dir = "../retrieval_experiments/retrieval_runs"
+        runs_dir = "retrieval_experiments/retrieval_runs"
         selected_runs_files = st.multiselect(
             "Select Retrieval Runs",
             os.listdir(runs_dir) if os.path.exists(runs_dir) else [],

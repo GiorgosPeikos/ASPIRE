@@ -69,7 +69,7 @@ if st.button("Upload Files"):
 
     if qrels is not None:
         # Define the folder to save the QREL file
-        qrels_folder = "retrieval_experiments/qrels/"
+        qrels_folder = "aspire/retrieval_experiments/qrels/"
         os.makedirs(qrels_folder, exist_ok=True)
 
         # Define file path using the original file name
@@ -83,7 +83,7 @@ if st.button("Upload Files"):
 
     if queries is not None:
         # Define the folder to save the queries file
-        queries_folder = "retrieval_experiments/queries/"
+        queries_folder = "aspire/retrieval_experiments/queries/"
         os.makedirs(queries_folder, exist_ok=True)
 
         # Define file path using the original file name
@@ -116,7 +116,7 @@ if all_files:
     if st.button("Delete selected files"):
         for file_name in selected_files:
             relative_path = file_dict[file_name]
-            file_path = os.path.join("retrieval_experiments/", relative_path)
+            file_path = os.path.join("aspire/retrieval_experiments/", relative_path)
             os.remove(file_path)
             st.write(f"Deleted {relative_path}")
 

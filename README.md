@@ -120,6 +120,8 @@ Contributions to improve the dashboard or add new features are welcome. Please f
 
 [Wojciech Kusa] - [wojciech.kusa@tuwien.ac.at]
 
+[Symeon Symeonidis] - [symesyme@pme.duth.gr]
+
 Project Link: [https://github.com/GiorgosPeikos/ASPIRE](https://github.com/GiorgosPeikos/ASPIRE)
 
 ## Acknowledgments

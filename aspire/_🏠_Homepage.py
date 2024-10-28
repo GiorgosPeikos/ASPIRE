@@ -4,7 +4,7 @@ from utils.ui import load_css
 
 def main():
     st.set_page_config(layout="wide", page_title="IR Evaluation Dashboard")
-    load_css("css/styles.css")
+    load_css("aspire/css/styles.css")
 
     st.markdown(
         """

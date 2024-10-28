@@ -6,6 +6,8 @@
 ## Overview
 The Assistive System for Performance Evaluation in Information Retrieval (ASPIRE) is a tool designed for researchers and practitioners in the field of Information Retrieval (IR). It provides a user-friendly interface to analyze and compare the performance of different retrieval systems or approaches. Built with Streamlit, this dashboard offers a range of analyses and visualizations to help users gain insights into their IR experiments.
 
+ASPIRE is available online : https://aspire-ir-eval.streamlit.app/
+
 ## Features
 
 ### Data Management

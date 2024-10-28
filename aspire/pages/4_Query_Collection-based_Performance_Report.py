@@ -19,7 +19,7 @@ st.set_page_config(
 )
 
 # Load custom CSS
-load_css("css/styles.css")
+load_css("aspire/css/styles.css")
 
 # Title for the page
 st.markdown(

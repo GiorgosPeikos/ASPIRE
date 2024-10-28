@@ -13,7 +13,7 @@ from utils.ui import load_css
 st.set_page_config(layout="wide", initial_sidebar_state="collapsed")
 
 # Load custom CSS
-load_css("css/styles.css")
+load_css("aspire/css/styles.css")
 
 # Title for the page
 st.markdown(

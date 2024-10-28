@@ -15,7 +15,7 @@ from utils.ui import load_css
 st.set_page_config(layout="wide")
 
 # Load custom CSS
-load_css("css/styles.css")
+load_css("aspire/css/styles.css")
 
 # In this page, the user can load a single experiment and create an Evaluation Report for this experiment. Usage:
 # This report can be useful if the user wants to discuss the results with others by sending them a single PDF file

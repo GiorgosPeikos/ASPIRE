@@ -53,7 +53,6 @@ pip install -r requirements.txt
 3. Start the Streamlit Application:
 
 ```zsh
-cd aspire
 streamlit run _🏠_Homepage.py
 ```
 	

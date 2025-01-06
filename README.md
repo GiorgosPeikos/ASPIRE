@@ -125,6 +125,20 @@ Contributions to improve the dashboard or add new features are welcome. Please f
 
 Project Link: [https://github.com/GiorgosPeikos/ASPIRE](https://github.com/GiorgosPeikos/ASPIRE)
 
+## Details and Citation 📄
+Further details regarding the future aims of this project can be found in its demo paper, which will be presented at the **47th European Conference on Information Retrieval (ECIR)**. [Read the paper here.](https://arxiv.org/pdf/2412.15759).
+
+If you use this project in your research, please cite it as follows:
+
+```bibtex
+@article{peikos2024aspire,
+  title={ASPIRE: Assistive System for Performance Evaluation in IR},
+  author={Peikos, Georgios and Kusa, Wojciech and Symeonidis, Symeon},
+  journal={arXiv preprint arXiv:2412.15759},
+  year={2024}
+}
+```
+
 ## Acknowledgments
 
 - [ir_measures](https://github.com/terrierteam/ir_measures) for providing IR evaluation metrics.
@@ -132,3 +146,5 @@ Project Link: [https://github.com/GiorgosPeikos/ASPIRE](https://github.com/Giorg
 - [Plotly](https://plotly.com/) for data visualizations.
 - [Matplotlib](https://matplotlib.org/) for data visualization capabilities.
 - Tested on Python 3.10
+
+

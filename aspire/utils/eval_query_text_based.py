@@ -14,7 +14,7 @@ from utils.eval_multiple_exp import calculate_evaluation
 from utils.eval_single_exp import get_experiment_name, metric_parser
 
 # Initialize the tokenizer
-tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+tokenizer = AutoTokenizer.from_pretrained("google-bert/bert-base-uncased")
 nltk.download("stopwords", quiet=True)
 nltk.download("punkt", quiet=True)
 
